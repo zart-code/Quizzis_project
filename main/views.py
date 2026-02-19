@@ -10,6 +10,7 @@ def main_page(request):
 def login_page(request):
     """Авторизация пользователя."""
     if request.method == 'POST':
+        print(request)
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
             username = form.cleaned_data.get('username')
