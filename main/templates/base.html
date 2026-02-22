@@ -26,7 +26,7 @@
                     {% if user.profile.is_admin %}
                         <a href="{% url 'main_page' %}" class="nav-link admin-link">Админ</a>
                     {% endif %}
-                    <a href="{% url 'main_page' %}" class="nav-link">Выход</a>
+                    <a href="{% url 'logout' %}" class="nav-link">Выход</a>
                 {% else %}
                     <a href="{% url 'login_page' %}" class="nav-link">Вход</a>
                     <a href="{% url 'register_page' %}" class="nav-link btn-primary">Регистрация</a>
