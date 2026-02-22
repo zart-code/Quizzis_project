@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% block title %}Главная - Quizziz{% endblock %}
+
 {% block content %}
 <div class="hero">
     <div class="container">
@@ -7,13 +9,11 @@
         <p class="hero-subtitle">Создавайте увлекательные квизы и проверяйте свои знания</p>
         {% if not user.is_authenticated %}
             <div class="hero-actions">
-                <a href="{% url 'register' %}" class="btn btn-large btn-primary">Начать сейчас</a>
-                <a href="{% url 'quizzes' %}" class="btn btn-large btn-secondary">Смотреть квизы</a>
+                <a href="{% url 'register_page' %}" class="btn btn-large btn-primary">Начать сейчас</a>
             </div>
         {% else %}
             <div class="hero-actions">
-                <a href="{% url 'create_quiz' %}" class="btn btn-large btn-primary">Создать квиз</a>
-                <a href="{% url 'quizzes' %}" class="btn btn-large btn-secondary">Пройти квиз</a>
+                <a href="{% url 'main_page' %}" class="btn btn-large btn-primary">Создать квиз</a>
             </div>
         {% endif %}
     </div>
@@ -45,29 +45,5 @@
             </div>
         </div>
     </section>
-
-    {% if quizzes %}
-    <section class="recent-quizzes">
-        <h2 class="section-title">Популярные квизы</h2>
-        <div class="quiz-grid">
-            {% for quiz in quizzes %}
-            <div class="quiz-card" style="border-left: 5px solid {{ quiz.color }};">
-                <div class="quiz-header">
-                    <h3>{{ quiz.title }}</h3>
-                    <span class="quiz-questions-count">{{ quiz.questions.count }} вопросов</span>
-                </div>
-                <p class="quiz-description">{{ quiz.description|truncatewords:20 }}</p>
-                <div class="quiz-footer">
-                    <span class="quiz-author">👤 {{ quiz.author.username }}</span>
-                    <a href="{% url 'view_quiz' quiz.id %}" class="btn btn-small btn-primary">Подробнее</a>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        <div class="text-center" style="margin-top: 2rem;">
-            <a href="{% url 'quizzes' %}" class="btn btn-secondary">Показать все квизы</a>
-        </div>
-    </section>
-    {% endif %}
 </div>
 {% endblock %}
