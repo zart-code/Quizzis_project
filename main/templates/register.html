@@ -26,45 +26,23 @@
 
                 <div class="form-group">
                     <label for="{{ form.username.id_for_label }}">Имя пользователя</label>
-                    <input type="text"
-                           name="{{ form.username.name }}"
-                           id="{{ form.username.id_for_label }}"
-                           value="{{ form.username.value|default:'' }}"
-                           required
-                           style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;">
-                    {% if form.username.errors %}
-                        <p style="color: red; font-size: 12px;">{{ form.username.errors }}</p>
-                    {% endif %}
+                    {{ form.username }}
                 </div>
 
                 <div class="form-group">
                     <label for="{{ form.password1.id_for_label }}">Пароль</label>
-                    <input type="password"
-                           name="{{ form.password1.name }}"
-                           id="{{ form.password1.id_for_label }}"
-                           required
-                           style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;">
-                    {% if form.password1.errors %}
-                        <p style="color: red; font-size: 12px;">{{ form.password1.errors }}</p>
-                    {% endif %}
+                    {{ form.password1 }}
                 </div>
 
                 <div class="form-group">
                     <label for="{{ form.password2.id_for_label }}">Подтвердите пароль</label>
-                    <input type="password"
-                           name="{{ form.password2.name }}"
-                           id="{{ form.password2.id_for_label }}"
-                           required
-                           style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;">
-                    {% if form.password2.errors %}
-                        <p style="color: red; font-size: 12px;">{{ form.password2.errors }}</p>
-                    {% endif %}
+                    {{ form.password2 }}
                 </div>
 
                 <button type="submit" class="btn btn-primary btn-block">Зарегистрироваться</button>
             </form>
 
-            <p class="auth-footer" style="margin-top: 15px; text-align: center;">
+            <p class="auth-footer">
                 Уже есть аккаунт? <a href="{% url 'login_page' %}">Войти</a>
             </p>
         </div>
