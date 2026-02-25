@@ -3,52 +3,44 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from .forms import CustomUserCreationForm
 
+# импортируем функционал из отдельных файлов в папке views_features
+from main.views_features.views_profile import *
+
 def main_page(request):
     """Главная страница (меню)."""
     return render(request, 'main_page.html')
 
-def login_page(request):
-    """Авторизация пользователя."""
-    if request.method == 'POST':
-        print(request)
-        form = AuthenticationForm(request, data=request.POST)
-        if form.is_valid():
-            username = form.cleaned_data.get('username')
-            password = form.cleaned_data.get('password')
-            user = authenticate(username=username, password=password)
-            if user is not None:
-                login(request, user)
-                return redirect('main_page')
-            else:
-                # Неверные данные – показываем форму с ошибкой
-                context = {'title': 'Войти в аккаунт', 'form': form}
-                return render(request, 'login_page.html', context)
-        else:
-            context = {'title': 'Войти в аккаунт', 'form': form}
-            return render(request, 'login_page.html', context)
-    else:
-        form = AuthenticationForm()
 
-    context = {'title': 'Войти в аккаунт', 'form': form}
-    return render(request, 'login_page.html', context)
 
 def register_page(request):
-    """Регистрация нового пользователя."""
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            login(request, user)  # автоматический вход после регистрации
+            login(request, user)
             return redirect('main_page')
         else:
-            context = {'title': 'Регистрация', 'form': form}
-            return render(request, 'register.html', context)
+            # Ошибки валидации - показываем форму с ошибками
+            return render(request, 'register.html', {'form': form})
     else:
         form = CustomUserCreationForm()
 
-    context = {'title': 'Регистрация', 'form': form}
-    return render(request, 'register.html', context)
+    return render(request, 'register.html', {'form': form})
 
+
+def login_page(request):
+    if request.method == 'POST':
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user)
+            return redirect('main_page')
+        else:
+            return render(request, 'login_page.html', {'form': form})
+    else:
+        form = AuthenticationForm()
+
+    return render(request, 'login_page.html', {'form': form})
 def logout_view(request):
     """Выход из системы."""
     logout(request)
