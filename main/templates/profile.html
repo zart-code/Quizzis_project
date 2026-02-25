@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Профиль: {{ user.username }}</h1>
+<p>Email: {{ user.email }}</p>
+<p>Дата регистрации: {{ user.date_joined }}</p>
+<a href="{% url 'edit_profile' %}">Редактировать профиль</a>
+
+<hr>
+
+<h3>Общая статистика</h3>
+<ul>
+    <li>Всего квизов в системе: {{ total_quizzes }}</li>
+    <li>Пройдено вами: {{ completed_quizzes }}</li>
+    <li>Средний балл: {{ average_score|floatformat:1 }}%</li>
+    <li>Лучший балл: {{ best_score|floatformat:1 }}%</li>
+</ul>
+
+<hr>
+
+<h3>Статистика по категориям</h3>
+{% for stat in category_stats %}
+    <p>
+        <strong>{{ stat.name }}</strong>:
+        {{ stat.quizzes_taken }} квизов,
+        ср. балл: {{ stat.average_score|floatformat:1 }}%,
+        лучший: {{ stat.best_score|floatformat:1 }}%
+    </p>
+{% endfor %}
+
+<hr>
+
+<h3>История квизов</h3>
+<form method="get">
+    <select name="status" onchange="this.form.submit()">
+        <option value="all" {% if request.GET.status == 'all' %}selected{% endif %}>Все</option>
+        <option value="completed" {% if request.GET.status == 'completed' %}selected{% endif %}>Завершенные</option>
+        <option value="in_progress" {% if request.GET.status == 'in_progress' %}selected{% endif %}>В процессе</option>
+    </select>
+</form>
+
+<ul>
+    {% for res in quiz_history %}
+    <li>
+        {{ res.quiz.title }} ({{ res.quiz.category.name }}) -
+        {% if res.completed %}
+            Результат: {{ res.score }}/{{ res.max_score }} ({{ res.score_percent }}%) - {{ res.completed_at }}
+        {% else %}
+            В процессе - <a href="{% url 'continue_quiz' res.quiz.id %}">Продолжить</a>
+        {% endif %}
+    </li>
+    {% empty %}
+    <li>История пуста</li>
+    {% endfor %}
+</ul>
+
+<hr>
+
+<h3>Достижения</h3>
+<ul>
+    {% for ach in achievements %}
+    <li>
+        {{ ach.icon }} <strong>{{ ach.name }}</strong> - {{ ach.description }}
+        {% if ach.unlocked %}(ПОЛУЧЕНО){% else %}(Закрыто){% endif %}
+    </li>
+    {% endfor %}
+</ul>
+{% endblock %}

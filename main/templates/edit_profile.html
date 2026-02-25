@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}Редактирование профиля - Quiz Platform{% endblock %}
+
+{% block content %}
+<h2>Редактирование профиля</h2>
+
+{% if messages %}
+    {% for message in messages %}
+        <p style="color: {% if message.tags == 'error' %}red{% else %}green{% endif %};">
+            {{ message }}
+        </p>
+    {% endfor %}
+{% endif %}
+
+<form method="post">
+    {% csrf_token %}
+
+    <p>
+        <label for="username">Имя пользователя:</label><br>
+        <input type="text" id="username" name="username" value="{{ user.username }}" required>
+    </p>
+
+    <p>
+        <label for="email">Email:</label><br>
+        <input type="email" id="email" name="email" value="{{ user.email }}">
+    </p>
+
+    <hr>
+    <h3>Изменить пароль (необязательно)</h3>
+
+    <p>
+        <label for="password">Новый пароль:</label><br>
+        <input type="password" id="password" name="password">
+    </p>
+
+    <p>
+        <label for="password_confirm">Подтвердите пароль:</label><br>
+        <input type="password" id="password_confirm" name="password_confirm">
+    </p>
+
+    <button type="submit">Сохранить</button>
+    <a href="{% url 'profile' %}">Отмена</a>
+</form>
+{% endblock %}
