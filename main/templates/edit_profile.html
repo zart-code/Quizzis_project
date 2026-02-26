@@ -1,45 +1,157 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+{% load static %}
 
-{% block title %}Редактирование профиля - Quiz Platform{% endblock %}
+{% block title %}Редактировать профиль - Quizziz{% endblock %}
 
 {% block content %}
-<h2>Редактирование профиля</h2>
+<div class="container">
+    <div class="edit-profile-page">
+        <div class="edit-profile-card">
+            <h2 class="edit-profile-title">Редактировать профиль</h2>
 
-{% if messages %}
-    {% for message in messages %}
-        <p style="color: {% if message.tags == 'error' %}red{% else %}green{% endif %};">
-            {{ message }}
-        </p>
-    {% endfor %}
-{% endif %}
+            <form method="POST" class="edit-profile-form">
+                {% csrf_token %}
 
-<form method="post">
-    {% csrf_token %}
+                <div class="form-group">
+                    <label for="username">Имя пользователя</label>
+                    <input type="text"
+                           id="username"
+                           name="username"
+                           class="form-control"
+                           value="{{ user.username }}"
+                           required>
+                </div>
 
-    <p>
-        <label for="username">Имя пользователя:</label><br>
-        <input type="text" id="username" name="username" value="{{ user.username }}" required>
-    </p>
 
-    <p>
-        <label for="email">Email:</label><br>
-        <input type="email" id="email" name="email" value="{{ user.email }}">
-    </p>
+                <div class="form-group">
+                    <label for="password">Новый пароль</label>
+                    <input type="password"
+                           id="password"
+                           name="password"
+                           class="form-control"
+                           minlength="8">
+                    <small class="form-hint">Минимум 8 символов</small>
+                </div>
 
-    <hr>
-    <h3>Изменить пароль (необязательно)</h3>
+                <div class="form-group">
+                    <label for="password_confirm">Подтвердите пароль</label>
+                    <input type="password"
+                           id="password_confirm"
+                           name="password_confirm"
+                           class="form-control"
+                           minlength="8">
+                </div>
 
-    <p>
-        <label for="password">Новый пароль:</label><br>
-        <input type="password" id="password" name="password">
-    </p>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary btn-large">Сохранить изменения</button>
+                    <a href="{% url 'profile' %}" class="btn btn-secondary btn-large">Отмена</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
-    <p>
-        <label for="password_confirm">Подтвердите пароль:</label><br>
-        <input type="password" id="password_confirm" name="password_confirm">
-    </p>
+<style>
+.edit-profile-page {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 2rem 0;
+}
 
-    <button type="submit">Сохранить</button>
-    <a href="{% url 'profile' %}">Отмена</a>
-</form>
+.edit-profile-card {
+    background: rgba(26, 26, 46, 0.8);
+    backdrop-filter: blur(20px);
+    border-radius: 30px;
+    padding: 3rem;
+    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.3);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.edit-profile-title {
+    text-align: center;
+    font-size: 2rem;
+    margin-bottom: 2.5rem;
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.edit-profile-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.form-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 1rem 0;
+}
+
+.form-divider span {
+    padding: 0 1rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    background: rgba(26, 26, 46, 0.8);
+    position: relative;
+}
+
+.form-divider::before,
+.form-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.form-hint {
+    display: block;
+    margin-top: 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.form-actions .btn {
+    flex: 1;
+}
+
+@media (max-width: 600px) {
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .edit-profile-card {
+        padding: 2rem 1.5rem;
+    }
+}
+</style>
+
+<script>
+// Валидация формы
+document.querySelector('.edit-profile-form').addEventListener('submit', function(e) {
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('password_confirm').value;
+
+    if (password || confirmPassword) {
+        if (password !== confirmPassword) {
+            e.preventDefault();
+            alert('Пароли не совпадают!');
+            return false;
+        }
+
+        if (password.length < 8) {
+            e.preventDefault();
+            alert('Пароль должен быть не менее 8 символов!');
+            return false;
+        }
+    }
+});
+</script>
 {% endblock %}
