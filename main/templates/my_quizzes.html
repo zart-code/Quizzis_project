@@ -46,7 +46,11 @@
         {% endfor %}
     </div>
     {% else %}
-
+    <div class="empty-state">
+        <div class="empty-icon">📝</div>
+        <h3>У вас пока нет квизов</h3>
+        <p>Создайте свой первый квиз и поделитесь им с другими!</p>
+    </div>
     {% endif %}
 </div>
 {% endblock %}
