@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Мои квизы - Quizziz{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1>Мои квизы 📝</h1>
+        <a href="{% url 'create_quiz'' %}" class="btn btn-primary">Создать новый квиз</a>
+    </div>
+
+    {% if quizzes %}
+    <div class="my-quizzes-list">
+        {% for quiz in quizzes %}
+        <div class="my-quiz-card" style="border-left: 5px solid {{ quiz.color }};">
+            <div class="quiz-main-info">
+                <div class="quiz-header-section">
+                    <h3>{{ quiz.title }}</h3>
+                    <div class="quiz-badges">
+                        {% if quiz.is_published %}
+                            <span class="badge badge-success">Опубликован</span>
+                        {% else %}
+                            <span class="badge badge-warning">Черновик</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <p class="quiz-description">{{ quiz.description }}</p>
+                
+                <div class="quiz-stats-row">
+                    <div class="stat-mini">
+                        <span class="stat-icon">❓</span>
+                        <span class="stat-text">{{ quiz.questions|length }} вопросов</span>
+                    </div>
+                    <div class="stat-mini">
+                        <span class="stat-icon">📊</span>
+                        <span class="stat-text">{{ quiz.results|length }} прохождений</span>
+                    </div>
+                    <div class="stat-mini">
+                        <span class="stat-icon">📅</span>
+                        <span class="stat-text">{{ quiz.created_at.strftime('%d.%m.%Y'' %}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="quiz-actions-section">
+                <a href="{% url 'view_quiz' quiz.id' %}" class="btn btn-small btn-info">Просмотр</a>
+                <a href="{% url 'edit_quiz' quiz.id' %}" class="btn btn-small btn-primary">Редактировать</a>
+                <a href="{% url 'quiz_stats' quiz.id' %}" class="btn btn-small btn-success">Статистика</a>
+                <form method="POST" action="{% url 'delete_quiz' quiz.id' %}" style="display: inline;" onsubmit="return confirm('Вы уверены?');">
+                    <button type="submit" class="btn btn-small btn-danger">Удалить</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">📝</div>
+        <h3>У вас пока нет квизов</h3>
+        <p>Создайте свой первый квиз и поделитесь им с другими!</p>
+        <a href="{% url 'create_quiz'' %}" class="btn btn-primary btn-large">Создать квиз</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
