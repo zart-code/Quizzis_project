@@ -6,7 +6,6 @@
 <div class="container">
     <div class="page-header">
         <h1>Мои квизы 📝</h1>
-        <a href="{% url 'create_quiz'' %}" class="btn btn-primary">Создать новый квиз</a>
     </div>
 
     {% if quizzes %}
@@ -42,24 +41,12 @@
                 </div>
             </div>
 
-            <div class="quiz-actions-section">
-                <a href="{% url 'view_quiz' quiz.id' %}" class="btn btn-small btn-info">Просмотр</a>
-                <a href="{% url 'edit_quiz' quiz.id' %}" class="btn btn-small btn-primary">Редактировать</a>
-                <a href="{% url 'quiz_stats' quiz.id' %}" class="btn btn-small btn-success">Статистика</a>
-                <form method="POST" action="{% url 'delete_quiz' quiz.id' %}" style="display: inline;" onsubmit="return confirm('Вы уверены?');">
-                    <button type="submit" class="btn btn-small btn-danger">Удалить</button>
-                </form>
-            </div>
+
         </div>
         {% endfor %}
     </div>
     {% else %}
-    <div class="empty-state">
-        <div class="empty-icon">📝</div>
-        <h3>У вас пока нет квизов</h3>
-        <p>Создайте свой первый квиз и поделитесь им с другими!</p>
-        <a href="{% url 'create_quiz'' %}" class="btn btn-primary btn-large">Создать квиз</a>
-    </div>
+
     {% endif %}
 </div>
 {% endblock %}

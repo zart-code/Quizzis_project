@@ -48,3 +48,6 @@ def logout_view(request):
 
 def quizzes_view(request):
     return render(request, 'quizzes_view.html')
+
+def my_quizzes(request):
+    return render(request, 'my_quizzes.html')
