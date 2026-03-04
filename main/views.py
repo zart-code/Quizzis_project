@@ -45,3 +45,6 @@ def logout_view(request):
     """Выход из системы."""
     logout(request)
     return redirect('main_page')
+
+def quizzes_view(request):
+    pass
