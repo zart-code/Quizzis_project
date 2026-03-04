@@ -34,8 +34,8 @@
             <!-- Сортировка -->
             <div class="sort-buttons">
                 <span class="sort-label">Сортировка:</span>
-                <button class="sort-btn {% if current_sort == 'new' or not current_sort %}active{% endif %}"
-                        onclick="setSort('new')">
+                <button class="sort-btn {% if current_sort == 'new'%}active{% endif %}"
+                        onclick="setSort('new')" >
                     🆕 Новые
                 </button>
                 <button class="sort-btn {% if current_sort == 'popular' %}active{% endif %}"

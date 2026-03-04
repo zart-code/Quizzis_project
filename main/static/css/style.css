@@ -794,9 +794,9 @@ body {
     padding: 0.7rem 1.5rem;
     background: rgba(139, 92, 246, 0.1);
     color: var(--text-secondary);
-    border: 2px solid rgba(139, 92, 246, 0.2);
+    border: 0px solid rgba(139, 92, 246, 0.2);
     border-radius: 12px;
-    font-weight: 500;
+    font-weight: 400;
     cursor: pointer;
     transition: all 0.3s;
     font-size: 0.95rem;

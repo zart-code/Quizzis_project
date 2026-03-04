@@ -47,7 +47,12 @@ def logout_view(request):
     return redirect('main_page')
 
 def quizzes_view(request):
-    return render(request, 'quizzes_view.html')
+    sort_type = request.GET.get('sort', 'new')
+
+    context = {
+        'current_sort': sort_type,
+    }
+    return render(request, 'quizzes_view.html', context)
 
 def my_quizzes(request):
     return render(request, 'my_quizzes.html')
