@@ -6,9 +6,7 @@
 <div class="container">
     <div class="page-header">
         <h1>Все квизы 📚</h1>
-        {% if current_user.is_authenticated %}
-        <a href="{% url 'quizzes_view'' %}" class="btn btn-primary">Создать квиз</a>
-        {% endif %}
+
     </div>
 
     {% if quizzes %}
@@ -24,22 +22,12 @@
                 <span class="quiz-author">👤 {{ quiz.author.username }}</span>
                 <span class="quiz-date">📅 {{ quiz.created_at.strftime('%d.%m.%Y'' %}</span>
             </div>
-            {% if quiz.time_limit > 0 %}
-            <div class="quiz-time-limit">
-                ⏱️ Ограничение: {{ quiz.time_limit // 60 }} мин
-            </div>
-            {% endif %}
 
         </div>
         {% endfor %}
     </div>
     {% else %}
-    <div class="empty-state">
-        <p>Пока нет доступных квизов 😔</p>
-        {% if current_user.is_authenticated %}
-        <a href="{% url 'quizzes_view'' %}" class="btn btn-primary">Создать первый квиз</a>
-        {% endif %}
-    </div>
+
     {% endif %}
 </div>
 {% endblock %}

@@ -47,4 +47,4 @@ def logout_view(request):
     return redirect('main_page')
 
 def quizzes_view(request):
-    pass
+    return render(request, 'quizzes_view.html')
