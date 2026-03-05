@@ -1,6 +1,8 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
+from .models import UserAchievement, Achievement
+
 
 class CustomUserCreationForm(UserCreationForm):
     """Кастомная форма регистрации."""
@@ -8,6 +10,9 @@ class CustomUserCreationForm(UserCreationForm):
         model = User
         fields = ('username', 'email')
 
+
 class StyledAuthenticationForm(AuthenticationForm):
     """Форма входа (без стилей)."""
     pass
+
+

@@ -6,7 +6,6 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Avg, Max, Count, Q
 from main.forms import CustomUserCreationForm, StyledAuthenticationForm
-from main.models import Quiz, QuizResult, Achievement, UserAchievement
 
 
 @login_required(login_url='login_page')

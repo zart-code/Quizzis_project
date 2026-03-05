@@ -1,7 +1,6 @@
 from django.contrib import admin
 from django.urls import path
 from main.views import *
-
 """
 Структура страниц в формате x.y (где x - уровень, y - номер страницы на этом уровне):
 
@@ -17,6 +16,7 @@ from main.views import *
 2.1 - Страница профиля profile
 2.2 - Редактирование профиля edit_profile
 """
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
