@@ -5,6 +5,7 @@ from .forms import CustomUserCreationForm
 
 # импортируем функционал из отдельных файлов в папке views_features
 from main.views_features.views_profile import *
+from main.views_features.views_quiz import *
 
 def main_page(request):
     """Главная страница (меню)."""
