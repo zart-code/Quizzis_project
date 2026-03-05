@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+
+{% block title %}Создание квиза — Quizziz{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Создание нового квиза</h1>
+
+    <form method="post" id="quiz-form">
+        {% csrf_token %}
+
+        {# ===== Основная информация о квизе ===== #}
+        <fieldset>
+            <legend>Основная информация</legend>
+
+            {% for field in quiz_form %}
+                <div class="form-group">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}:</label>
+                    {{ field }}
+                    {% if field.help_text %}
+                        <small>{{ field.help_text }}</small>
+                    {% endif %}
+                    {% if field.errors %}
+                        <ul class="error-list">
+                            {% for error in field.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+            {% endfor %}
+
+            {% if quiz_form.non_field_errors %}
+                <ul class="error-list">
+                    {% for error in quiz_form.non_field_errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </fieldset>
+
+        {# ===== Блок вопросов ===== #}
+        <fieldset>
+            <legend>Вопросы</legend>
+            <div id="questions-container">
+                {# Сюда JS будет добавлять блоки вопросов #}
+            </div>
+            <button type="button" id="add-question-btn">+ Добавить вопрос</button>
+        </fieldset>
+
+        <div class="form-actions">
+            <button type="submit">Сохранить квиз</button>
+            <a href="{% url 'main_page' %}">Отмена</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const container = document.getElementById('questions-container');
+    const addQuestionBtn = document.getElementById('add-question-btn');
+    let questionCounter = 0;
+
+    // Если при ошибке валидации вернулись данные — восстанавливаем
+    const existingQuestions = {{ questions_data|safe }};
+    if (existingQuestions && existingQuestions.length > 0) {
+        existingQuestions.forEach(function (q) {
+            addQuestion(q.text, q.type, q.answers);
+        });
+    }
+
+    addQuestionBtn.addEventListener('click', function () {
+        addQuestion('', 'single', [
+            {text: '', is_correct: false},
+            {text: '', is_correct: false},
+        ]);
+    });
+
+    function addQuestion(text, type, answers) {
+        questionCounter++;
+        const qIdx = questionCounter;
+
+        const questionBlock = document.createElement('div');
+        questionBlock.className = 'question-block';
+        questionBlock.dataset.questionIdx = qIdx;
+
+        let answersHtml = '';
+        if (answers && answers.length > 0) {
+            answers.forEach(function (ans, aIdx) {
+                answersHtml += buildAnswerHtml(qIdx, aIdx + 1, ans.text, ans.is_correct, type);
+            });
+        }
+
+        questionBlock.innerHTML =
+            '<div class="question-header">' +
+                '<strong>Вопрос #' + qIdx + '</strong>' +
+                '<button type="button" class="remove-question-btn" title="Удалить вопрос">✕</button>' +
+            '</div>' +
+            '<div class="form-group">' +
+                '<label>Текст вопроса:</label>' +
+                '<textarea name="question_' + qIdx + '_text" rows="2">' + escapeHtml(text) + '</textarea>' +
+            '</div>' +
+            '<div class="form-group">' +
+                '<label>Тип вопроса:</label>' +
+                '<select name="question_' + qIdx + '_type" class="question-type-select">' +
+                    '<option value="single"' + (type === 'single' ? ' selected' : '') + '>Одиночный выбор</option>' +
+                    '<option value="multiple"' + (type === 'multiple' ? ' selected' : '') + '>Множественный выбор</option>' +
+                '</select>' +
+            '</div>' +
+            '<div class="answers-container" data-question-idx="' + qIdx + '">' +
+                answersHtml +
+            '</div>' +
+            '<button type="button" class="add-answer-btn" data-question-idx="' + qIdx + '">+ Добавить вариант ответа</button>';
+
+        container.appendChild(questionBlock);
+
+        // Обработчик удаления вопроса
+        questionBlock.querySelector('.remove-question-btn').addEventListener('click', function () {
+            questionBlock.remove();
+        });
+
+        // Обработчик добавления ответа
+        questionBlock.querySelector('.add-answer-btn').addEventListener('click', function () {
+            const answersDiv = questionBlock.querySelector('.answers-container');
+            const currentCount = answersDiv.querySelectorAll('.answer-block').length;
+            const newIdx = currentCount + 1;
+            const currentType = questionBlock.querySelector('.question-type-select').value;
+            const answerDiv = document.createElement('div');
+            answerDiv.className = 'answer-block';
+            answerDiv.innerHTML = buildAnswerHtml(qIdx, newIdx, '', false, currentType);
+            // Нужно вставить содержимое, а не обёртку
+            answersDiv.insertAdjacentHTML('beforeend', buildAnswerHtml(qIdx, newIdx, '', false, currentType));
+        });
+
+        // Обработчик смены типа вопроса — переключает radio/checkbox
+        questionBlock.querySelector('.question-type-select').addEventListener('change', function () {
+            const newType = this.value;
+            const answersDiv = questionBlock.querySelector('.answers-container');
+            const inputs = answersDiv.querySelectorAll('input.correct-input');
+            inputs.forEach(function (inp) {
+                inp.type = (newType === 'multiple') ? 'checkbox' : 'radio';
+                if (newType === 'single') {
+                    // Для radio ставим одинаковое имя
+                    inp.name = 'question_' + qIdx + '_correct_radio';
+                }
+            });
+        });
+    }
+
+    function buildAnswerHtml(qIdx, aIdx, text, isCorrect, questionType) {
+        const inputType = (questionType === 'multiple') ? 'checkbox' : 'radio';
+        const checkedAttr = isCorrect ? ' checked' : '';
+        // Для radio используем общее имя группы,
+        // для checkbox — индивидуальное
+        let correctName;
+        let correctValue = '';
+        if (inputType === 'radio') {
+            correctName = 'question_' + qIdx + '_correct_radio';
+            correctValue = ' value="' + aIdx + '"';
+        } else {
+            correctName = 'question_' + qIdx + '_answer_' + aIdx + '_correct';
+            correctValue = ' value="on"';
+        }
+
+        return '<div class="answer-block">' +
+            '<input type="text" name="question_' + qIdx + '_answer_' + aIdx + '_text" ' +
+                'placeholder="Вариант ответа" value="' + escapeHtml(text) + '">' +
+            '<label>' +
+                '<input type="' + inputType + '" class="correct-input" ' +
+                    'name="' + correctName + '"' + correctValue + checkedAttr + '> Правильный' +
+            '</label>' +
+            '<button type="button" class="remove-answer-btn" title="Удалить вариант">✕</button>' +
+        '</div>';
+    }
+
+    // Делегирование удаления ответов
+    container.addEventListener('click', function (e) {
+        if (e.target.classList.contains('remove-answer-btn')) {
+            e.target.closest('.answer-block').remove();
+        }
+    });
+
+    // Перед отправкой формы: конвертируем radio-выбор
+    // в формат question_N_answer_M_correct
+    document.getElementById('quiz-form').addEventListener('submit', function () {
+        const questionBlocks = container.querySelectorAll('.question-block');
+        questionBlocks.forEach(function (qBlock) {
+            const qIdx = qBlock.dataset.questionIdx;
+            const typeSelect = qBlock.querySelector('.question-type-select');
+            if (typeSelect.value === 'single') {
+                const radioInputs = qBlock.querySelectorAll(
+                    'input[name="question_' + qIdx + '_correct_radio"]'
+                );
+                radioInputs.forEach(function (radio) {
+                    if (radio.checked) {
+                        const aIdx = radio.value;
+                        const hiddenInput = document.createElement('input');
+                        hiddenInput.type = 'hidden';
+                        hiddenInput.name = 'question_' + qIdx + '_answer_' + aIdx + '_correct';
+                        hiddenInput.value = 'on';
+                        qBlock.appendChild(hiddenInput);
+                    }
+                });
+            }
+        });
+    });
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
+    }
+});
+</script>
+{% endblock %}

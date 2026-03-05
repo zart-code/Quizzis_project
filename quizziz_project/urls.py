@@ -26,4 +26,5 @@ urlpatterns = [
     path('logout/', logout_view, name='logout'),
     path('profile/', profile_view, name='profile'),
     path('profile/edit/', edit_profile_view, name='edit_profile'),
+    path('quiz/create/', create_quiz_view, name='create_quiz'),
 ]
