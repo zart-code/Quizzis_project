@@ -13,16 +13,19 @@ class CustomUser(AbstractUser):
         null=True,
         verbose_name='Аватар'
     )
+
     bio = models.TextField(
         max_length=500,
         blank=True,
         verbose_name='О себе'
     )
+
     date_of_birth = models.DateField(
         blank=True,
         null=True,
         verbose_name='Дата рождения'
     )
+
     total_points = models.IntegerField(
         default=0,
         verbose_name='Всего баллов'
@@ -241,6 +244,7 @@ class Question(models.Model):
 
     def __str__(self):
         return f'{self.quizz.title} - Вопрос {self.order}'
+
 
 class Answer(models.Model):
     """
