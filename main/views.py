@@ -2,7 +2,6 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from .forms import CustomUserCreationForm
-
 # импортируем функционал из отдельных файлов в папке views_features
 from main.views_features.views_profile import *
 from django.shortcuts import render, get_object_or_404, redirect
@@ -71,6 +70,7 @@ class UserListView(ListView):
 
 
 class UserDetailView(DetailView):
+    '''дорабатывается'''
     model = CustomUser
     template_name = 'users/user_detail.html'
     context_object_name = 'user'
