@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Все квизы - Quizziz{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="quizzes-page">
+        <!-- Заголовок страницы -->
+        <div class="quizzes-header">
+            <h1 class="quizzes-title">Все квизы 📚</h1>
+
+        </div>
+
+        <!-- Панель поиска и фильтров -->
+        <div class="quizzes-controls">
+            <!-- Поиск -->
+            <form method="GET" class="search-form" id="searchForm">
+                <div class="search-container">
+                    <input type="text"
+                           name="search"
+                           class="search-input"
+                           placeholder="🔍 Поиск по названию..."
+                           value="{{ search_query }}"
+                           id="searchInput">
+                    <button type="submit" class="search-btn">Найти</button>
+                    {% if search_query %}
+                        <a href="{% url 'quizzes' %}" class="search-clear">✕</a>
+                    {% endif %}
+                </div>
+                <input type="hidden" name="sort" value="{{ current_sort }}" id="sortInput">
+            </form>
+
+            <!-- Сортировка -->
+            <div class="sort-buttons">
+                <span class="sort-label">Сортировка:</span>
+                <button class="sort-btn {% if current_sort == 'new'%}active{% endif %}"
+                        onclick="setSort('new')" >
+                    🆕 Новые
+                </button>
+                <button class="sort-btn {% if current_sort == 'popular' %}active{% endif %}"
+                        onclick="setSort('popular')">
+                    🔥 Популярные
+                </button>
+                <button class="sort-btn {% if current_sort == 'best' %}active{% endif %}"
+                        onclick="setSort('best')">
+                    ⭐ Лучшие
+                </button>
+            </div>
+        </div>
+
+        <!-- Список квизов -->
+        {% if quizzes %}
+            <div class="quizzes-grid">
+                {% for quiz in quizzes %}
+                    <div class="quiz-card-compact" style="border-left: 4px solid {{ quiz.color }};">
+                        <!-- Заголовок квиза -->
+                        <div class="quiz-compact-header">
+                            <h3 class="quiz-compact-title">{{ quiz.title }}</h3>
+                            <span class="quiz-compact-count">{{ quiz.questions_count }} вопр.</span>
+                        </div>
+
+                        <!-- Описание -->
+                        {% if quiz.description %}
+                            <p class="quiz-compact-description">{{ quiz.description|truncatewords:15 }}</p>
+                        {% endif %}
+
+                        <!-- Статистика -->
+                        <div class="quiz-compact-stats">
+                            <span class="quiz-stat-item">
+                                👤 {{ quiz.author.username }}
+                            </span>
+                            <span class="quiz-stat-item">
+                                📊 {{ quiz.results_count }} прохожд.
+                            </span>
+                            {% if quiz.avg_score %}
+                                <span class="quiz-stat-item">
+                                    ⭐ {{ quiz.avg_score|floatformat:0 }}%
+                                </span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Действия -->
+                        <div class="quiz-compact-actions">
+                            <a href="{% url 'view_quiz' quiz.id %}" class="btn btn-small btn-secondary">
+                                Подробнее
+                            </a>
+                            {% if user.is_authenticated %}
+                                <a href="{% url 'take_quiz' quiz.id %}" class="btn btn-small btn-success">
+                                    Пройти
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <!-- Пустое состояние -->
+            <div class="quizzes-empty">
+                <div class="empty-icon">🔍</div>
+                {% if search_query %}
+                    <h3>Ничего не найдено</h3>
+                    <p>По запросу "{{ search_query }}" квизы не найдены</p>
+                    <a href="{% url 'quizzes' %}" class="btn btn-primary">Сбросить поиск</a>
+                {% else %}
+                    <h3>Пока нет доступных квизов</h3>
+                    <p>Станьте первым, кто создаст квиз!</p>
+
+
+                    {% endif %}
+                {% endif %}
+            </div>
+
+    </div>
+</div>
+{% endblock %}

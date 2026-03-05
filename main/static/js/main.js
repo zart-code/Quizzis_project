@@ -196,6 +196,133 @@ function showNotification(message, type = 'info') {
     }, 5000);
 }
 
+
+
+// Функция для установки сортировки
+function setSort(sortType) {
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set('sort', sortType);
+
+    // Сохраняем поисковый запрос если есть
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput && searchInput.value) {
+        currentUrl.searchParams.set('search', searchInput.value);
+    }
+
+    window.location.href = currentUrl.toString();
+}
+
+// Быстрый поиск при нажатии Enter
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const form = document.getElementById('searchForm');
+                if (form) {
+                    form.submit();
+                }
+            }
+        });
+    }
+});
+
+// Автоматическая отправка формы при изменении поиска (опционально)
+// Раскомментируйте если хотите live search
+/*
+document.addEventListener('DOMContentLoaded', function() {
+    let searchTimeout;
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                if (this.value.length >= 3 || this.value.length === 0) {
+                    const form = document.getElementById('searchForm');
+                    if (form) {
+                        form.submit();
+                    }
+                }
+            }, 500);
+        });
+    }
+});
+*/
+
+// ============================================
+// СТРАНИЦА СОЗДАНИЯ КВИЗА
+// ============================================
+
+// Выбор предустановленного цвета
+document.addEventListener('DOMContentLoaded', function() {
+    const colorPresets = document.querySelectorAll('.color-preset');
+    if (colorPresets.length > 0) {
+        colorPresets.forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const colorInput = document.getElementById('color');
+                if (colorInput) {
+                    colorInput.value = this.dataset.color;
+                }
+            });
+        });
+    }
+});
+
+// Конвертация минут в секунды при отправке формы создания квиза
+document.addEventListener('DOMContentLoaded', function() {
+    const createQuizForm = document.getElementById('createQuizForm');
+    if (createQuizForm) {
+        createQuizForm.addEventListener('submit', function(e) {
+            const timeLimitInput = document.getElementById('time_limit');
+            if (timeLimitInput) {
+                const minutes = parseInt(timeLimitInput.value) || 0;
+                timeLimitInput.value = minutes * 60;
+            }
+        });
+    }
+});
+
+// Подсветка выбранной темы
+document.addEventListener('DOMContentLoaded', function() {
+    const themeRadios = document.querySelectorAll('.theme-radio');
+    if (themeRadios.length > 0) {
+        themeRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                console.log('Выбрана тема:', this.value);
+                // Можно добавить дополнительные действия при выборе темы
+            });
+        });
+    }
+});
+
+// Валидация формы создания квиза
+document.addEventListener('DOMContentLoaded', function() {
+    const createQuizForm = document.getElementById('createQuizForm');
+    if (createQuizForm) {
+        createQuizForm.addEventListener('submit', function(e) {
+            const themeSelected = document.querySelector('.theme-radio:checked');
+
+            if (!themeSelected) {
+                e.preventDefault();
+                alert('Пожалуйста, выберите тему квиза');
+                return false;
+            }
+
+            const titleInput = document.getElementById('title');
+            if (titleInput) {
+                const title = titleInput.value.trim();
+                if (!title) {
+                    e.preventDefault();
+                    alert('Пожалуйста, введите название квиза');
+                    return false;
+                }
+            }
+        });
+    }
+});
+
 // Экспортируем функции для использования в других файлах
 window.confirmDelete = confirmDelete;
 window.showNotification = showNotification;

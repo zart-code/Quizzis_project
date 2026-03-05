@@ -2,6 +2,8 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from .forms import CustomUserCreationForm
+
+# импортируем функционал из отдельных файлов в папке views_features
 from main.views_features.views_profile import *
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView
@@ -49,6 +51,17 @@ def logout_view(request):
     """Выход из системы."""
     logout(request)
     return redirect('main_page')
+
+def quizzes_view(request):
+    sort_type = request.GET.get('sort', 'new')
+
+    context = {
+        'current_sort': sort_type,
+    }
+    return render(request, 'quizzes_view.html', context)
+
+def my_quizzes(request):
+    return render(request, 'my_quizzes.html')
 
 
 class UserListView(ListView):
