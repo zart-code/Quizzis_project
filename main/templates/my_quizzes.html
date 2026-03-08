@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Мои квизы - Quizziz{% endblock %}
+
+{% block content %}
+<h2>Мои квизы</h2>
+
+<a href="{% url 'create_quiz' %}">+ Создать новый квиз</a>
+<hr>
+
+{% if quizzes %}
+    {% for quiz in quizzes %}
+    <div>
+        <strong>{{ quiz.title }}</strong>
+        — вопросов: {{ quiz.questions.count }}
+        — создан: {{ quiz.created_at|date:"d.m.Y" }}
+        <a href="{% url 'play_quiz' quiz.id %}">▶ Пройти</a>
+    </div>
+    <hr>
+    {% endfor %}
+{% else %}
+    <p>У вас ещё нет квизов.</p>
+{% endif %}
+{% endblock %}

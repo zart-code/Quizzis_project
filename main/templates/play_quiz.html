@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}{{ quiz.title }} - Quizziz{% endblock %}
+
+{% block content %}
+<h2>{{ quiz.title }}</h2>
+
+{% if finished %}
+    <p>Результат: {{ score }} / {{ total }}</p>
+    <a href="{% url 'play_quiz' quiz.id %}">Пройти ещё раз</a>
+    <br>
+    <a href="{% url 'my_quizzes' %}">← Мои квизы</a>
+{% else %}
+    <form method="post">
+        {% csrf_token %}
+        {% for question in questions %}
+        <div>
+            <strong>{{ forloop.counter }}. {{ question.text }}</strong>
+            <ul>
+                {% for answer in question.answers.all %}
+                <li>
+                    <label>
+                        <input type="radio" name="q{{ question.id }}" value="{{ answer.id }}" required>
+                        {{ answer.text }}
+                    </label>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        <hr>
+        {% endfor %}
+        <button type="submit">Завершить</button>
+    </form>
+{% endif %}
+{% endblock %}
