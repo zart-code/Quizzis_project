@@ -52,6 +52,7 @@ class Quiz(models.Model):
         verbose_name='Лимит времени (мин)',
     )
 
+
     class Meta:
         verbose_name_plural = 'Quizzes'
 
@@ -78,6 +79,10 @@ class Question(models.Model):
         choices=QUESTION_TYPE_CHOICES,
         default=SINGLE,
         verbose_name='Тип вопроса',
+    )
+    time_limit = models.IntegerField(
+        default=30,
+        verbose_name='Время на ответ (сек)',
     )
     order = models.IntegerField(default=0)
 
@@ -124,6 +129,7 @@ class QuizResult(models.Model):
     completed = models.BooleanField(default=False)
     started_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(blank=True, null=True)
+
 
     class Meta:
         ordering = ['-completed_at', '-started_at']
