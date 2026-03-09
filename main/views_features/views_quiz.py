@@ -9,12 +9,15 @@ def create_quiz_view(request):
         title = request.POST.get('title')
         quiz = Quiz.objects.create(title=title, creator=request.user)
 
+
         i = 1
         while request.POST.get(f'q{i}_text'):
+            time_limit = int(request.POST.get(f'q{i}_time', 30))
             q = Question.objects.create(
                 quiz=quiz,
                 text=request.POST.get(f'q{i}_text'),
                 order=i,
+                time_limit=time_limit,
             )
             correct = request.POST.get(f'q{i}_correct')
             for j in range(4):
@@ -39,26 +42,80 @@ def my_quizzes_view(request):
 @login_required
 def play_quiz_view(request, quiz_id):
     quiz = get_object_or_404(Quiz, id=quiz_id)
-    questions = quiz.questions.prefetch_related('answers').all()
+    questions = list(quiz.questions.prefetch_related('answers').all())
+
+    if not questions:
+        return redirect('my_quizzes')
 
     if request.method == 'POST':
-        score = 0
-        total = questions.count()
-        for question in questions:
-            chosen = request.POST.get(f'q{question.id}')
-            correct = question.answers.filter(is_correct=True).first()
-            if correct and str(correct.id) == chosen:
-                score += 1
-        return render(request, 'play_quiz.html', {
-            'quiz': quiz,
-            'questions': questions,
-            'score': score,
-            'total': total,
-            'finished': True,
-        })
+        action = request.POST.get('action')
 
+        if action == 'finish':
+            answers_log = request.session.get(f'quiz_{quiz_id}_log', [])
+            score = sum(1 for r in answers_log if r['correct'])
+            total = len(answers_log)
+            request.session.pop(f'quiz_{quiz_id}_log', None)
+            request.session.pop(f'quiz_{quiz_id}_index', None)
+            return render(request, 'play_quiz.html', {
+                'quiz': quiz,
+                'score': score,
+                'total': total,
+                'finished': True,
+            })
+
+        if action == 'answer':
+            index = int(request.POST.get('index', 0))
+            question = questions[index]
+            chosen_id = request.POST.get('answer')
+            timed_out = request.POST.get('timed_out') == '1'
+
+            correct_answer = question.answers.filter(is_correct=True).first()
+            is_correct = (
+                not timed_out
+                and bool(chosen_id)
+                and correct_answer is not None
+                and str(correct_answer.id) == chosen_id
+            )
+
+            log = request.session.get(f'quiz_{quiz_id}_log', [])
+            log.append({'correct': is_correct})
+            request.session[f'quiz_{quiz_id}_log'] = log
+
+            next_index = index + 1
+            is_last = next_index >= len(questions)
+
+            return render(request, 'play_quiz.html', {
+                'quiz': quiz,
+                'question': question,
+                'correct_answer': correct_answer,
+                'is_correct': is_correct,
+                'timed_out': timed_out,
+                'next_index': next_index,
+                'is_last': is_last,
+                'finished': False,
+                'show_result': True,
+            })
+
+        if action == 'next':
+            index = int(request.POST.get('index', 0))
+            question = questions[index]
+            return render(request, 'play_quiz.html', {
+                'quiz': quiz,
+                'question': question,
+                'index': index,
+                'total': len(questions),
+                'finished': False,
+                'show_result': False,
+            })
+
+    # GET — старт квиза
+    request.session[f'quiz_{quiz_id}_log'] = []
+    request.session[f'quiz_{quiz_id}_index'] = 0
     return render(request, 'play_quiz.html', {
         'quiz': quiz,
-        'questions': questions,
+        'question': questions[0],
+        'index': 0,
+        'total': len(questions),
         'finished': False,
+        'show_result': False,
     })
