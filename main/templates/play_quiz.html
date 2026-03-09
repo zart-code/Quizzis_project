@@ -10,26 +10,84 @@
     <a href="{% url 'play_quiz' quiz.id %}">Пройти ещё раз</a>
     <br>
     <a href="{% url 'my_quizzes' %}">← Мои квизы</a>
-{% else %}
+
+{% elif show_result %}
+    {% if timed_out %}
+        <p>Время истекло!</p>
+    {% elif is_correct %}
+        <p>Верно!</p>
+    {% else %}
+        <p>Неверно!</p>
+    {% endif %}
+    <p>Правильный ответ: {{ correct_answer.text }}</p>
+
     <form method="post">
         {% csrf_token %}
-        {% for question in questions %}
-        <div>
-            <strong>{{ forloop.counter }}. {{ question.text }}</strong>
-            <ul>
-                {% for answer in question.answers.all %}
-                <li>
-                    <label>
-                        <input type="radio" name="q{{ question.id }}" value="{{ answer.id }}" required>
-                        {{ answer.text }}
-                    </label>
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
-        <hr>
-        {% endfor %}
-        <button type="submit">Завершить</button>
+        <input type="hidden" name="index" value="{{ next_index }}">
+        {% if is_last %}
+            <input type="hidden" name="action" value="finish">
+            <button type="submit">Посмотреть результат</button>
+        {% else %}
+            <input type="hidden" name="action" value="next">
+            <button type="submit">Следующий вопрос</button>
+        {% endif %}
+    </form>
+
+{% else %}
+    <p>Вопрос {{ index|add:1 }} из {{ total }}</p>
+    <strong>{{ question.text }}</strong>
+    <p>DEBUG time_limit: {{ question.time_limit }}</p>
+
+
+    <form method="post" id="answer-form">
+        {% csrf_token %}
+        <input type="hidden" name="index" value="{{ index }}">
+        <input type="hidden" name="action" value="answer">
+        <input type="hidden" name="timed_out" value="0" id="timed-out-field">
+
+        <ul>
+            {% for answer in question.answers.all %}
+            <li>
+                <label>
+                    <input type="radio" name="answer" value="{{ answer.id }}">
+                    {{ answer.text }}
+                </label>
+            </li>
+            {% endfor %}
+        </ul>
+
+        <p>Осталось времени: <span id="timer">{{ question.time_limit }}</span> сек</p>
+        <button type="submit" id="submit-btn">Ответить</button>
     </form>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if not finished and not show_result %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const timeLimit = {{ question.time_limit }};
+        const timerEl = document.getElementById('timer');
+        const form = document.getElementById('answer-form');
+        const timedOutField = document.getElementById('timed-out-field');
+
+        let remaining = timeLimit;
+
+        const interval = setInterval(function () {
+            remaining--;
+            timerEl.textContent = remaining;
+            if (remaining <= 0) {
+                clearInterval(interval);
+                timedOutField.value = '1';
+                form.submit();
+            }
+        }, 1000);
+
+        form.addEventListener('submit', function () {
+            clearInterval(interval);
+        });
+    });
+</script>
+{% endif %}
+
 {% endblock %}
