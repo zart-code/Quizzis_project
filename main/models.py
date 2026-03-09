@@ -63,16 +63,16 @@ class Quiz(models.Model):
 class Question(models.Model):
     SINGLE = 'single'
     MULTIPLE = 'multiple'
+    TEXT = 'text'
+    NUMBER = 'number'
     QUESTION_TYPE_CHOICES = [
         (SINGLE, 'Одиночный выбор'),
         (MULTIPLE, 'Множественный выбор'),
+        (TEXT, 'Текстовый'),
+        (NUMBER, 'Числовой'),
     ]
 
-    quiz = models.ForeignKey(
-        Quiz,
-        on_delete=models.CASCADE,
-        related_name='questions',
-    )
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='questions')
     text = models.TextField(verbose_name='Текст вопроса')
     question_type = models.CharField(
         max_length=10,
@@ -80,10 +80,12 @@ class Question(models.Model):
         default=SINGLE,
         verbose_name='Тип вопроса',
     )
-    time_limit = models.IntegerField(
-        default=30,
-        verbose_name='Время на ответ (сек)',
+    correct_number = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name='Правильное число',
     )
+    time_limit = models.IntegerField(default=30, verbose_name='Время на ответ (сек)')
     order = models.IntegerField(default=0)
 
     class Meta:

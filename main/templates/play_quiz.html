@@ -14,12 +14,25 @@
 {% elif show_result %}
     {% if timed_out %}
         <p>Время истекло!</p>
+    {% elif is_correct is None %}
+        <p>Ответ принят — будет проверен преподавателем вручную</p>
     {% elif is_correct %}
         <p>Верно!</p>
     {% else %}
         <p>Неверно!</p>
     {% endif %}
-    <p>Правильный ответ: {{ correct_answer.text }}</p>
+
+    {% if question.question_type == 'single' and correct_answer %}
+        <p>Правильный ответ: {{ correct_answer.text }}</p>
+    {% elif question.question_type == 'multiple' %}
+        <p>Правильные ответы:
+            {% for answer in question.answers.all %}
+                {% if answer.is_correct %}{{ answer.text }}; {% endif %}
+            {% endfor %}
+        </p>
+    {% elif question.question_type == 'number' %}
+        <p>Правильное число: {{ question.correct_number }}</p>
+    {% endif %}
 
     <form method="post">
         {% csrf_token %}
@@ -36,8 +49,6 @@
 {% else %}
     <p>Вопрос {{ index|add:1 }} из {{ total }}</p>
     <strong>{{ question.text }}</strong>
-    <p>DEBUG time_limit: {{ question.time_limit }}</p>
-
 
     <form method="post" id="answer-form">
         {% csrf_token %}
@@ -45,16 +56,37 @@
         <input type="hidden" name="action" value="answer">
         <input type="hidden" name="timed_out" value="0" id="timed-out-field">
 
-        <ul>
-            {% for answer in question.answers.all %}
-            <li>
-                <label>
-                    <input type="radio" name="answer" value="{{ answer.id }}">
-                    {{ answer.text }}
-                </label>
-            </li>
-            {% endfor %}
-        </ul>
+        {% if question.question_type == 'single' %}
+            <ul>
+                {% for answer in question.answers.all %}
+                <li>
+                    <label>
+                        <input type="radio" name="answer" value="{{ answer.id }}" required>
+                        {{ answer.text }}
+                    </label>
+                </li>
+                {% endfor %}
+            </ul>
+
+        {% elif question.question_type == 'multiple' %}
+            <ul>
+                {% for answer in question.answers.all %}
+                <li>
+                    <label>
+                        <input type="checkbox" name="answer" value="{{ answer.id }}">
+                        {{ answer.text }}
+                    </label>
+                </li>
+                {% endfor %}
+            </ul>
+
+        {% elif question.question_type == 'number' %}
+            <input type="number" step="any" name="answer_number" required>
+
+        {% elif question.question_type == 'text' %}
+            <input type="text" name="answer_text">
+            <p><em>Ответ будет проверен преподавателем вручную</em></p>
+        {% endif %}
 
         <p>Осталось времени: <span id="timer">{{ question.time_limit }}</span> сек</p>
         <button type="submit" id="submit-btn">Ответить</button>
@@ -89,5 +121,4 @@
     });
 </script>
 {% endif %}
-
 {% endblock %}

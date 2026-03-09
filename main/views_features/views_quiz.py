@@ -9,23 +9,47 @@ def create_quiz_view(request):
         title = request.POST.get('title')
         quiz = Quiz.objects.create(title=title, creator=request.user)
 
-
         i = 1
         while request.POST.get(f'q{i}_text'):
+            q_type = request.POST.get(f'q{i}_type', 'single')
             time_limit = int(request.POST.get(f'q{i}_time', 30))
+
             q = Question.objects.create(
                 quiz=quiz,
                 text=request.POST.get(f'q{i}_text'),
+                question_type=q_type,
                 order=i,
                 time_limit=time_limit,
             )
-            correct = request.POST.get(f'q{i}_correct')
-            for j in range(4):
-                Answer.objects.create(
-                    question=q,
-                    text=request.POST.get(f'q{i}_ans{j}', ''),
-                    is_correct=(str(j) == correct),
-                )
+
+            if q_type == 'single':
+                correct = request.POST.get(f'q{i}_correct')
+                for j in range(4):
+                    Answer.objects.create(
+                        question=q,
+                        text=request.POST.get(f'q{i}_ans{j}', ''),
+                        is_correct=(str(j) == correct),
+                    )
+
+            elif q_type == 'multiple':
+                correct_list = request.POST.getlist(f'q{i}_correct')
+                for j in range(4):
+                    Answer.objects.create(
+                        question=q,
+                        text=request.POST.get(f'q{i}_ans{j}', ''),
+                        is_correct=(str(j) in correct_list),
+                    )
+
+            elif q_type == 'number':
+                raw = request.POST.get(f'q{i}_correct_number', '0')
+                try:
+                    q.correct_number = float(raw)
+                except ValueError:
+                    q.correct_number = 0
+                q.save()
+
+            # text — ответ не сохраняем, проверка вручную
+
             i += 1
 
         return redirect('my_quizzes')
@@ -66,19 +90,39 @@ def play_quiz_view(request, quiz_id):
         if action == 'answer':
             index = int(request.POST.get('index', 0))
             question = questions[index]
-            chosen_id = request.POST.get('answer')
             timed_out = request.POST.get('timed_out') == '1'
+            is_correct = False
+            correct_answer = None
 
-            correct_answer = question.answers.filter(is_correct=True).first()
-            is_correct = (
-                not timed_out
-                and bool(chosen_id)
-                and correct_answer is not None
-                and str(correct_answer.id) == chosen_id
-            )
+            if not timed_out:
+                if question.question_type == 'single':
+                    chosen_id = request.POST.get('answer')
+                    correct_answer = question.answers.filter(is_correct=True).first()
+                    is_correct = (
+                        bool(chosen_id)
+                        and correct_answer is not None
+                        and str(correct_answer.id) == chosen_id
+                    )
+
+                elif question.question_type == 'multiple':
+                    chosen_ids = set(request.POST.getlist('answer'))
+                    correct_ids = set(
+                        str(a.id) for a in question.answers.filter(is_correct=True)
+                    )
+                    is_correct = chosen_ids == correct_ids
+
+                elif question.question_type == 'number':
+                    raw = request.POST.get('answer_number', '')
+                    try:
+                        is_correct = float(raw) == question.correct_number
+                    except ValueError:
+                        is_correct = False
+
+                elif question.question_type == 'text':
+                    is_correct = None  # проверяется вручную
 
             log = request.session.get(f'quiz_{quiz_id}_log', [])
-            log.append({'correct': is_correct})
+            log.append({'correct': bool(is_correct)})
             request.session[f'quiz_{quiz_id}_log'] = log
 
             next_index = index + 1
@@ -108,7 +152,6 @@ def play_quiz_view(request, quiz_id):
                 'show_result': False,
             })
 
-    # GET — старт квиза
     request.session[f'quiz_{quiz_id}_log'] = []
     request.session[f'quiz_{quiz_id}_index'] = 0
     return render(request, 'play_quiz.html', {
