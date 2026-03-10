@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}{{ session.quiz.title }}{% endblock %}
+
+{% block content %}
+<h2>{{ session.quiz.title }}</h2>
+<p>Вопрос {{ index|add:1 }} из {{ total }}</p>
+<p>Ваш счёт: {{ participant.score }}</p>
+
+{% if answered %}
+    <p>Ответ принят. Ожидайте следующий вопрос...</p>
+    <script>
+        setTimeout(function () {
+            window.location.reload();
+        }, 2000);
+    </script>
+{% else %}
+    <strong>{{ question.text }}</strong>
+
+    <form method="post" id="answer-form">
+        {% csrf_token %}
+        <input type="hidden" name="timed_out" value="0" id="timed-out-field">
+
+        {% if question.question_type == 'single' %}
+            <ul>
+                {% for answer in question.answers.all %}
+                <li>
+                    <label>
+                        <input type="radio" name="answer" value="{{ answer.id }}" required>
+                        {{ answer.text }}
+                    </label>
+                </li>
+                {% endfor %}
+            </ul>
+        {% elif question.question_type == 'multiple' %}
+            <ul>
+                {% for answer in question.answers.all %}
+                <li>
+                    <label>
+                        <input type="checkbox" name="answer" value="{{ answer.id }}">
+                        {{ answer.text }}
+                    </label>
+                </li>
+                {% endfor %}
+            </ul>
+        {% elif question.question_type == 'number' %}
+            <input type="number" step="any" name="answer_number" required>
+        {% elif question.question_type == 'text' %}
+            <input type="text" name="answer_text">
+            <p><em>Проверяется вручную</em></p>
+        {% endif %}
+
+        <p>Осталось времени: <span id="timer">{{ question.time_limit }}</span> сек</p>
+        <button type="submit">Ответить</button>
+    </form>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const timeLimit = {{ question.time_limit }};
+            const timerEl = document.getElementById('timer');
+            const form = document.getElementById('answer-form');
+            const timedOutField = document.getElementById('timed-out-field');
+            let remaining = timeLimit;
+
+            const interval = setInterval(function () {
+                remaining--;
+                timerEl.textContent = remaining;
+                if (remaining <= 0) {
+                    clearInterval(interval);
+                    timedOutField.value = '1';
+                    form.submit();
+                }
+            }, 1000);
+
+            form.addEventListener('submit', function () {
+                clearInterval(interval);
+            });
+        });
+    </script>
+{% endif %}
+{% endblock %}

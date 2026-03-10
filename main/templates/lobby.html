@@ -33,7 +33,11 @@
     <button type="submit" onclick="return confirm('Удалить сессию и выйти?')">Выйти</button>
 </form>
 
-<button id="start-btn" disabled>Начать игру</button>
+<form method="post" action="{% url 'start_game' session.pin %}">
+    {% csrf_token %}
+    <button type="submit" id="start-btn">Начать игру</button>
+</form>
+
 
 <script>
     const apiUrl = "{% url 'api_players' session.pin %}";

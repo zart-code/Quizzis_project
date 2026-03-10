@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Результаты — {{ session.quiz.title }}{% endblock %}
+
+{% block content %}
+<h2>Игра завершена!</h2>
+<h3>{{ session.quiz.title }}</h3>
+<p>Ваш итоговый счёт: <strong>{{ participant.score }}</strong></p>
+
+<h4>Таблица лидеров</h4>
+<ol>
+    {% for p in session.participants.all %}
+    <li>{{ p.user.username }} — {{ p.score }}</li>
+    {% endfor %}
+</ol>
+
+<a href="{% url 'main_page' %}">← На главную</a>
+{% endblock %}

@@ -20,4 +20,8 @@ urlpatterns = [
     path('lobby/<str:pin>/delete/', delete_session_view, name='delete_session'),
     path('lobby/<str:pin>/api/players/', api_players_view, name='api_players'),
     path('join/<str:pin>/', join_lobby_view, name='join_lobby'),
+    path('lobby/<str:pin>/start/', start_game_view, name='start_game'),
+    path('session/<str:pin>/api/state/', api_state_view, name='api_state'),
+    path('session/<str:pin>/play/', session_play_view, name='session_play'),
+
 ]
