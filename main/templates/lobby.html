@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Лобби — {{ session.quiz.title }}{% endblock %}
+
+{% block content %}
+<h2>{{ session.quiz.title }}</h2>
+<p>Вопросов: {{ session.quiz.questions.count }}</p>
+<hr>
+
+<h3>PIN-код: <strong>{{ session.pin }}</strong></h3>
+<p>
+    Ссылка для подключения:
+    <strong id="join-link">{{ request.scheme }}://{{ request.get_host }}/join/{{ session.pin }}/</strong>
+</p>
+<button onclick="copyLink()">Скопировать ссылку</button>
+<hr>
+
+<p>Подключено: <span id="player-count">0</span> / 25</p>
+<p>Статус лобби: <span id="lock-status">{% if session.is_locked %}Закрыто{% else %}Открыто{% endif %}</span></p>
+
+<ul id="players-list"></ul>
+<hr>
+
+<form method="post" action="{% url 'toggle_lock' session.pin %}">
+    {% csrf_token %}
+    <button type="submit">
+        {% if session.is_locked %}Открыть лобби{% else %}Закрыть лобби{% endif %}
+    </button>
+</form>
+
+<form method="post" action="{% url 'delete_session' session.pin %}">
+    {% csrf_token %}
+    <button type="submit" onclick="return confirm('Удалить сессию и выйти?')">Выйти</button>
+</form>
+
+<button id="start-btn" disabled>Начать игру</button>
+
+<script>
+    const apiUrl = "{% url 'api_players' session.pin %}";
+
+    function copyLink() {
+        const link = document.getElementById('join-link').textContent;
+        navigator.clipboard.writeText(link);
+    }
+
+    function fetchPlayers() {
+        fetch(apiUrl)
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('player-count').textContent = data.count;
+
+                const list = document.getElementById('players-list');
+                list.innerHTML = data.players.map(
+                    p => `<li>${p.username} — ${p.role}</li>`
+                ).join('');
+
+                document.getElementById('start-btn').disabled = data.count === 0;
+                document.getElementById('lock-status').textContent =
+                    data.is_locked ? 'Закрыто' : 'Открыто';
+            });
+    }
+
+    fetchPlayers();
+    setInterval(fetchPlayers, 3000);
+</script>
+{% endblock %}

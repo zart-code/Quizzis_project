@@ -2,21 +2,6 @@ from django.contrib import admin
 from django.urls import path
 from main.views import *
 
-"""
-Структура страниц в формате x.y (где x - уровень, y - номер страницы на этом уровне):
-
-Уровень 0 - Главная
-0.1 - Главная страница (меню) main_page
-
-Уровень 1 - Аутентификация
-1.1 - Страница входа login_page
-1.2 - Страница регистрации register_page
-1.3 - Страница выхода logout (редирект на main_page)
-
-Уровень 2 - Профиль пользователя
-2.1 - Страница профиля profile
-2.2 - Редактирование профиля edit_profile
-"""
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -29,5 +14,9 @@ urlpatterns = [
     path('quiz/create/', create_quiz_view, name='create_quiz'),
     path('my-quizzes/', my_quizzes_view, name='my_quizzes'),
     path('quiz/<int:quiz_id>/play/', play_quiz_view, name='play_quiz'),
-
+    path('quiz/<int:quiz_id>/lobby/create/', create_lobby_view, name='create_lobby'),
+    path('lobby/<str:pin>/', lobby_view, name='lobby'),
+    path('lobby/<str:pin>/lock/', toggle_lock_view, name='toggle_lock'),
+    path('lobby/<str:pin>/delete/', delete_session_view, name='delete_session'),
+    path('lobby/<str:pin>/api/players/', api_players_view, name='api_players'),
 ]

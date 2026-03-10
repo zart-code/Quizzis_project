@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
-
+import random
+import string
 
 class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -168,3 +169,119 @@ class UserAchievement(models.Model):
 
     def __str__(self):
         return f'{self.user.username} - {self.achievement.name}'
+
+
+def generate_pin():
+        return ''.join(random.choices(string.digits, k=6))
+
+class GameSession(models.Model):
+    WAITING = 'waiting'
+    IN_PROGRESS = 'in_progress'
+    FINISHED = 'finished'
+    STATUS_CHOICES = [
+        (WAITING, 'Ожидание'),
+        (IN_PROGRESS, 'Идёт игра'),
+        (FINISHED, 'Завершена'),
+    ]
+
+    quiz = models.ForeignKey(
+        Quiz,
+        on_delete=models.CASCADE,
+        related_name='sessions',
+        verbose_name='Квиз',
+    )
+    host = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='hosted_sessions',
+        verbose_name='Хост',
+    )
+    pin = models.CharField(
+        max_length=6,
+        unique=True,
+        default=generate_pin,
+        verbose_name='PIN-код',
+    )
+    status = models.CharField(
+        max_length=15,
+        choices=STATUS_CHOICES,
+        default=WAITING,
+        verbose_name='Статус',
+    )
+    is_locked = models.BooleanField(
+        default=False,
+        verbose_name='Лобби закрыто',
+    )
+    current_question = models.IntegerField(
+        default=0,
+        verbose_name='Текущий вопрос',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.quiz.title} [{self.pin}]'
+
+class GameParticipant(models.Model):
+    session = models.ForeignKey(
+        GameSession,
+        on_delete=models.CASCADE,
+        related_name='participants',
+        verbose_name='Сессия',
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='game_participations',
+        verbose_name='Игрок',
+    )
+    score = models.IntegerField(default=0, verbose_name='Счёт')
+    is_answered = models.BooleanField(
+        default=False,
+        verbose_name='Ответил на текущий вопрос',
+    )
+    joined_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['session', 'user']
+        ordering = ['-score']
+
+    def __str__(self):
+        return f'{self.user.username} — {self.session.pin}'
+
+class GameAnswer(models.Model):
+    session = models.ForeignKey(
+        GameSession,
+        on_delete=models.CASCADE,
+        related_name='game_answers',
+        verbose_name='Сессия',
+    )
+    participant = models.ForeignKey(
+        GameParticipant,
+        on_delete=models.CASCADE,
+        related_name='answers',
+        verbose_name='Участник',
+    )
+    question = models.ForeignKey(
+        Question,
+        on_delete=models.CASCADE,
+        related_name='game_answers',
+        verbose_name='Вопрос',
+    )
+    answer = models.ForeignKey(
+        Answer,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='Выбранный ответ',
+    )
+    is_correct = models.BooleanField(default=False, verbose_name='Верно')
+    answered_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ['participant', 'question']
+
+    def __str__(self):
+        return f'{self.participant.user.username} — {self.question.text[:30]}'

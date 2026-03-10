@@ -52,7 +52,7 @@ def create_quiz_view(request):
 
             i += 1
 
-        return redirect('my_quizzes')
+        return redirect('create_lobby', quiz_id=quiz.id)
 
     return render(request, 'create_quiz.html')
 
