@@ -19,4 +19,5 @@ urlpatterns = [
     path('lobby/<str:pin>/lock/', toggle_lock_view, name='toggle_lock'),
     path('lobby/<str:pin>/delete/', delete_session_view, name='delete_session'),
     path('lobby/<str:pin>/api/players/', api_players_view, name='api_players'),
+    path('join/<str:pin>/', join_lobby_view, name='join_lobby'),
 ]

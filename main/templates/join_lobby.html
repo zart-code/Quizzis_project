@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block title %}Ожидание — {{ session.quiz.title }}{% endblock %}
+
+{% block content %}
+<h2>{{ session.quiz.title }}</h2>
+<p>Вы подключились как: <strong>{{ request.user.username }}</strong></p>
+<p>Ожидайте, хост скоро начнёт игру...</p>
+{% endblock %}

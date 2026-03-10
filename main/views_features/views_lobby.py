@@ -57,3 +57,23 @@ def api_players_view(request, pin):
         'count': len(players),
         'is_locked': session.is_locked,
     })
+
+
+@login_required
+def join_lobby_view(request, pin):
+    session = get_object_or_404(GameSession, pin=pin)
+
+    if session.status != GameSession.WAITING:
+        return render(request, 'lobby_error.html', {'message': 'Игра уже началась или завершена.'})
+
+    if session.is_locked:
+        return render(request, 'lobby_error.html', {'message': 'Лобби закрыто для новых игроков.'})
+
+    participants_count = session.participants.count()
+    if participants_count >= 25:
+        return render(request, 'lobby_error.html', {'message': 'Лобби заполнено (максимум 25 игроков).'})
+
+    from main.models import GameParticipant
+    GameParticipant.objects.get_or_create(session=session, user=request.user)
+
+    return render(request, 'join_lobby.html', {'session': session})
