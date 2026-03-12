@@ -7,6 +7,7 @@ from django.contrib import messages
 from django.db.models import Avg, Max, Count, Q
 from main.forms import CustomUserCreationForm, StyledAuthenticationForm
 from main.models import Quiz, QuizResult, UserAchievement, Achievement
+from main.models import Achievement, Quiz, QuizResult, UserAchievement
 
 
 @login_required(login_url='login_page')

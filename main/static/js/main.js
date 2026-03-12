@@ -323,6 +323,93 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+let count = 0;
+const labels = ['A','B','C','D'];
+const times = [15,20,30,45,60];
+
+function makeTimeOpts(i){
+    return times.map(t=>`<input type="radio" class="time-opt" name="q${i}_time" value="${t}" id="qt${i}_${t}" ${t===30?'checked':''}><label for="qt${i}_${t}">${t} сек</label>`).join('');
+}
+
+function makeAnswersSingle(i){
+    return `<div class="answers-grid">${labels.map((l,j)=>`<div class="answer-row"><input type="radio" name="q${i}_correct" value="${j}" id="q${i}c${j}"><span class="ans-label">${l}</span><input type="text" class="q-input" name="q${i}_ans${j}" placeholder="Вариант ${l}" required></div>`).join('')}</div>`;
+}
+
+function makeAnswersMultiple(i){
+    return `<div class="answers-grid">${labels.map((l,j)=>`<div class="answer-row"><input type="checkbox" name="q${i}_correct" value="${j}" id="q${i}c${j}"><span class="ans-label">${l}</span><input type="text" class="q-input" name="q${i}_ans${j}" placeholder="Вариант ${l}" required></div>`).join('')}</div>`;
+}
+
+function makeAnswersNumber(i){
+    return `<div class="q-row"><label>Правильное число</label><input type="number" step="any" class="q-input" name="q${i}_correct_number" placeholder="Введите число..." required></div>`;
+}
+
+function makeAnswersText(){
+    return `<p class="text-hint">💬 Ответ проверяется преподавателем вручную</p>`;
+}
+
+function makeQuestion(i){
+    const html=`<div class="q-block" id="qblock${i}">
+        <div class="q-block-header">
+            <span class="q-block-title">Вопрос ${i}</span>
+            <button type="button" class="q-remove-btn" onclick="removeQuestion(${i})">✕ Удалить</button>
+        </div>
+        <div class="q-row">
+            <label>Тип вопроса</label>
+            <select class="q-select" name="q${i}_type" id="q${i}_type" onchange="updateAnswers(${i})">
+                <option value="single">Одиночный выбор</option>
+                <option value="multiple">Множественный выбор</option>
+                <option value="text">Текстовый</option>
+                <option value="number">Числовой</option>
+            </select>
+        </div>
+        <div class="q-row">
+            <label>Текст вопроса</label>
+            <input type="text" class="q-input" name="q${i}_text" placeholder="Введите текст вопроса..." required>
+        </div>
+        <div id="q${i}_answers">${makeAnswersSingle(i)}</div>
+        <div class="q-row" style="margin-top:1rem">
+            <label>⏱ Время на ответ</label>
+            <div class="time-opts">${makeTimeOpts(i)}</div>
+        </div>
+    </div>`;
+    document.getElementById('questions-container').insertAdjacentHTML('beforeend',html);
+}
+
+function removeQuestion(i){
+    const el=document.getElementById(`qblock${i}`);
+    if(el) el.remove();
+}
+
+function updateAnswers(i){
+    const type=document.getElementById(`q${i}_type`).value;
+    const c=document.getElementById(`q${i}_answers`);
+    if(type==='single') c.innerHTML=makeAnswersSingle(i);
+    else if(type==='multiple') c.innerHTML=makeAnswersMultiple(i);
+    else if(type==='number') c.innerHTML=makeAnswersNumber(i);
+    else c.innerHTML=makeAnswersText();
+}
+
+document.getElementById('add-question-btn').addEventListener('click',()=>{count++;makeQuestion(count);});
+
+count++;
+makeQuestion(count);
+
+
+const apiUrl = "{% url 'api_players' session.pin %}";
+function copyLink(){navigator.clipboard.writeText(document.getElementById('join-link').textContent)}
+function fetchPlayers(){
+    fetch(apiUrl).then(r=>r.json()).then(data=>{
+        document.getElementById('player-count').textContent=data.count;
+        const list=document.getElementById('players-list');
+        list.innerHTML=data.players.length===0?'<li class="players-empty">Ожидание игроков...</li>':data.players.map(p=>`<li class="player-chip">👤 ${p.username}</li>`).join('');
+        document.getElementById('start-btn').disabled=data.count===0;
+        document.getElementById('lock-status-badge').innerHTML=data.is_locked?'<span class="lbadge lbadge-danger">Закрыто</span>':'<span class="lbadge lbadge-success">Открыто</span>';
+    });
+}
+fetchPlayers();
+setInterval(fetchPlayers,3000);
+
+
 // Экспортируем функции для использования в других файлах
 window.confirmDelete = confirmDelete;
 window.showNotification = showNotification;

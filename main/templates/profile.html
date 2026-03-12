@@ -73,7 +73,7 @@
             {% else %}
                 <div class="profile-empty-state">
                     <p class="profile-empty-text">Вы еще не прошли ни одного квиза</p>
-                    <a href="{% url 'main_page' %}" class="btn btn-success btn-large">Начать прохождение</a>
+                    <a href="{% url 'quizzes_view' %}" class="btn btn-success btn-large">Начать прохождение</a>
                 </div>
             {% endif %}
         </div>
@@ -128,7 +128,7 @@
         <!-- Кнопки действий -->
         <div class="profile-actions">
             <a href="{% url 'edit_profile' %}" class="btn btn-secondary btn-large">Редактировать профиль</a>
-            <a href="{% url 'main_page' %}" class="btn btn-primary btn-large">Мои квизы</a>
+            <a href="{% url 'my_quizzes' %}" class="btn btn-primary btn-large">Мои квизы</a>
         </div>
     </div>
 </div>

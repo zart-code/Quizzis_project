@@ -1,73 +1,101 @@
 {% extends "base.html" %}
-
-{% block title %}Мои квизы - Quizziz{% endblock %}
+{% load static %}
+{% block title %}Мои квизы — Quizziz{% endblock %}
 
 {% block content %}
 <div class="container">
-    <div class="page-header">
-        <h1>Мои квизы 📝</h1>
-    </div>
-<h2>Мои квизы</h2>
+    <div class="mq-wrapper">
 
-<a href="{% url 'create_quiz' %}">+ Создать новый квиз</a>
-<hr>
+        <div class="mq-header">
+            <div class="mq-header-text">
+                <h1 class="mq-title">Мои квизы</h1>
+                <p class="mq-subtitle">Управляйте своими квизами и запускайте новые игры</p>
+            </div>
+            <a href="{% url 'create_quiz' %}" class="btn btn-primary mq-create-btn">
+                <span class="mq-create-icon">✦</span> Создать квиз
+            </a>
+        </div>
 
-{% if quizzes %}
-    {% for quiz in quizzes %}
-    <div>
-        <strong>{{ quiz.title }}</strong>
-        — вопросов: {{ quiz.questions.count }}
-        — создан: {{ quiz.created_at|date:"d.m.Y" }}
-        <a href="{% url 'play_quiz' quiz.id %}">▶ Пройти</a>
-    </div>
-    <hr>
-    {% endfor %}
-{% else %}
-    <p>У вас ещё нет квизов.</p>
-{% endif %}
-    {% if quizzes %}
-    <div class="my-quizzes-list">
-        {% for quiz in quizzes %}
-        <div class="my-quiz-card" style="border-left: 5px solid {{ quiz.color }};">
-            <div class="quiz-main-info">
-                <div class="quiz-header-section">
-                    <h3>{{ quiz.title }}</h3>
-                    <div class="quiz-badges">
+        {% if quizzes %}
+
+        <div class="mq-stats-bar">
+            <div class="mq-stat">
+                <span class="mq-stat-num">{{ quizzes|length }}</span>
+                <span class="mq-stat-label">квизов</span>
+            </div>
+            <div class="mq-stat-divider"></div>
+            <div class="mq-stat">
+                <span class="mq-stat-label">вопросов всего</span>
+            </div>
+        </div>
+
+        <div class="mq-grid">
+            {% for quiz in quizzes %}
+            <div class="mq-card" style="--accent-hue: {{ forloop.counter0|add:200 }}">
+                <div class="mq-card-glow"></div>
+
+                <div class="mq-card-top">
+                    <div class="mq-card-num">{{ forloop.counter|stringformat:"02d" }}</div>
+                    <div class="mq-card-badges">
                         {% if quiz.is_published %}
-                            <span class="badge badge-success">Опубликован</span>
+                        <span class="mq-badge mq-badge-pub">● Опубликован</span>
                         {% else %}
-                            <span class="badge badge-warning">Черновик</span>
+                        <span class="mq-badge mq-badge-draft">◌ Черновик</span>
                         {% endif %}
                     </div>
                 </div>
-                <p class="quiz-description">{{ quiz.description }}</p>
 
-                <div class="quiz-stats-row">
-                    <div class="stat-mini">
-                        <span class="stat-icon">❓</span>
-                        <span class="stat-text">{{ quiz.questions|length }} вопросов</span>
-                    </div>
-                    <div class="stat-mini">
-                        <span class="stat-icon">📊</span>
-                        <span class="stat-text">{{ quiz.results|length }} прохождений</span>
-                    </div>
-                    <div class="stat-mini">
-                        <span class="stat-icon">📅</span>
-                        <span class="stat-text">{{ quiz.created_at.strftime('%d.%m.%Y'' %}</span>
-                    </div>
+                <h3 class="mq-card-title">{{ quiz.title }}</h3>
+
+                {% if quiz.description %}
+                <p class="mq-card-desc">{{ quiz.description|truncatechars:80 }}</p>
+                {% endif %}
+
+                <div class="mq-card-meta">
+                    <span class="mq-meta-item">
+                        <span class="mq-meta-icon">❓</span>
+                        {{ quiz.questions.count }} вопр.
+                    </span>
+                    {% if quiz.time_limit %}
+                    <span class="mq-meta-item">
+                        <span class="mq-meta-icon">⏱</span>
+                        {{ quiz.time_limit }} мин
+                    </span>
+                    {% endif %}
+                    <span class="mq-meta-item">
+                        <span class="mq-meta-icon">📅</span>
+                        {{ quiz.created_at|date:"d.m.Y" }}
+                    </span>
+                </div>
+
+                <div class="mq-card-actions">
+                    <a href="{% url 'play_quiz' quiz.id %}" class="mq-btn mq-btn-play">
+                        <span>▶</span> Пройти
+                    </a>
+                    <a href="{% url 'create_lobby' quiz.id %}" class="mq-btn mq-btn-lobby">
+                        <span>🎮</span> Лобби
+                    </a>
                 </div>
             </div>
-
-
+            {% endfor %}
         </div>
-        {% endfor %}
+
+        {% else %}
+
+        <div class="mq-empty">
+            <div class="mq-empty-visual">
+                <div class="mq-empty-ring mq-ring-1"></div>
+                <div class="mq-empty-ring mq-ring-2"></div>
+                <div class="mq-empty-ring mq-ring-3"></div>
+                <div class="mq-empty-icon">📝</div>
+            </div>
+            <h2 class="mq-empty-title">Квизов пока нет</h2>
+            <p class="mq-empty-sub">Создайте первый квиз и поделитесь им с другими!</p>
+            <a href="{% url 'create_quiz' %}" class="btn btn-primary btn-large">✦ Создать первый квиз</a>
+        </div>
+
+        {% endif %}
     </div>
-    {% else %}
-    <div class="empty-state">
-        <div class="empty-icon">📝</div>
-        <h3>У вас пока нет квизов</h3>
-        <p>Создайте свой первый квиз и поделитесь им с другими!</p>
-    </div>
-    {% endif %}
 </div>
+
 {% endblock %}

@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
-from .forms import CustomUserCreationForm
+from .forms import CustomUserCreationForm, StyledAuthenticationForm
 
 # импортируем функционал из отдельных файлов в папке views_features
 from main.views_features.views_profile import *
@@ -36,7 +36,7 @@ def register_page(request):
 
 def login_page(request):
     if request.method == 'POST':
-        form = AuthenticationForm(request, data=request.POST)
+        form = StyledAuthenticationForm(request, data=request.POST)
         if form.is_valid():
             user = form.get_user()
             login(request, user)
@@ -44,7 +44,7 @@ def login_page(request):
         else:
             return render(request, 'login_page.html', {'form': form})
     else:
-        form = AuthenticationForm()
+        form = StyledAuthenticationForm()
 
     return render(request, 'login_page.html', {'form': form})
 
@@ -66,4 +66,3 @@ def quizzes_view(request):
 
 def my_quizzes(request):
     return render(request, 'my_quizzes.html')
-
