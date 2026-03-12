@@ -7,6 +7,10 @@ from .forms import CustomUserCreationForm
 from main.views_features.views_profile import *
 from main.views_features.views_quiz import *
 from main.views_features.views_lobby import *
+from django.shortcuts import render, get_object_or_404, redirect
+from django.views.generic import ListView, DetailView
+from django.contrib.auth.mixins import LoginRequiredMixin  # если нужна авторизация, но для теста можно без
+from .models import Achievement, UserAchievement
 
 
 def main_page(request):
@@ -49,3 +53,17 @@ def logout_view(request):
     """Выход из системы."""
     logout(request)
     return redirect('main_page')
+
+
+def quizzes_view(request):
+    sort_type = request.GET.get('sort', 'new')
+
+    context = {
+        'current_sort': sort_type,
+    }
+    return render(request, 'quizzes_view.html', context)
+
+
+def my_quizzes(request):
+    return render(request, 'my_quizzes.html')
+

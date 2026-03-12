@@ -64,5 +64,7 @@ urlpatterns = [
     path('lobby/<str:pin>/start/', start_game_view, name='start_game'),
     path('session/<str:pin>/api/state/', api_state_view, name='api_state'),
     path('session/<str:pin>/play/', session_play_view, name='session_play'),
+    path('quizzises/', quizzes_view, name='quizzes_view'),
+    path('my_quizzes/', my_quizzes, name='my_quizzes'),
 
 ]
