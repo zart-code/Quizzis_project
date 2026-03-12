@@ -2,8 +2,6 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from .forms import CustomUserCreationForm, StyledAuthenticationForm
-
-# импортируем функционал из отдельных файлов в папке views_features
 from main.views_features.views_profile import *
 from main.views_features.views_quiz import *
 from main.views_features.views_lobby import *
