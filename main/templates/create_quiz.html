@@ -1,104 +1,36 @@
 {% extends "base.html" %}
 {% load static %}
 
+{% block title %}Создать квиз — Quizziz{% endblock %}
+
 {% block content %}
-<form method="post" id="quiz-form">
-    {% csrf_token %}
+<div class="container">
+    <div class="cq-wrapper">
+        <div class="cq-header">
+            <h1 class="cq-title">✏️ Создание квиза</h1>
+            <p class="cq-subtitle">Добавьте вопросы и запустите игру</p>
+        </div>
 
-    <label for="quiz-title">Название квиза</label>
-    <input type="text" id="quiz-title" name="title" required>
-    <br><br>
+        <form method="post" id="quiz-form">
+            {% csrf_token %}
+            <div class="card cq-title-card">
+                <label class="cq-label" for="quiz-title">📚 Название квиза</label>
+                <input type="text" id="quiz-title" name="title" class="form-control" placeholder="Введите название квиза..." required>
+            </div>
 
-    <div id="questions-container"></div>
+            <div id="questions-container"></div>
 
-    <button type="button" id="add-question-btn">+ Добавить вопрос</button>
-    <br><br>
-    <button type="submit">Создать</button>
-</form>
+            <div class="cq-add-row">
+                <button type="button" id="add-question-btn" class="btn btn-secondary">+ Добавить вопрос</button>
+            </div>
+
+            <div class="cq-submit-row">
+                <button type="submit" class="btn btn-primary btn-large">🚀 Создать и открыть лобби</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
 {% endblock %}
 
-{% block extra_js %}
-<script>
-    let count = 1;
-    const labels = ['A', 'B', 'C', 'D'];
-    const times = [15, 20, 30, 45, 60];
-
-    function makeAnswersSingle(i) {
-        return labels.map((l, j) => `
-            <div>
-                <input type="radio" name="q${i}_correct" value="${j}" id="q${i}c${j}">
-                <label for="q${i}c${j}">${l}</label>
-                <input type="text" name="q${i}_ans${j}" placeholder="Вариант ${l}" required>
-            </div>`).join('');
-    }
-
-    function makeAnswersMultiple(i) {
-        return labels.map((l, j) => `
-            <div>
-                <input type="checkbox" name="q${i}_correct" value="${j}" id="q${i}c${j}">
-                <label for="q${i}c${j}">${l}</label>
-                <input type="text" name="q${i}_ans${j}" placeholder="Вариант ${l}" required>
-            </div>`).join('');
-    }
-
-    function makeAnswersNumber(i) {
-        return `
-            <div>
-                <label>Правильное число:
-                    <input type="number" step="any" name="q${i}_correct_number" required>
-                </label>
-            </div>`;
-    }
-
-    function makeAnswersText() {
-        return `<p><em>Ответ проверяется преподавателем вручную</em></p>`;
-    }
-
-    function makeTimeOpts(i) {
-        return times.map(t => `
-            <label>
-                <input type="radio" name="q${i}_time" value="${t}" ${t === 30 ? 'checked' : ''}>
-                ${t} сек
-            </label>`).join('');
-    }
-
-    function makeQuestion(i) {
-        return `
-            <div id="qblock${i}">
-                <strong>Вопрос ${i}</strong><br>
-
-                <label>Тип вопроса:
-                    <select name="q${i}_type" id="q${i}_type" onchange="updateAnswers(${i})">
-                        <option value="single">Одиночный выбор</option>
-                        <option value="multiple">Множественный выбор</option>
-                        <option value="text">Текстовый</option>
-                        <option value="number">Числовой</option>
-                    </select>
-                </label><br>
-
-                <input type="text" name="q${i}_text" placeholder="Текст вопроса" required><br>
-
-                <div id="q${i}_answers">${makeAnswersSingle(i)}</div>
-
-                <div><label>Время:</label> ${makeTimeOpts(i)}</div>
-            </div><hr>`;
-    }
-
-    function updateAnswers(i) {
-        const type = document.getElementById(`q${i}_type`).value;
-        const container = document.getElementById(`q${i}_answers`);
-        if (type === 'single') container.innerHTML = makeAnswersSingle(i);
-        else if (type === 'multiple') container.innerHTML = makeAnswersMultiple(i);
-        else if (type === 'number') container.innerHTML = makeAnswersNumber(i);
-        else if (type === 'text') container.innerHTML = makeAnswersText();
-    }
-
-    document.getElementById('questions-container').innerHTML = makeQuestion(1);
-
-    document.getElementById('add-question-btn').addEventListener('click', () => {
-        count++;
-        document.getElementById('questions-container')
-            .insertAdjacentHTML('beforeend', makeQuestion(count));
-    });
-</script>
-{% endblock %}
