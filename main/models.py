@@ -152,6 +152,7 @@ class QuizResult(models.Model):
     started_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(blank=True, null=True)
 
+    order = models.PositiveIntegerField(default=0)
 
     class Meta:
         verbose_name = 'Вариант ответа'

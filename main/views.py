@@ -8,10 +8,10 @@ from main.views_features.views_profile import *
 from main.views_features.views_quiz import *
 from main.views_features.views_lobby import *
 
+
 def main_page(request):
     """Главная страница (меню)."""
     return render(request, 'main_page.html')
-
 
 
 def register_page(request):

@@ -1,12 +1,15 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils.translation import gettext_lazy as _
+
+'''
 from .models import (
     CustomUser, Achievement, UserAchievement,
     Category, Quizz, Question, Answer,
 )
-
+'''
 # ---- Кастомный пользователь ----
+'''
 class CustomUserAdmin(UserAdmin):
     list_display = ('username', 'email', 'first_name', 'last_name', 'total_points', 'is_staff')
     list_filter = ('is_staff', 'is_superuser', 'is_active', 'groups')
@@ -91,4 +94,4 @@ class AnswerAdmin(admin.ModelAdmin):
     list_filter = ('is_correct', 'question__quizz')
     search_fields = ('text', 'question__text')
     raw_id_fields = ('question',)
-
+'''
