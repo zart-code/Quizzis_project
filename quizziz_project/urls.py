@@ -1,20 +1,46 @@
 from django.contrib import admin
 from django.urls import path
 from main.views import *
+
 """
-Структура страниц в формате x.y (где x - уровень, y - номер страницы на этом уровне):
+Уровень 0 — Главная
+  0.1 - Главная страница (меню) [main_page] /
 
-Уровень 0 - Главная
-0.1 - Главная страница (меню) main_page
+Уровень 1 — Аутентификация
+  1.1 - Вход [login_page] /login/
+  1.2 - Регистрация [register_page] /register/
+  1.3 - Выход [logout] /logout/ (редирект на 0.1)
 
-Уровень 1 - Аутентификация
-1.1 - Страница входа login_page
-1.2 - Страница регистрации register_page
-1.3 - Страница выхода logout (редирект на main_page)
+Уровень 2 — Профиль
+  2.1 - Профиль [profile] /profile/
+  2.2 - Редактирование профиля [edit_profile] /profile/edit/
 
-Уровень 2 - Профиль пользователя
-2.1 - Страница профиля profile
-2.2 - Редактирование профиля edit_profile
+Уровень 3 — Квизы
+  3.1 - Мои квизы [my_quizzes] /my-quizzes/
+  3.2 - Создание квиза [create_quiz] /quiz/create/
+        → после создания редирект на 4.1 (создание лобби)
+  3.3 - Одиночное прохождение квиза [play_quiz] /quiz/<id>/play/
+
+Уровень 4 — Лобби (хост)
+  4.1 - Создание лобби [create_lobby] /quiz/<id>/lobby/create/
+        → редирект на 4.2
+  4.2 - Лобби хоста [lobby] /lobby/<pin>/
+  4.3 - Закрыть/открыть лобби [toggle_lock] /lobby/<pin>/lock/ (редирект на 4.2)
+  4.4 - Удалить сессию [delete_session] /lobby/<pin>/delete/ (редирект на 3.1)
+  4.5 - Начать игру [start_game] /lobby/<pin>/start/ (редирект на 4.2)
+
+Уровень 5 — Подключение игрока
+  5.1 - Подключение по PIN [join_lobby] /join/<pin>/
+        → страница ожидания старта
+
+Уровень 6 — Синхронная игра
+  6.1 - Прохождение квиза игроком [session_play] /session/<pin>/play/
+        → после последнего вопроса: страница результатов
+
+Уровень 7 — API (служебные, без шаблонов)
+  7.1 - Список игроков в лобби [api_players] /lobby/<pin>/api/players/
+  7.2 - Статус сессии [api_state] /session/<pin>/api/state/
+        → используется polling'ом на 5.1 и 6.1
 """
 
 
@@ -26,6 +52,17 @@ urlpatterns = [
     path('logout/', logout_view, name='logout'),
     path('profile/', profile_view, name='profile'),
     path('profile/edit/', edit_profile_view, name='edit_profile'),
-    path('quizzises/', quizzes_view, name='quizzes_view'),
-    path('my_quizzes/', my_quizzes, name='my_quizzes'),
+    path('quiz/create/', create_quiz_view, name='create_quiz'),
+    path('my-quizzes/', my_quizzes_view, name='my_quizzes'),
+    path('quiz/<int:quiz_id>/play/', play_quiz_view, name='play_quiz'),
+    path('quiz/<int:quiz_id>/lobby/create/', create_lobby_view, name='create_lobby'),
+    path('lobby/<str:pin>/', lobby_view, name='lobby'),
+    path('lobby/<str:pin>/lock/', toggle_lock_view, name='toggle_lock'),
+    path('lobby/<str:pin>/delete/', delete_session_view, name='delete_session'),
+    path('lobby/<str:pin>/api/players/', api_players_view, name='api_players'),
+    path('join/<str:pin>/', join_lobby_view, name='join_lobby'),
+    path('lobby/<str:pin>/start/', start_game_view, name='start_game'),
+    path('session/<str:pin>/api/state/', api_state_view, name='api_state'),
+    path('session/<str:pin>/play/', session_play_view, name='session_play'),
+
 ]

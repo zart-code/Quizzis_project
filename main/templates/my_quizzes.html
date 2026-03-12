@@ -7,7 +7,24 @@
     <div class="page-header">
         <h1>Мои квизы 📝</h1>
     </div>
+<h2>Мои квизы</h2>
 
+<a href="{% url 'create_quiz' %}">+ Создать новый квиз</a>
+<hr>
+
+{% if quizzes %}
+    {% for quiz in quizzes %}
+    <div>
+        <strong>{{ quiz.title }}</strong>
+        — вопросов: {{ quiz.questions.count }}
+        — создан: {{ quiz.created_at|date:"d.m.Y" }}
+        <a href="{% url 'play_quiz' quiz.id %}">▶ Пройти</a>
+    </div>
+    <hr>
+    {% endfor %}
+{% else %}
+    <p>У вас ещё нет квизов.</p>
+{% endif %}
     {% if quizzes %}
     <div class="my-quizzes-list">
         {% for quiz in quizzes %}
@@ -24,7 +41,7 @@
                     </div>
                 </div>
                 <p class="quiz-description">{{ quiz.description }}</p>
-                
+
                 <div class="quiz-stats-row">
                     <div class="stat-mini">
                         <span class="stat-icon">❓</span>

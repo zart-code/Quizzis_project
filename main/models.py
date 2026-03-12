@@ -1,115 +1,8 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.utils import timezone
-
-
-class CustomUser(AbstractUser):
-    """
-    Расширенная модель пользователя.
-    """
-    avatar = models.ImageField(
-        upload_to='avatars/',
-        blank=True,
-        null=True,
-        verbose_name='Аватар'
-    )
-
-    bio = models.TextField(
-        max_length=500,
-        blank=True,
-        verbose_name='О себе'
-    )
-
-    date_of_birth = models.DateField(
-        blank=True,
-        null=True,
-        verbose_name='Дата рождения'
-    )
-
-    total_points = models.IntegerField(
-        default=0,
-        verbose_name='Всего баллов'
-    )
-
-    class Meta:
-        verbose_name = 'Пользователь'
-        verbose_name_plural = 'Пользователи'
-
-    def __str__(self):
-        return self.username
-
-
-class Achievement(models.Model):
-    """
-    Модель достижения.
-    """
-    name = models.CharField(
-        max_length=100,
-        unique=True,
-        verbose_name='Название'
-    )
-    description = models.TextField(
-        verbose_name='Описание'
-    )
-    icon = models.ImageField(
-        upload_to='achievements/icons/',
-        blank=True,
-        null=True,
-        verbose_name='Иконка'
-    )
-    points = models.PositiveIntegerField(
-        default=0,
-        verbose_name='Баллы за достижение'
-    )
-    condition = models.TextField(
-        blank=True,
-        help_text='Условие получения достижения (опционально)',
-        verbose_name='Условие'
-    )
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='Дата создания',
-        # default=timezone.now
-    )
-
-    class Meta:
-        verbose_name = 'Достижение'
-        verbose_name_plural = 'Достижения'
-        ordering = ['name']
-
-    def __str__(self):
-        return self.name
-
-
-class UserAchievement(models.Model):
-    """
-    Связь пользователя и достижения (многие ко многим с датой получения).
-    """
-    user = models.ForeignKey(
-        CustomUser,
-        on_delete=models.CASCADE,
-        related_name='achievements',
-        verbose_name='Пользователь'
-    )
-    achievement = models.ForeignKey(
-        Achievement,
-        on_delete=models.CASCADE,
-        related_name='users',
-        verbose_name='Достижение'
-    )
-    earned_at = models.DateTimeField(
-        default=timezone.now,
-        verbose_name='Дата получения'
-    )
-
-    class Meta:
-        verbose_name = 'Достижение пользователя'
-        verbose_name_plural = 'Достижения пользователей'
-        unique_together = ('user', 'achievement')  # предотвращает повторное получение
-
-    def __str__(self):
-        return f'{self.user.username} - {self.achievement.name}'
-
+from django.contrib.auth.models import User
+import random
+import string
 
 class Category(models.Model):
     """
@@ -134,17 +27,16 @@ class Category(models.Model):
         return self.name
 
 
-class Quizz(models.Model):
-    """
-    Модель викторины.
-    """
+class Quiz(models.Model):
     title = models.CharField(
         max_length=200,
-        verbose_name='Название'
+        verbose_name='Название квиза',
     )
-    description = models.TextField(
-        blank=True,
-        verbose_name='Описание'
+    creator = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='created_quizzes',
+        verbose_name='Создатель',
     )
     category = models.ForeignKey(
         Category,
@@ -152,43 +44,31 @@ class Quizz(models.Model):
         null=True,
         blank=True,
         related_name='quizzes',
-        verbose_name='Категория'
+        verbose_name='Категория',
     )
-    created_by = models.ForeignKey(
-        CustomUser,
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name='created_quizzes',
-        verbose_name='Автор'
+    description = models.TextField(
+        blank=True,
+        verbose_name='Описание',
     )
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='Дата создания'
-    )
-    updated_at = models.DateTimeField(
-        auto_now=True,
-        verbose_name='Дата обновления'
+    additional_info = models.TextField(
+        blank=True,
+        verbose_name='Дополнительная информация',
     )
     is_published = models.BooleanField(
         default=False,
-        verbose_name='Опубликовано'
+        verbose_name='Опубликован',
     )
-    time_limit = models.DurationField(
+    created_at = models.DateTimeField(auto_now_add=True)
+    time_limit = models.IntegerField(
         blank=True,
         null=True,
-        help_text='Общее время на прохождение (например, 00:30:00 для 30 минут)',
-        verbose_name='Лимит времени'
-    )
-    pass_score = models.PositiveIntegerField(
-        default=0,
-        help_text='Минимальное количество баллов для зачета',
-        verbose_name='Проходной балл'
+        help_text='Ограничение по времени в минутах',
+        verbose_name='Лимит времени (мин)',
     )
 
+
     class Meta:
-        verbose_name = 'Викторина'
-        verbose_name_plural = 'Викторины'
-        ordering = ['-created_at']
+        verbose_name_plural = 'Quizzes'
 
     def __str__(self):
         return self.title
@@ -199,43 +79,32 @@ class Quizz(models.Model):
 
 
 class Question(models.Model):
-    """
-    Модель вопроса в викторине.
-    """
-    class QuestionType(models.TextChoices):
-        SINGLE = 'single', 'Одиночный выбор'
-        MULTIPLE = 'multiple', 'Множественный выбор'
-        TEXT = 'text', 'Текстовый ответ'
+    SINGLE = 'single'
+    MULTIPLE = 'multiple'
+    TEXT = 'text'
+    NUMBER = 'number'
+    QUESTION_TYPE_CHOICES = [
+        (SINGLE, 'Одиночный выбор'),
+        (MULTIPLE, 'Множественный выбор'),
+        (TEXT, 'Текстовый'),
+        (NUMBER, 'Числовой'),
+    ]
 
-    quizz = models.ForeignKey(
-        Quizz,
-        on_delete=models.CASCADE,
-        related_name='questions',
-        verbose_name='Викторина'
-    )
-    text = models.TextField(
-        verbose_name='Текст вопроса'
-    )
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='questions')
+    text = models.TextField(verbose_name='Текст вопроса')
     question_type = models.CharField(
         max_length=10,
-        choices=QuestionType.choices,
-        default=QuestionType.SINGLE,
-        verbose_name='Тип вопроса'
+        choices=QUESTION_TYPE_CHOICES,
+        default=SINGLE,
+        verbose_name='Тип вопроса',
     )
-    order = models.PositiveIntegerField(
-        default=0,
-        verbose_name='Порядковый номер'
-    )
-    points = models.PositiveIntegerField(
-        default=1,
-        verbose_name='Баллы за правильный ответ'
-    )
-    image = models.ImageField(
-        upload_to='questions/',
-        blank=True,
+    correct_number = models.FloatField(
         null=True,
-        verbose_name='Изображение'
+        blank=True,
+        verbose_name='Правильное число',
     )
+    time_limit = models.IntegerField(default=30, verbose_name='Время на ответ (сек)')
+    order = models.IntegerField(default=0)
 
     class Meta:
         verbose_name = 'Вопрос'
@@ -243,31 +112,46 @@ class Question(models.Model):
         ordering = ['order']
 
     def __str__(self):
-        return f'{self.quizz.title} - Вопрос {self.order}'
+        return self.text
 
 
 class Answer(models.Model):
-    """
-    Вариант ответа на вопрос.
-    """
     question = models.ForeignKey(
         Question,
         on_delete=models.CASCADE,
         related_name='answers',
-        verbose_name='Вопрос'
     )
     text = models.CharField(
         max_length=255,
-        verbose_name='Текст ответа'
+        verbose_name='Текст ответа',
     )
     is_correct = models.BooleanField(
         default=False,
-        verbose_name='Правильный?'
+        verbose_name='Правильный',
     )
-    order = models.PositiveIntegerField(
-        default=0,
-        verbose_name='Порядок'
+
+    def __str__(self):
+        return self.text
+
+
+class QuizResult(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='quiz_results',
     )
+    quiz = models.ForeignKey(
+        Quiz,
+        on_delete=models.CASCADE,
+        related_name='results',
+    )
+    score = models.IntegerField(default=0)
+    max_score = models.IntegerField(default=0)
+    score_percent = models.FloatField(default=0)
+    completed = models.BooleanField(default=False)
+    started_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(blank=True, null=True)
+
 
     class Meta:
         verbose_name = 'Вариант ответа'
@@ -275,4 +159,141 @@ class Answer(models.Model):
         ordering = ['order']
 
     def __str__(self):
-        return self.text
+        return self.name
+
+
+class UserAchievement(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='achievements',
+    )
+    achievement = models.ForeignKey(
+        Achievement,
+        on_delete=models.CASCADE,
+        related_name='user_achievements',
+    )
+    unlocked_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['user', 'achievement']
+        ordering = ['-unlocked_at']
+
+    def __str__(self):
+        return f'{self.user.username} - {self.achievement.name}'
+
+
+def generate_pin():
+        return ''.join(random.choices(string.digits, k=6))
+
+class GameSession(models.Model):
+    WAITING = 'waiting'
+    IN_PROGRESS = 'in_progress'
+    FINISHED = 'finished'
+    STATUS_CHOICES = [
+        (WAITING, 'Ожидание'),
+        (IN_PROGRESS, 'Идёт игра'),
+        (FINISHED, 'Завершена'),
+    ]
+
+    quiz = models.ForeignKey(
+        Quiz,
+        on_delete=models.CASCADE,
+        related_name='sessions',
+        verbose_name='Квиз',
+    )
+    host = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='hosted_sessions',
+        verbose_name='Хост',
+    )
+    pin = models.CharField(
+        max_length=6,
+        unique=True,
+        default=generate_pin,
+        verbose_name='PIN-код',
+    )
+    status = models.CharField(
+        max_length=15,
+        choices=STATUS_CHOICES,
+        default=WAITING,
+        verbose_name='Статус',
+    )
+    is_locked = models.BooleanField(
+        default=False,
+        verbose_name='Лобби закрыто',
+    )
+    current_question = models.IntegerField(
+        default=0,
+        verbose_name='Текущий вопрос',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.quiz.title} [{self.pin}]'
+
+class GameParticipant(models.Model):
+    session = models.ForeignKey(
+        GameSession,
+        on_delete=models.CASCADE,
+        related_name='participants',
+        verbose_name='Сессия',
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='game_participations',
+        verbose_name='Игрок',
+    )
+    score = models.IntegerField(default=0, verbose_name='Счёт')
+    is_answered = models.BooleanField(
+        default=False,
+        verbose_name='Ответил на текущий вопрос',
+    )
+    joined_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['session', 'user']
+        ordering = ['-score']
+
+    def __str__(self):
+        return f'{self.user.username} — {self.session.pin}'
+
+class GameAnswer(models.Model):
+    session = models.ForeignKey(
+        GameSession,
+        on_delete=models.CASCADE,
+        related_name='game_answers',
+        verbose_name='Сессия',
+    )
+    participant = models.ForeignKey(
+        GameParticipant,
+        on_delete=models.CASCADE,
+        related_name='answers',
+        verbose_name='Участник',
+    )
+    question = models.ForeignKey(
+        Question,
+        on_delete=models.CASCADE,
+        related_name='game_answers',
+        verbose_name='Вопрос',
+    )
+    answer = models.ForeignKey(
+        Answer,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='Выбранный ответ',
+    )
+    is_correct = models.BooleanField(default=False, verbose_name='Верно')
+    answered_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ['participant', 'question']
+
+    def __str__(self):
+        return f'{self.participant.user.username} — {self.question.text[:30]}'
