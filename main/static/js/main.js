@@ -395,6 +395,21 @@ count++;
 makeQuestion(count);
 
 
+const apiUrl = "{% url 'api_players' session.pin %}";
+function copyLink(){navigator.clipboard.writeText(document.getElementById('join-link').textContent)}
+function fetchPlayers(){
+    fetch(apiUrl).then(r=>r.json()).then(data=>{
+        document.getElementById('player-count').textContent=data.count;
+        const list=document.getElementById('players-list');
+        list.innerHTML=data.players.length===0?'<li class="players-empty">Ожидание игроков...</li>':data.players.map(p=>`<li class="player-chip">👤 ${p.username}</li>`).join('');
+        document.getElementById('start-btn').disabled=data.count===0;
+        document.getElementById('lock-status-badge').innerHTML=data.is_locked?'<span class="lbadge lbadge-danger">Закрыто</span>':'<span class="lbadge lbadge-success">Открыто</span>';
+    });
+}
+fetchPlayers();
+setInterval(fetchPlayers,3000);
+
+
 // Экспортируем функции для использования в других файлах
 window.confirmDelete = confirmDelete;
 window.showNotification = showNotification;

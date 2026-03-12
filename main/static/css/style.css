@@ -1241,3 +1241,32 @@ body {
 .time-opt + label{padding:.4rem .9rem;background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.2);border-radius:10px;cursor:pointer;font-size:.85rem;color:var(--text-secondary);transition:all .2s}
 .time-opt:checked + label{background:rgba(139,92,246,.3);border-color:var(--primary);color:var(--primary-light);font-weight:600}
 .text-hint{color:var(--text-muted);font-style:italic;font-size:.9rem;padding:.8rem;background:rgba(139,92,246,.05);border-radius:10px;border:1px dashed rgba(139,92,246,.2)}
+
+
+
+
+.lobby-wrapper{max-width:800px;margin:0 auto;padding:2rem 0}
+.lobby-header{text-align:center;margin-bottom:2rem}
+.lobby-title{font-size:2.2rem;font-weight:700;background:linear-gradient(135deg,#A78BFA,#EC4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:.5rem}
+.lobby-meta{color:var(--text-secondary)}
+.lobby-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem}
+@media(max-width:600px){.lobby-grid{grid-template-columns:1fr}}
+.lobby-pin-card,.lobby-status-card{padding:1.8rem}
+.pin-label{font-size:.8rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);margin-bottom:.5rem}
+.pin-code{font-size:3.5rem;font-weight:700;letter-spacing:.3em;background:linear-gradient(135deg,#A78BFA,#EC4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:1rem}
+.join-link-row{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap}
+.join-link-text{font-size:.75rem;color:var(--text-muted);word-break:break-all;flex:1}
+.status-row{display:flex;align-items:center;justify-content:space-between;padding:1rem 0;border-bottom:1px solid rgba(139,92,246,.1)}
+.status-row:last-child{border-bottom:none}
+.status-label{color:var(--text-secondary);font-size:.9rem}
+.status-value{font-size:2rem;font-weight:700;color:var(--primary-light)}
+.status-max{color:var(--text-muted);font-size:1.1rem}
+.lbadge{display:inline-block;padding:.3rem .9rem;border-radius:20px;font-size:.85rem;font-weight:600}
+.lbadge-success{background:rgba(16,185,129,.2);color:#10B981;border:1px solid rgba(16,185,129,.3)}
+.lbadge-danger{background:rgba(239,68,68,.2);color:#EF4444;border:1px solid rgba(239,68,68,.3)}
+.players-section{padding:1.8rem;margin-bottom:1.5rem}
+.section-title{font-size:1.1rem;font-weight:600;color:var(--text-primary);margin-bottom:1rem}
+.players-list{list-style:none;display:flex;flex-wrap:wrap;gap:.7rem}
+.players-empty{color:var(--text-muted);font-style:italic}
+.player-chip{background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3);border-radius:20px;padding:.4rem 1rem;font-size:.9rem;color:var(--text-primary)}
+.lobby-actions{display:flex;gap:1rem;flex-wrap:wrap;justify-content:center}
