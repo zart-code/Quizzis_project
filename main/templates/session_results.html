@@ -1,18 +1,65 @@
 {% extends "base.html" %}
-
+{% load static %}
 {% block title %}Результаты — {{ session.quiz.title }}{% endblock %}
 
 {% block content %}
-<h2>Игра завершена!</h2>
-<h3>{{ session.quiz.title }}</h3>
-<p>Ваш итоговый счёт: <strong>{{ participant.score }}</strong></p>
+<div class="container">
+    <div class="sr-wrapper">
+        <div class="sr-header">
+            <div class="sr-icon">🏆</div>
+            <h1 class="sr-title">Игра завершена!</h1>
+            <p class="sr-quiz-name">{{ session.quiz.title }}</p>
+        </div>
 
-<h4>Таблица лидеров</h4>
-<ol>
-    {% for p in session.participants.all %}
-    <li>{{ p.user.username }} — {{ p.score }}</li>
-    {% endfor %}
-</ol>
+        <div class="card sr-score-card">
+            <div class="sr-score-label">Ваш итоговый счёт</div>
+            <div class="sr-score-value">{{ participant.score }}</div>
+            <div class="sr-score-sub">очков</div>
+        </div>
 
-<a href="{% url 'main_page' %}">← На главную</a>
+        <div class="card sr-leaderboard">
+            <h2 class="sr-lb-title">🥇 Таблица лидеров</h2>
+            <ol class="sr-lb-list">
+                {% for p in session.participants.all %}
+                <li class="sr-lb-item {% if p.user == request.user %}sr-lb-me{% endif %}">
+                    <span class="sr-lb-pos">{{ forloop.counter }}</span>
+                    <span class="sr-lb-name">
+                        {% if p.user == request.user %}⭐ {% endif %}{{ p.user.username }}
+                    </span>
+                    <span class="sr-lb-score">{{ p.score }} очк.</span>
+                </li>
+                {% endfor %}
+            </ol>
+        </div>
+
+        <div class="sr-actions">
+            <a href="{% url 'main_page' %}" class="btn btn-primary">← На главную</a>
+        </div>
+    </div>
+</div>
+
+<style>
+.sr-wrapper{max-width:600px;margin:0 auto;padding:2rem 0}
+.sr-header{text-align:center;margin-bottom:2rem}
+.sr-icon{font-size:4rem;margin-bottom:1rem;animation:bounceIn .6s ease}
+@keyframes bounceIn{0%{transform:scale(0)}60%{transform:scale(1.2)}100%{transform:scale(1)}}
+.sr-title{font-size:2rem;font-weight:700;background:linear-gradient(135deg,#A78BFA,#EC4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sr-quiz-name{color:var(--text-secondary);margin-top:.4rem}
+.sr-score-card{padding:2rem;text-align:center;margin-bottom:1.5rem}
+.sr-score-label{color:var(--text-muted);font-size:.9rem;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem}
+.sr-score-value{font-size:4rem;font-weight:700;color:var(--accent);line-height:1}
+.sr-score-sub{color:var(--text-muted);font-size:.9rem;margin-top:.3rem}
+.sr-leaderboard{padding:1.8rem;margin-bottom:1.5rem}
+.sr-lb-title{font-size:1.1rem;font-weight:700;color:var(--text-primary);margin-bottom:1rem}
+.sr-lb-list{list-style:none;display:flex;flex-direction:column;gap:.5rem}
+.sr-lb-item{display:flex;align-items:center;gap:1rem;padding:.8rem 1rem;border-radius:12px;background:rgba(139,92,246,.06);border:1px solid rgba(139,92,246,.1)}
+.sr-lb-me{background:rgba(139,92,246,.18);border-color:var(--primary)}
+.sr-lb-pos{font-size:1.2rem;font-weight:700;color:var(--primary-light);min-width:1.5rem;text-align:center}
+.sr-lb-item:nth-child(1) .sr-lb-pos::before{content:'🥇 '}
+.sr-lb-item:nth-child(2) .sr-lb-pos::before{content:'🥈 '}
+.sr-lb-item:nth-child(3) .sr-lb-pos::before{content:'🥉 '}
+.sr-lb-name{flex:1;color:var(--text-primary);font-weight:500}
+.sr-lb-score{color:var(--accent);font-weight:700}
+.sr-actions{text-align:center}
+</style>
 {% endblock %}
