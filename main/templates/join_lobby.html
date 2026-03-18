@@ -3,22 +3,35 @@
 {% block title %}Ожидание — {{ session.quiz.title }}{% endblock %}
 
 {% block content %}
-<h2>{{ session.quiz.title }}</h2>
-<p>Вы подключились как: <strong>{{ request.user.username }}</strong></p>
-<p>Ожидайте, хост скоро начнёт игру...</p>
+<div class="container">
+    <div class="jl-wrapper">
+        <div class="card jl-card">
+            <div class="jl-icon">🎮</div>
+            <h1 class="jl-title">{{ session.quiz.title }}</h1>
+            <p class="jl-sub">Вы подключились как <strong class="jl-name">{{ request.user.username }}</strong></p>
+
+            <div class="jl-status-box">
+                <div class="jl-waiting-dots"><span></span><span></span><span></span></div>
+                <p class="jl-waiting-text">Ожидайте, хост скоро начнёт игру...</p>
+            </div>
+
+            <div class="jl-pin-row">
+                <span class="jl-pin-label">PIN</span>
+                <span class="jl-pin-val">{{ session.pin }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 
 <script>
-    const apiUrl = "{% url 'api_state' session.pin %}";
-    const playUrl = "/session/{{ session.pin }}/play/";
-
-    setInterval(function () {
-        fetch(apiUrl)
-            .then(r => r.json())
-            .then(data => {
-                if (data.status === 'in_progress') {
-                    window.location.href = playUrl;
-                }
-            });
-    }, 2000);
+const apiUrl = "{% url 'api_state' session.pin %}";
+const playUrl = "/session/{{ session.pin }}/play/";
+setInterval(function(){
+    fetch(apiUrl).then(r=>r.json()).then(data=>{
+        if(data.status==='in_progress') window.location.href=playUrl;
+    });
+},2000);
 </script>
 {% endblock %}
