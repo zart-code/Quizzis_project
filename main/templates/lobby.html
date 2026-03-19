@@ -3,57 +3,57 @@
 {% block title %}Лобби — {{ session.quiz.title }}{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="lobby-wrapper">
-        <div class="lobby-header">
-            <h1 class="lobby-title">🎮 {{ session.quiz.title }}</h1>
-            <p class="lobby-meta">Вопросов: <strong>{{ session.quiz.questions.count }}</strong></p>
-        </div>
+    <div class="container">
+        <div class="lobby-wrapper">
+            <div class="lobby-header">
+                <h1 class="lobby-title">🎮 {{ session.quiz.title }}</h1>
+                <p class="lobby-meta">Вопросов: <strong>{{ session.quiz.questions.count }}</strong></p>
+            </div>
 
-        <div class="lobby-grid">
-            <div class="lobby-pin-card card">
-                <div class="pin-label">PIN-код для входа</div>
-                <div class="pin-code">{{ session.pin }}</div>
-                <div class="join-link-row">
-                    <span class="join-link-text" id="join-link">{{ request.scheme }}://{{ request.get_host }}/join/{{ session.pin }}/</span>
-                    <button class="btn btn-secondary btn-small" onclick="copyLink()">📋 Копировать</button>
+            <div class="lobby-grid">
+                <div class="lobby-pin-card card">
+                    <div class="pin-label">PIN-код для входа</div>
+                    <div class="pin-code">{{ session.pin }}</div>
+                    <div class="join-link-row">
+                        <span class="join-link-text" id="join-link">{{ request.scheme }}://{{ request.get_host }}/join/{{ session.pin }}/</span>
+                        <button class="btn btn-secondary btn-small" onclick="copyLink()">📋 Копировать</button>
+                    </div>
+                </div>
+                <div class="lobby-status-card card">
+                    <div class="status-row">
+                        <span class="status-label">Игроков</span>
+                        <span><span class="status-value" id="player-count">0</span><span class="status-max"> / 25</span></span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">Статус лобби</span>
+                        <span id="lock-status-badge">{% if session.is_locked %}<span class="lbadge lbadge-danger">Закрыто</span>{% else %}<span class="lbadge lbadge-success">Открыто</span>{% endif %}</span>
+                    </div>
                 </div>
             </div>
-            <div class="lobby-status-card card">
-                <div class="status-row">
-                    <span class="status-label">Игроков</span>
-                    <span><span class="status-value" id="player-count">0</span><span class="status-max"> / 25</span></span>
-                </div>
-                <div class="status-row">
-                    <span class="status-label">Статус лобби</span>
-                    <span id="lock-status-badge">{% if session.is_locked %}<span class="lbadge lbadge-danger">Закрыто</span>{% else %}<span class="lbadge lbadge-success">Открыто</span>{% endif %}</span>
-                </div>
+
+            <div class="players-section card">
+                <h3 class="section-title">👥 Участники</h3>
+                <ul class="players-list" id="players-list">
+                    <li class="players-empty">Ожидание игроков...</li>
+                </ul>
             </div>
-        </div>
 
-        <div class="players-section card">
-            <h3 class="section-title">👥 Участники</h3>
-            <ul class="players-list" id="players-list">
-                <li class="players-empty">Ожидание игроков...</li>
-            </ul>
-        </div>
-
-        <div class="lobby-actions">
-            <form method="post" action="{% url 'toggle_lock' session.pin %}" style="display:inline">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-secondary">{% if session.is_locked %}🔓 Открыть лобби{% else %}🔒 Закрыть лобби{% endif %}</button>
-            </form>
-            <form method="post" action="{% url 'start_game' session.pin %}" style="display:inline">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-primary" id="start-btn" disabled>▶ Начать игру</button>
-            </form>
-            <form method="post" action="{% url 'delete_session' session.pin %}" style="display:inline">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-danger" onclick="return confirm('Удалить сессию и выйти?')">🗑 Выйти</button>
-            </form>
+            <div class="lobby-actions">
+                <form method="post" action="{% url 'toggle_lock' session.pin %}" style="display:inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-secondary">{% if session.is_locked %}🔓 Открыть лобби{% else %}🔒 Закрыть лобби{% endif %}</button>
+                </form>
+                <form method="post" action="{% url 'start_game' session.pin %}" style="display:inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary" id="start-btn" disabled>▶ Начать игру</button>
+                </form>
+                <form method="post" action="{% url 'delete_session' session.pin %}" style="display:inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger" onclick="return confirm('Удалить сессию и выйти?')">🗑 Выйти</button>
+                </form>
+            </div>
         </div>
     </div>
-</div>
 
 
 

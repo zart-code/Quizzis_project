@@ -1,10 +1,8 @@
 import json
-
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
-
 from main.models import GameSession, Quiz, GameParticipant, GameAnswer
 
 
@@ -98,6 +96,7 @@ def api_state_view(request, pin):
     return JsonResponse({
         'status': session.status,
     })
+
 
 @login_required
 def session_play_view(request, pin):
