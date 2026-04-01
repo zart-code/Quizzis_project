@@ -8,6 +8,13 @@ import random
 import string
 
 
+def generate_pin():
+    """
+    Генератор случайного ключа сессии
+    """
+    return ''.join(random.choices(string.digits, k=6))
+
+
 class Category(models.Model):
     """
     Категория для группировки викторин.
@@ -23,6 +30,9 @@ class Category(models.Model):
     )
 
     class Meta:
+        """
+        Метаданные
+        """
         verbose_name = 'Категория'
         verbose_name_plural = 'Категории'
         ordering = ['name']
@@ -33,7 +43,7 @@ class Category(models.Model):
 
 class Quiz(models.Model):
     """
-    Модель квиза
+    Модель quiz
     """
     title = models.CharField(
         max_length=200,
@@ -74,6 +84,9 @@ class Quiz(models.Model):
     )
 
     class Meta:
+        """
+        Метаданные
+        """
         verbose_name_plural = 'Quizzes'
 
     def __str__(self):
@@ -116,6 +129,9 @@ class Question(models.Model):
     order = models.IntegerField(default=0)
 
     class Meta:
+        """
+        Метаданные
+        """
         verbose_name = 'Вопрос'
         verbose_name_plural = 'Вопросы'
         ordering = ['order']
@@ -148,7 +164,7 @@ class Answer(models.Model):
 
 class QuizResult(models.Model):
     """
-    Модель результата прохождения квиза
+    Модель результата прохождения quiz
     """
     user = models.ForeignKey(
         User,
@@ -170,6 +186,9 @@ class QuizResult(models.Model):
     order = models.PositiveIntegerField(default=0)
 
     class Meta:
+        """
+        Метаданные
+        """
         verbose_name = 'Вариант ответа'
         verbose_name_plural = 'Варианты ответов'
         ordering = ['order']
@@ -207,6 +226,9 @@ class UserAchievement(models.Model):
     unlocked_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        """
+        Методанные
+        """
         unique_together = ['user', 'achievement']
         ordering = ['-unlocked_at']
 
@@ -261,13 +283,6 @@ class GameSession(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
-    @staticmethod
-    def generate_pin():
-        """
-        Генератор случайного ключа сессии
-        """
-        return ''.join(random.choices(string.digits, k=6))
-
     class Meta:
         ordering = ['-created_at']
 
@@ -302,6 +317,9 @@ class GameParticipant(models.Model):
     joined_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        """
+        Метаданные
+        """
         unique_together = ['session', 'user']
         ordering = ['-score']
 
@@ -342,6 +360,9 @@ class GameAnswer(models.Model):
     answered_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
+        """
+        Метаданные
+        """
         unique_together = ['participant', 'question']
 
     def __str__(self):
