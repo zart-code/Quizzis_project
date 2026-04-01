@@ -311,7 +311,7 @@ class GameSession(models.Model):
         """
         Отладочная информация
         """
-        return f'{self.quiz.title} [{self.pin}]'
+        return f'{self.quiz} [{self.pin}]'
 
 
 class GameParticipant(models.Model):
