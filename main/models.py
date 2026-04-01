@@ -1,11 +1,11 @@
 """
 Файл для моделей database
 """
-from django.contrib.auth.models import AbstractUser
-from django.db import models
-from django.contrib.auth.models import User
 import random
 import string
+from django.db import models
+from django.contrib.auth.models import User
+
 
 
 def generate_pin():
@@ -224,7 +224,7 @@ class Achievement(models.Model):
         """
         Отладочная информация
         """
-        return self.name
+        return str(self.name)
 
 
 class UserAchievement(models.Model):
