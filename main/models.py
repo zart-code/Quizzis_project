@@ -41,7 +41,7 @@ class Category(models.Model):
         """
         Отладочная информация
         """
-        return self.name
+        return str(self.name)
 
 
 class Quiz(models.Model):
@@ -96,7 +96,7 @@ class Quiz(models.Model):
         """
         Отладочная информация
         """
-        return self.title
+        return str(self.title)
 
     def total_questions(self):
         """Возвращает количество вопросов в викторине."""
@@ -146,7 +146,7 @@ class Question(models.Model):
         """
         Отладочная информация
         """
-        return self.text
+        return str(self.text)
 
 
 class Answer(models.Model):
@@ -171,7 +171,7 @@ class Answer(models.Model):
         """
         Отладочная информация
         """
-        return self.text
+        return str(self.text)
 
 
 class QuizResult(models.Model):
