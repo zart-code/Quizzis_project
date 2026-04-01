@@ -38,6 +38,9 @@ class Category(models.Model):
         ordering = ['name']
 
     def __str__(self):
+        """
+        Отладочная информация
+        """
         return self.name
 
 
@@ -90,6 +93,9 @@ class Quiz(models.Model):
         verbose_name_plural = 'Quizzes'
 
     def __str__(self):
+        """
+        Отладочная информация
+        """
         return self.title
 
     def total_questions(self):
@@ -137,6 +143,9 @@ class Question(models.Model):
         ordering = ['order']
 
     def __str__(self):
+        """
+        Отладочная информация
+        """
         return self.text
 
 
@@ -159,6 +168,9 @@ class Answer(models.Model):
     )
 
     def __str__(self):
+        """
+        Отладочная информация
+        """
         return self.text
 
 
@@ -194,6 +206,9 @@ class QuizResult(models.Model):
         ordering = ['order']
 
     def __str__(self):
+        """
+        Отладочная информация
+        """
         return self.name
 
 
@@ -206,6 +221,9 @@ class Achievement(models.Model):
     icon = models.CharField(max_length=10, default='🏆')
 
     def __str__(self):
+        """
+        Отладочная информация
+        """
         return self.name
 
 
@@ -233,6 +251,9 @@ class UserAchievement(models.Model):
         ordering = ['-unlocked_at']
 
     def __str__(self):
+        """
+        Отладочная информация
+        """
         return f'{self.user.username} - {self.achievement.name}'
 
 
@@ -324,6 +345,9 @@ class GameParticipant(models.Model):
         ordering = ['-score']
 
     def __str__(self):
+        """
+        Отладочная информация
+        """
         return f'{self.user.username} — {self.session.pin}'
 
 
@@ -366,4 +390,7 @@ class GameAnswer(models.Model):
         unique_together = ['participant', 'question']
 
     def __str__(self):
+        """
+        Отладочная информация
+        """
         return f'{self.participant.user.username} — {self.question.text[:30]}'
