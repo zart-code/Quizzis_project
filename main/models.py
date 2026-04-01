@@ -1,8 +1,12 @@
+"""
+Файл для моделей database
+"""
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.contrib.auth.models import User
 import random
 import string
+
 
 class Category(models.Model):
     """
@@ -28,6 +32,9 @@ class Category(models.Model):
 
 
 class Quiz(models.Model):
+    """
+    Модель квиза
+    """
     title = models.CharField(
         max_length=200,
         verbose_name='Название квиза',
@@ -66,7 +73,6 @@ class Quiz(models.Model):
         verbose_name='Лимит времени (мин)',
     )
 
-
     class Meta:
         verbose_name_plural = 'Quizzes'
 
@@ -79,6 +85,9 @@ class Quiz(models.Model):
 
 
 class Question(models.Model):
+    """
+    Модель вопроса
+    """
     SINGLE = 'single'
     MULTIPLE = 'multiple'
     TEXT = 'text'
@@ -116,6 +125,9 @@ class Question(models.Model):
 
 
 class Answer(models.Model):
+    """
+    Модель ответа
+    """
     question = models.ForeignKey(
         Question,
         on_delete=models.CASCADE,
@@ -135,6 +147,9 @@ class Answer(models.Model):
 
 
 class QuizResult(models.Model):
+    """
+    Модель результата прохождения квиза
+    """
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -164,6 +179,9 @@ class QuizResult(models.Model):
 
 
 class Achievement(models.Model):
+    """
+    Модель достижений
+    """
     name = models.CharField(max_length=100)
     description = models.TextField()
     icon = models.CharField(max_length=10, default='🏆')
@@ -172,8 +190,10 @@ class Achievement(models.Model):
         return self.name
 
 
-
 class UserAchievement(models.Model):
+    """
+    Модель достижений пользователя
+    """
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -194,10 +214,10 @@ class UserAchievement(models.Model):
         return f'{self.user.username} - {self.achievement.name}'
 
 
-def generate_pin():
-        return ''.join(random.choices(string.digits, k=6))
-
 class GameSession(models.Model):
+    """
+    Класс сессии
+    """
     WAITING = 'waiting'
     IN_PROGRESS = 'in_progress'
     FINISHED = 'finished'
@@ -241,13 +261,27 @@ class GameSession(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
+    @staticmethod
+    def generate_pin():
+        """
+        Генератор случайного ключа сессии
+        """
+        return ''.join(random.choices(string.digits, k=6))
+
     class Meta:
         ordering = ['-created_at']
 
     def __str__(self):
+        """
+        Отладочная информация
+        """
         return f'{self.quiz.title} [{self.pin}]'
 
+
 class GameParticipant(models.Model):
+    """
+    Игра ??
+    """
     session = models.ForeignKey(
         GameSession,
         on_delete=models.CASCADE,
@@ -274,7 +308,11 @@ class GameParticipant(models.Model):
     def __str__(self):
         return f'{self.user.username} — {self.session.pin}'
 
+
 class GameAnswer(models.Model):
+    """
+    Ответы игры
+    """
     session = models.ForeignKey(
         GameSession,
         on_delete=models.CASCADE,
