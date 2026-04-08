@@ -1,4 +1,4 @@
-""""""
+"""Файл функций views"""
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
@@ -18,6 +18,7 @@ def main_page(request):
 
 
 def register_page(request):
+    """Страница регистрации"""
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
@@ -34,6 +35,7 @@ def register_page(request):
 
 
 def login_page(request):
+    """Страница логина (вход в систему)"""
     if request.method == 'POST':
         form = StyledAuthenticationForm(request, data=request.POST)
         if form.is_valid():
