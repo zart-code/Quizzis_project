@@ -1,3 +1,4 @@
+""""""
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
@@ -7,7 +8,7 @@ from main.views_features.views_quiz import *
 from main.views_features.views_lobby import *
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView
-from django.contrib.auth.mixins import LoginRequiredMixin  # если нужна авторизация, но для теста можно без
+from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import Achievement, UserAchievement
 
 
