@@ -1,15 +1,9 @@
 """Файл функций views"""
-from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.forms import AuthenticationForm
 from main.views_features.views_profile import *
-from .forms import CustomUserCreationForm, StyledAuthenticationForm
-from main.views_features.views_quiz import *
+from main.views_features.views_quiz import create_quiz_view, play_quiz_view, my_quizzes_view
 from main.views_features.views_lobby import *
-from django.shortcuts import render, get_object_or_404, redirect
-from django.views.generic import ListView, DetailView
-from django.contrib.auth.mixins import LoginRequiredMixin
-from .models import Achievement, UserAchievement
+from .forms import CustomUserCreationForm, StyledAuthenticationForm
+from django.shortcuts import render, redirect
 
 
 def main_page(request):
