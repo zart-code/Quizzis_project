@@ -7,7 +7,6 @@ from django.db import models
 from django.contrib.auth.models import User
 
 
-
 def generate_pin():
     """
     Генератор случайного ключа сессии
@@ -98,7 +97,7 @@ class Quiz(models.Model):
         """
         return str(self.title)
 
-    def total_questions(self):
+    def total_questions(self) -> object:
         """Возвращает количество вопросов в викторине."""
         return self.questions.count()
 
@@ -209,7 +208,7 @@ class QuizResult(models.Model):
         """
         Отладочная информация
         """
-        return self.name
+        return self.score
 
 
 class Achievement(models.Model):
@@ -254,7 +253,7 @@ class UserAchievement(models.Model):
         """
         Отладочная информация
         """
-        return f'{self.user.username} - {self.achievement.name}'
+        return f'{self.achievement.name} {self.unlocked_at}'
 
 
 class GameSession(models.Model):
@@ -348,7 +347,7 @@ class GameParticipant(models.Model):
         """
         Отладочная информация
         """
-        return f'{self.user.username} — {self.session.pin}'
+        return f'присоединился: {self.joined_at}'
 
 
 class GameAnswer(models.Model):
@@ -393,4 +392,4 @@ class GameAnswer(models.Model):
         """
         Отладочная информация
         """
-        return f'{self.participant.user.username} — {self.question.text[:30]}'
+        return f'{self.answer} — {self.question}'

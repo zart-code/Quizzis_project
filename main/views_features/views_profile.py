@@ -1,13 +1,10 @@
 """Views для профиля"""
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
-from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Avg, Max, Count, Q
-from main.forms import CustomUserCreationForm, StyledAuthenticationForm
-from main.models import Quiz, QuizResult, UserAchievement, Achievement
 from main.models import Achievement, Quiz, QuizResult, UserAchievement
 
 

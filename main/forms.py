@@ -24,4 +24,3 @@ class StyledAuthenticationForm(AuthenticationForm):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs.update(FIELD_ATTRS)
-
