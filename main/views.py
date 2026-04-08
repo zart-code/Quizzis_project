@@ -1,9 +1,7 @@
 """Файл функций views"""
-from main.views_features.views_profile import *
-from main.views_features.views_quiz import create_quiz_view, play_quiz_view, my_quizzes_view
-from main.views_features.views_lobby import *
-from .forms import CustomUserCreationForm, StyledAuthenticationForm
+from django.contrib.auth import login, logout
 from django.shortcuts import render, redirect
+from .forms import CustomUserCreationForm, StyledAuthenticationForm
 
 
 def main_page(request):
@@ -21,8 +19,7 @@ def register_page(request):
             return redirect('main_page')
         # Ошибки валидации - показываем форму с ошибками
         return render(request, 'register.html', {'form': form})
-    else:
-        form = CustomUserCreationForm()
+    form = CustomUserCreationForm()
 
     return render(request, 'register.html', {'form': form})
 
@@ -36,8 +33,7 @@ def login_page(request):
             login(request, user)
             return redirect('main_page')
         return render(request, 'login_page.html', {'form': form})
-    else:
-        form = StyledAuthenticationForm()
+    form = StyledAuthenticationForm()
 
     return render(request, 'login_page.html', {'form': form})
 

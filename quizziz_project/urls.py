@@ -45,6 +45,9 @@
 from django.contrib import admin
 from django.urls import path
 from main.views import *
+from main.views_features.views_profile import *
+from main.views_features.views_quiz import *
+from main.views_features.views_lobby import *
 
 
 urlpatterns = [
