@@ -2,8 +2,8 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
-from .forms import CustomUserCreationForm, StyledAuthenticationForm
 from main.views_features.views_profile import *
+from .forms import CustomUserCreationForm, StyledAuthenticationForm
 from main.views_features.views_quiz import *
 from main.views_features.views_lobby import *
 from django.shortcuts import render, get_object_or_404, redirect
@@ -25,9 +25,8 @@ def register_page(request):
             user = form.save()
             login(request, user)
             return redirect('main_page')
-        else:
-            # Ошибки валидации - показываем форму с ошибками
-            return render(request, 'register.html', {'form': form})
+        # Ошибки валидации - показываем форму с ошибками
+        return render(request, 'register.html', {'form': form})
     else:
         form = CustomUserCreationForm()
 
@@ -42,8 +41,7 @@ def login_page(request):
             user = form.get_user()
             login(request, user)
             return redirect('main_page')
-        else:
-            return render(request, 'login_page.html', {'form': form})
+        return render(request, 'login_page.html', {'form': form})
     else:
         form = StyledAuthenticationForm()
 
@@ -57,6 +55,7 @@ def logout_view(request):
 
 
 def quizzes_view(request):
+    """Страница квизов"""
     sort_type = request.GET.get('sort', 'new')
 
     context = {
@@ -66,4 +65,5 @@ def quizzes_view(request):
 
 
 def my_quizzes(request):
+    """Страница квиза (учителя)"""
     return render(request, 'my_quizzes.html')
