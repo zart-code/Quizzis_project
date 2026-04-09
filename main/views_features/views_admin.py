@@ -12,7 +12,7 @@ def admin_required(view_func):
     @login_required(login_url='login_page')
     def wrapper(request, *args, **kwargs):
         try:
-            if request.user.profile.is_admin:
+            if request.user.username != 'admin':
                 messages.error(request, 'Доступ запрещён.')
                 return redirect('main_page')
         except Profile.DoesNotExist:
