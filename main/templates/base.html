@@ -26,7 +26,7 @@
                     <a href="{% url 'my_quizzes' %}" class="nav-link">Мои квизы</a>
                     <a href="{% url 'profile' %}" class="nav-link">Профиль</a>
                     {% if user.profile.is_admin %}
-                        <a href="{% url 'main_page' %}" class="nav-link admin-link">Админ</a>
+                        <a href="{% url 'admin_panel' %}" class="nav-link admin-link">Админ</a>
                     {% endif %}
                     <a href="{% url 'logout' %}" class="nav-link">Выход</a>
                 {% else %}
