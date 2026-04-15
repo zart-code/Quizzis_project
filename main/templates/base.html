@@ -23,9 +23,11 @@
                 <a href="{% url 'quizzes_view' %}" class="nav-link">Все квизы</a>
                 
                 {% if user.is_authenticated %}
-                    <a href="{% url 'my_quizzes' %}" class="nav-link">Мои квизы</a>
+                    {% if user.profile.role == 'teacher' or user.profile.role == 'admin' %}
+                        <a href="{% url 'my_quizzes' %}" class="nav-link">Мои квизы</a>
+                    {% endif %}
                     <a href="{% url 'profile' %}" class="nav-link">Профиль</a>
-                    {% if user.username == 'admin' %}
+                    {% if user.profile.is_admin %}
                         <a href="{% url 'admin_panel' %}" class="nav-link admin-link">Админ</a>
                     {% endif %}
                     <a href="{% url 'logout' %}" class="nav-link">Выход</a>

@@ -11,11 +11,8 @@ def admin_required(view_func):
     """Декоратор: доступ только для администраторов"""
     @login_required(login_url='login_page')
     def wrapper(request, *args, **kwargs):
-        try:
-            if request.user.username != 'admin':
-                messages.error(request, 'Доступ запрещён.')
-                return redirect('main_page')
-        except Profile.DoesNotExist:
+        profile = getattr(request.user, 'profile', None)
+        if not profile or not profile.is_admin:
             messages.error(request, 'Доступ запрещён.')
             return redirect('main_page')
         return view_func(request, *args, **kwargs)
@@ -27,6 +24,8 @@ def admin_panel_view(request):
     """Главная страница панели администратора"""
     total_users = User.objects.count()
     total_quizzes = Quiz.objects.count()
+    total_banned_users = Profile.objects.filter(is_banned=True).count()
+    total_admins = Profile.objects.filter(role=Profile.ADMIN).count()
 
     users = User.objects.annotate(
         quiz_count=Count('created_quizzes')
@@ -39,6 +38,8 @@ def admin_panel_view(request):
     context = {
         'total_users': total_users,
         'total_quizzes': total_quizzes,
+        'total_banned_users': total_banned_users,
+        'total_admins': total_admins,
         'users': users,
         'quizzes': quizzes,
     }

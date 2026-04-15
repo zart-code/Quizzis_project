@@ -72,6 +72,14 @@
       <div class="num">{{ total_quizzes }}</div>
       <div class="label">Квизов</div>
     </div>
+    <div class="stat-card">
+      <div class="num">{{ total_admins }}</div>
+      <div class="label">Админов</div>
+    </div>
+    <div class="stat-card">
+      <div class="num">{{ total_banned_users }}</div>
+      <div class="label">Забаненных</div>
+    </div>
   </div>
 
   {# ── Users table ── #}
@@ -83,6 +91,7 @@
           <th>ID</th>
           <th>Имя</th>
           <th>Email</th>
+          <th>Роль</th>
           <th>Статус</th>
           <th>Квизов</th>
           <th>Регистрация</th>
@@ -98,12 +107,19 @@
           </td>
           <td>{{ u.email }}</td>
           <td>
-            {% if u.profile.is_admin %}
+            {% if u.profile.role == 'admin' %}
               <span class="badge badge-admin">Админ</span>
-            {% elif u.profile.is_banned %}
+            {% elif u.profile.role == 'teacher' %}
+              <span class="badge badge-user">Учитель</span>
+            {% else %}
+              <span class="badge badge-user">Ученик</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if u.profile.is_banned %}
               <span class="badge badge-banned">Забанен</span>
             {% else %}
-              <span class="badge badge-user">Пользователь</span>
+              <span class="badge badge-user">Активен</span>
             {% endif %}
           </td>
           <td>{{ u.quiz_count }}</td>
@@ -124,7 +140,7 @@
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="7" style="color:#888;">Нет пользователей</td></tr>
+        <tr><td colspan="8" style="color:#888;">Нет пользователей</td></tr>
         {% endfor %}
       </tbody>
     </table>
