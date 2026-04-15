@@ -1,8 +1,6 @@
-from django.contrib import admin
-from django.urls import path
-from main.views import *
-
 """
+Главный файл url проекта
+------------------------
 Уровень 0 — Главная
   0.1 - Главная страница (меню) [main_page] /
 
@@ -42,6 +40,14 @@ from main.views import *
   7.2 - Статус сессии [api_state] /session/<pin>/api/state/
         → используется polling'ом на 5.1 и 6.1
 """
+
+
+from django.contrib import admin
+from django.urls import path
+from main.views import *
+from main.views_features.views_profile import *
+from main.views_features.views_quiz import *
+from main.views_features.views_lobby import *
 
 
 urlpatterns = [

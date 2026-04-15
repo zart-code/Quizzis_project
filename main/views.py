@@ -1,14 +1,7 @@
+"""Файл функций views"""
+from django.contrib.auth import login, logout
 from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.forms import AuthenticationForm
 from .forms import CustomUserCreationForm, StyledAuthenticationForm
-from main.views_features.views_profile import *
-from main.views_features.views_quiz import *
-from main.views_features.views_lobby import *
-from django.shortcuts import render, get_object_or_404, redirect
-from django.views.generic import ListView, DetailView
-from django.contrib.auth.mixins import LoginRequiredMixin  # если нужна авторизация, но для теста можно без
-from .models import Achievement, UserAchievement
 
 
 def main_page(request):
@@ -17,32 +10,30 @@ def main_page(request):
 
 
 def register_page(request):
+    """Страница регистрации"""
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
             login(request, user)
             return redirect('main_page')
-        else:
-            # Ошибки валидации - показываем форму с ошибками
-            return render(request, 'register.html', {'form': form})
-    else:
-        form = CustomUserCreationForm()
+        # Ошибки валидации - показываем форму с ошибками
+        return render(request, 'register.html', {'form': form})
+    form = CustomUserCreationForm()
 
     return render(request, 'register.html', {'form': form})
 
 
 def login_page(request):
+    """Страница логина (вход в систему)"""
     if request.method == 'POST':
         form = StyledAuthenticationForm(request, data=request.POST)
         if form.is_valid():
             user = form.get_user()
             login(request, user)
             return redirect('main_page')
-        else:
-            return render(request, 'login_page.html', {'form': form})
-    else:
-        form = StyledAuthenticationForm()
+        return render(request, 'login_page.html', {'form': form})
+    form = StyledAuthenticationForm()
 
     return render(request, 'login_page.html', {'form': form})
 
@@ -54,6 +45,7 @@ def logout_view(request):
 
 
 def quizzes_view(request):
+    """Страница квизов"""
     sort_type = request.GET.get('sort', 'new')
 
     context = {
@@ -63,4 +55,5 @@ def quizzes_view(request):
 
 
 def my_quizzes(request):
+    """Страница квиза (учителя)"""
     return render(request, 'my_quizzes.html')

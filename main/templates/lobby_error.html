@@ -1,6 +1,23 @@
 {% extends "base.html" %}
 
+{% block title %}Ошибка — Quizziz{% endblock %}
+
 {% block content %}
-<p>{{ message }}</p>
-<a href="{% url 'main_page' %}">← На главную</a>
+<div class="container">
+    <div class="le-wrapper">
+        <div class="card le-card">
+            <div class="le-icon">🚫</div>
+            <h1 class="le-title">Не удалось войти</h1>
+            <p class="le-message">{{ message }}</p>
+            <a href="{% url 'main_page' %}" class="btn btn-primary">← На главную</a>
+        </div>
+    </div>
+</div>
+<style>
+.le-wrapper{max-width:440px;margin:5rem auto}
+.le-card{padding:3rem 2rem;text-align:center}
+.le-icon{font-size:3.5rem;margin-bottom:1rem}
+.le-title{font-size:1.8rem;font-weight:700;color:var(--danger);margin-bottom:.8rem}
+.le-message{color:var(--text-secondary);margin-bottom:2rem;line-height:1.5}
+</style>
 {% endblock %}

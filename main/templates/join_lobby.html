@@ -3,22 +3,52 @@
 {% block title %}Ожидание — {{ session.quiz.title }}{% endblock %}
 
 {% block content %}
-<h2>{{ session.quiz.title }}</h2>
-<p>Вы подключились как: <strong>{{ request.user.username }}</strong></p>
-<p>Ожидайте, хост скоро начнёт игру...</p>
+<div class="container">
+    <div class="jl-wrapper">
+        <div class="card jl-card">
+            <div class="jl-icon">🎮</div>
+            <h1 class="jl-title">{{ session.quiz.title }}</h1>
+            <p class="jl-sub">Вы подключились как <strong class="jl-name">{{ request.user.username }}</strong></p>
+
+            <div class="jl-status-box">
+                <div class="jl-waiting-dots"><span></span><span></span><span></span></div>
+                <p class="jl-waiting-text">Ожидайте, хост скоро начнёт игру...</p>
+            </div>
+
+            <div class="jl-pin-row">
+                <span class="jl-pin-label">PIN</span>
+                <span class="jl-pin-val">{{ session.pin }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.jl-wrapper{max-width:480px;margin:4rem auto}
+.jl-card{padding:3rem 2rem;text-align:center}
+.jl-icon{font-size:3.5rem;margin-bottom:1rem}
+.jl-title{font-size:1.8rem;font-weight:700;background:linear-gradient(135deg,#A78BFA,#EC4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:.5rem}
+.jl-sub{color:var(--text-secondary);margin-bottom:2rem}
+.jl-name{color:var(--primary-light)}
+.jl-status-box{background:rgba(139,92,246,.07);border:1px solid rgba(139,92,246,.15);border-radius:14px;padding:1.5rem;margin-bottom:2rem}
+.jl-waiting-dots{display:flex;justify-content:center;gap:.5rem;margin-bottom:1rem}
+.jl-waiting-dots span{width:12px;height:12px;background:var(--primary);border-radius:50%;animation:jlBounce 1.2s infinite}
+.jl-waiting-dots span:nth-child(2){animation-delay:.2s}
+.jl-waiting-dots span:nth-child(3){animation-delay:.4s}
+@keyframes jlBounce{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}}
+.jl-waiting-text{color:var(--text-secondary);font-size:.95rem}
+.jl-pin-row{display:flex;align-items:center;justify-content:center;gap:.8rem}
+.jl-pin-label{font-size:.8rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted)}
+.jl-pin-val{font-size:1.8rem;font-weight:700;letter-spacing:.2em;color:var(--primary-light)}
+</style>
 
 <script>
-    const apiUrl = "{% url 'api_state' session.pin %}";
-    const playUrl = "/session/{{ session.pin }}/play/";
-
-    setInterval(function () {
-        fetch(apiUrl)
-            .then(r => r.json())
-            .then(data => {
-                if (data.status === 'in_progress') {
-                    window.location.href = playUrl;
-                }
-            });
-    }, 2000);
+const apiUrl = "{% url 'api_state' session.pin %}";
+const playUrl = "/session/{{ session.pin }}/play/";
+setInterval(function(){
+    fetch(apiUrl).then(r=>r.json()).then(data=>{
+        if(data.status==='in_progress') window.location.href=playUrl;
+    });
+},2000);
 </script>
 {% endblock %}
