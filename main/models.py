@@ -51,12 +51,14 @@ class Quiz(models.Model):
         max_length=200,
         verbose_name='Название квиза',
     )
+
     creator = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name='created_quizzes',
         verbose_name='Создатель',
     )
+
     category = models.ForeignKey(
         Category,
         on_delete=models.SET_NULL,
@@ -65,18 +67,22 @@ class Quiz(models.Model):
         related_name='quizzes',
         verbose_name='Категория',
     )
+
     description = models.TextField(
         blank=True,
         verbose_name='Описание',
     )
+
     additional_info = models.TextField(
         blank=True,
         verbose_name='Дополнительная информация',
     )
+
     is_published = models.BooleanField(
         default=False,
         verbose_name='Опубликован',
     )
+
     created_at = models.DateTimeField(auto_now_add=True)
     time_limit = models.IntegerField(
         blank=True,

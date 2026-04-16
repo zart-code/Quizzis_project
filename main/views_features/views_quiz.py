@@ -6,6 +6,7 @@ from main.models import Quiz, Question, Answer
 
 @login_required
 def create_quiz_view(request):
+    """Создание квиза"""
     if request.method == 'POST':
         title = request.POST.get('title')
         quiz = Quiz.objects.create(title=title, creator=request.user)
@@ -53,6 +54,8 @@ def create_quiz_view(request):
 
             i += 1
 
+        print(quiz)
+        quiz.save()
         return redirect('create_lobby', quiz_id=quiz.id)
 
     return render(request, 'create_quiz.html')
