@@ -1,11 +1,19 @@
 """Views для квизов"""
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from main.models import Quiz, Question, Answer
+from django.contrib import messages
+from main.models import Quiz, Question, Answer, Profile
 
 
 @login_required
 def create_quiz_view(request):
+    profile = getattr(request.user, 'profile', None)
+    if profile and profile.is_banned:
+        return render(request, 'banned_create_quiz.html')
+    if profile and profile.role not in [Profile.ADMIN, Profile.TEACHER]:
+        messages.error(request, 'Создавать квизы могут только учителя и администраторы.')
+        return redirect('main_page')
+
     if request.method == 'POST':
         title = request.POST.get('title')
         quiz = Quiz.objects.create(title=title, creator=request.user)
@@ -60,6 +68,11 @@ def create_quiz_view(request):
 
 @login_required
 def my_quizzes_view(request):
+    profile = getattr(request.user, 'profile', None)
+    if profile and profile.role not in [Profile.ADMIN, Profile.TEACHER]:
+        messages.error(request, 'Раздел "Мои квизы" доступен только учителям и администраторам.')
+        return redirect('main_page')
+
     quizzes = Quiz.objects.filter(creator=request.user).order_by('-created_at')
     return render(request, 'my_quizzes.html', {'quizzes': quizzes})
 

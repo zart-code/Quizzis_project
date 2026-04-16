@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Доступ запрещён{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h1>Создание квиза недоступно</h1>
+  <p>Ваш аккаунт был заблокирован администратором.</p>
+  <p>Из-за этого вы не можете создавать новые квизы.</p>
+  <p>
+    <a href="{% url 'main_page' %}">На главную</a>
+  </p>
+</div>
+{% endblock %}

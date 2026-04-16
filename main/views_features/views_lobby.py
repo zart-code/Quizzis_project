@@ -44,8 +44,7 @@ def api_players_view(request, pin):
     players = [
         {
             'username': p.user.username,
-            'role': getattr(p.user, 'profile', None)
-                    and p.user.profile.role or 'ученик',
+
         }
         for p in participants
     ]

@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+{% block title %}Админ-панель{% endblock %}
+
+{% block content %}
+<style>
+  .admin-wrap { max-width: 1100px; margin: 30px auto; padding: 0 16px; }
+  .admin-wrap h1 { margin-bottom: 24px; }
+
+  /* Stat cards */
+  .stat-cards { display: flex; gap: 16px; margin-bottom: 32px; flex-wrap: wrap; }
+  .stat-card { border: 1px solid #ccc; border-radius: 8px; padding: 16px 24px; min-width: 140px; text-align: center; }
+  .stat-card .num { font-size: 2rem; font-weight: bold; }
+  .stat-card .label { font-size: 0.85rem; color: #555; }
+
+  /* Tables */
+  .section { border: 1px solid #ccc; border-radius: 8px; padding: 20px; margin-bottom: 32px; }
+  .section h2 { margin-top: 0; margin-bottom: 16px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  thead tr { background: #eee; }
+  th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid #e0e0e0; }
+
+  /* Hover link */
+  .hover-link { color: inherit; text-decoration: none; }
+  .hover-link:hover { text-decoration: underline; color: #0066cc; }
+
+  /* Badges */
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.78rem; }
+  .badge-admin { background: #fdd; color: #a00; }
+  .badge-user  { background: #ddf; color: #006; }
+  .badge-banned { background: #ddd; color: #555; }
+
+  /* Buttons */
+  .btn { cursor: pointer; padding: 4px 10px; border-radius: 4px; border: 1px solid #999; background: #f5f5f5; font-size: 0.82rem; }
+  .btn-ban  { border-color: #c00; color: #c00; }
+  .btn-ban:hover  { background: #fdd; }
+  .btn-unban { border-color: #090; color: #090; }
+  .btn-unban:hover { background: #dfd; }
+  .btn-del  { border-color: #c00; color: #c00; }
+  .btn-del:hover  { background: #fdd; }
+
+  /* Load-more */
+  .load-more-wrap { text-align: center; margin-top: 12px; }
+  .btn-load-more { padding: 6px 20px; cursor: pointer; }
+
+  /* Messages */
+  .flash-messages { max-width: 1100px; margin: 16px auto 0; padding: 0 16px; }
+</style>
+
+<div class="admin-wrap">
+  <h1>⚙️ Админ-панель</h1>
+
+  {% if messages %}
+    <div style="margin-bottom:16px;">
+      {% for msg in messages %}
+        <div style="padding:8px 12px; border-radius:4px; margin-bottom:6px;
+             background:{% if msg.tags == 'error' %}#fdd{% else %}#dfd{% endif %};
+             border:1px solid {% if msg.tags == 'error' %}#c00{% else %}#090{% endif %};">
+          {{ msg }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {# ── Stat cards ── #}
+  <div class="stat-cards">
+    <div class="stat-card">
+      <div class="num">{{ total_users }}</div>
+      <div class="label">Пользователей</div>
+    </div>
+    <div class="stat-card">
+      <div class="num">{{ total_quizzes }}</div>
+      <div class="label">Квизов</div>
+    </div>
+    <div class="stat-card">
+      <div class="num">{{ total_admins }}</div>
+      <div class="label">Админов</div>
+    </div>
+    <div class="stat-card">
+      <div class="num">{{ total_banned_users }}</div>
+      <div class="label">Забаненных</div>
+    </div>
+  </div>
+
+  {# ── Users table ── #}
+  <div class="section">
+    <h2>Пользователи</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Имя</th>
+          <th>Email</th>
+          <th>Роль</th>
+          <th>Статус</th>
+          <th>Квизов</th>
+          <th>Регистрация</th>
+          <th>Действия</th>
+        </tr>
+      </thead>
+      <tbody id="users-tbody">
+        {% for u in users %}
+        <tr class="users-row" {% if forloop.counter > 10 %}style="display:none;"{% endif %}>
+          <td>{{ u.id }}</td>
+          <td>
+            <a href="{% url 'profile' %}" class="hover-link">{{ u.username }}</a>
+          </td>
+          <td>{{ u.email }}</td>
+          <td>
+            {% if u.profile.role == 'admin' %}
+              <span class="badge badge-admin">Админ</span>
+            {% elif u.profile.role == 'teacher' %}
+              <span class="badge badge-user">Учитель</span>
+            {% else %}
+              <span class="badge badge-user">Ученик</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if u.profile.is_banned %}
+              <span class="badge badge-banned">Забанен</span>
+            {% else %}
+              <span class="badge badge-user">Активен</span>
+            {% endif %}
+          </td>
+          <td>{{ u.quiz_count }}</td>
+          <td>{{ u.date_joined|date:"d.m.Y" }}</td>
+          <td>
+            {% if not u.profile.is_admin and u != request.user %}
+              <form method="post" action="{% url 'admin_ban_user' u.id %}" style="display:inline;">
+                {% csrf_token %}
+                {% if u.profile.is_banned %}
+                  <button type="submit" class="btn btn-unban">Разбанить</button>
+                {% else %}
+                  <button type="submit" class="btn btn-ban">Забанить</button>
+                {% endif %}
+              </form>
+            {% else %}
+              <span style="color:#aaa;">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" style="color:#888;">Нет пользователей</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if users|length > 10 %}
+    <div class="load-more-wrap">
+      <button class="btn btn-load-more" onclick="loadMore('users-tbody', this)">
+        Показать ещё
+      </button>
+    </div>
+    {% endif %}
+  </div>
+
+  {# ── Quizzes table ── #}
+  <div class="section">
+    <h2>Все квизы</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Название</th>
+          <th>Автор</th>
+          <th>Статус</th>
+          <th>Вопросов</th>
+          <th>Дата создания</th>
+          <th>Действия</th>
+        </tr>
+      </thead>
+      <tbody id="quizzes-tbody">
+        {% for quiz in quizzes %}
+        <tr class="quizzes-row" {% if forloop.counter > 10 %}style="display:none;"{% endif %}>
+          <td>{{ quiz.id }}</td>
+          <td>
+            <a href="{% url 'play_quiz' quiz.id %}" class="hover-link">{{ quiz.title }}</a>
+          </td>
+          <td>
+            <a href="{% url 'profile' %}" class="hover-link">{{ quiz.creator.username }}</a>
+          </td>
+          <td>
+            {% if quiz.is_published %}
+              <span class="badge badge-user">Опубликован</span>
+            {% else %}
+              <span class="badge badge-banned">Черновик</span>
+            {% endif %}
+          </td>
+          <td>{{ quiz.question_count }}</td>
+          <td>{{ quiz.created_at|date:"d.m.Y" }}</td>
+          <td>
+            <form method="post" action="{% url 'admin_delete_quiz' quiz.id %}" style="display:inline;"
+                  onsubmit="return confirm('Удалить квиз «{{ quiz.title }}»?')">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-del">Удалить</button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" style="color:#888;">Квизов нет</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if quizzes|length > 10 %}
+    <div class="load-more-wrap">
+      <button class="btn btn-load-more" onclick="loadMore('quizzes-tbody', this)">
+        Показать ещё
+      </button>
+    </div>
+    {% endif %}
+  </div>
+
+  {# ── Reports table ── #}
+  <div class="section">
+    <h2>Жалобы</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>От кого</th>
+          <th>На кого / квиз</th>
+          <th>Причина</th>
+          <th>Дата</th>
+          <th>Действия</th>
+        </tr>
+      </thead>
+      <tbody id="reports-tbody">
+        {# TODO: backend — модель Report ещё не реализована #}
+        <tr><td colspan="6" style="color:#888;">Жалоб нет</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  /**
+   * Показывает следующие 10 скрытых строк таблицы.
+   * Если больше нечего показывать — прячет кнопку.
+   */
+  function loadMore(tbodyId, btn) {
+    const rows = document.querySelectorAll('#' + tbodyId + ' tr[style*="display:none"]');
+    let shown = 0;
+    rows.forEach(function(row) {
+      if (shown < 10) {
+        row.style.display = '';
+        shown++;
+      }
+    });
+    // Проверяем, остались ли ещё скрытые строки
+    const remaining = document.querySelectorAll('#' + tbodyId + ' tr[style*="display:none"]');
+    if (remaining.length === 0) {
+      btn.parentElement.style.display = 'none';
+    }
+  }
+</script>
+{% endblock %}
