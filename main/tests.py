@@ -4,13 +4,16 @@ from django.test import TestCase, Client
 from django.urls import reverse
 
 from main.models import Category,Quiz,Question,Answer, QuizResult,Achievement,UserAchievement,GameSession,GameParticipant,GameAnswer
-
+"""
+Вася: GameAnswer
+"""
 
 class CategoryTest(TestCase):
     fixtures = ['db.json']
     def setUp(self):
         self.client = Client()
-        self.response = self.client.get('')
+        self.response = self.client.get('') #?
+        #print(self.response.context)
     def test_categoty_response(self):
         self.assertEqual(self.response.status_code, 200)
         #self.assertContains(self.response,)
@@ -26,9 +29,16 @@ class Quiz(TestCase):
 
     def setUp(self):
         self.client = Client()
-        self.user = User.objects.get(username='')
-       # self.rclient.
+        self.user = User.objects.get(username='zxcdeadinside')
+        self.client.force_login(self.user)
+        self.response = self.client.get('/quizzises/')
+        #print(self.response.context)
+    def test_quiz_response(self):
+        self.assertEqual(self.response.status_code, 200)
+        self.assertEqual(self.response.context["user"], self.user)
+        self.assertEqual(str(self.response.context["request"]), "<WSGIRequest: GET '/quizzises/'>")
 
+        #self.assertIn('form', self.response.context)  ?
 
 
 
