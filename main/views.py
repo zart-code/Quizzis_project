@@ -52,7 +52,7 @@ def login_page(request):
         template_name='login_page.html',
         success_url='main_page',
         extra_form_kwargs={'request': request},
-        needs_request = True
+        needs_request=True
     )
 
 
