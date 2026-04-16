@@ -8,13 +8,19 @@ from main.models import GameSession, Quiz, GameParticipant, GameAnswer
 
 @login_required
 def create_lobby_view(request, quiz_id):
+    """Создание квиза/лобби"""
     quiz = get_object_or_404(Quiz, id=quiz_id, creator=request.user)
     session = GameSession.objects.create(quiz=quiz, host=request.user)
+    session.save()
     return redirect('lobby', pin=session.pin)
 
 
 @login_required
 def lobby_view(request, pin):
+    print(f'pin: {pin}')
+    print(f'request.user: {request.user}')
+    print(f'GameSession: {GameSession}')
+
     session = get_object_or_404(GameSession, pin=pin, host=request.user)
     return render(request, 'lobby.html', {'session': session})
 
@@ -22,6 +28,7 @@ def lobby_view(request, pin):
 @login_required
 @require_POST
 def toggle_lock_view(request, pin):
+    print(2)
     session = get_object_or_404(GameSession, pin=pin, host=request.user)
     session.is_locked = not session.is_locked
     session.save()
