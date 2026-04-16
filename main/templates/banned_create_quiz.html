@@ -2,7 +2,93 @@
 {% block title %}Доступ запрещён — Quizziz{% endblock %}
 
 {% block extra_css %}
+<style>
+.banned-wrapper {
+    min-height: 70vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+}
 
+.banned-card {
+    background: rgba(26, 26, 46, .8);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(239, 68, 68, .25);
+    border-radius: 28px;
+    padding: 3rem 2.8rem;
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 0 60px rgba(239, 68, 68, .08), 0 20px 40px rgba(0, 0, 0, .3);
+    animation: fadeUp .45s ease both;
+}
+
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.banned-icon {
+    font-size: 4rem;
+    margin-bottom: 1.2rem;
+    filter: drop-shadow(0 0 18px rgba(239, 68, 68, .55));
+    display: block;
+}
+
+.banned-title {
+    font-size: 1.7rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #FCA5A5 0%, #EF4444 60%, #EC4899 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -.02em;
+    margin-bottom: 1rem;
+    line-height: 1.2;
+}
+
+.banned-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(239,68,68,.3), transparent);
+    margin: 1.2rem 0;
+}
+
+.banned-text {
+    color: var(--text-muted);
+    font-size: .93rem;
+    line-height: 1.65;
+    margin-bottom: .5rem;
+}
+
+.banned-text strong {
+    color: #FCA5A5;
+    font-weight: 600;
+}
+
+.banned-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    margin-top: 1.8rem;
+    padding: .7rem 2rem;
+    border-radius: 14px;
+    background: rgba(139, 92, 246, .12);
+    border: 1px solid rgba(139, 92, 246, .3);
+    color: var(--primary-light);
+    font-size: .9rem;
+    font-weight: 600;
+    font-family: 'Poppins', sans-serif;
+    text-decoration: none;
+    transition: all .22s;
+}
+.banned-btn:hover {
+    background: rgba(139, 92, 246, .25);
+    border-color: rgba(139, 92, 246, .6);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(139, 92, 246, .2);
+}
+</style>
 {% endblock %}
 
 {% block content %}
