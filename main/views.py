@@ -3,12 +3,16 @@
 from django.contrib.auth import login, logout
 from django.shortcuts import render, redirect
 from .forms import CustomUserCreationForm, StyledAuthenticationForm
+
+
 def _handle_form(request, form_class, template_name, success_url, extra_form_kwargs=None):
     if extra_form_kwargs is None:
         extra_form_kwargs = {}
     if request.method == 'POST':
-        form = form_class(request.POST
-, **extra_form_kwargs)
+
+        print(extra_form_kwargs)
+        form = form_class(request)
+
         if form.is_valid():
             if form_class == CustomUserCreationForm:
                 user = form.save()
@@ -20,9 +24,13 @@ def _handle_form(request, form_class, template_name, success_url, extra_form_kwa
     else:
         form = form_class(**extra_form_kwargs)
     return render(request, template_name, {'form': form})
+
+
 def main_page(request):
     """Главная страница (меню)."""
     return render(request, 'main_page.html')
+
+
 def register_page(request):
     """Страница регистрации"""
     return _handle_form(
@@ -31,6 +39,8 @@ def register_page(request):
         template_name='register.html',
         success_url='main_page'
     )
+
+
 def login_page(request):
     """Страница логина (вход в систему)"""
     return _handle_form(
@@ -40,10 +50,14 @@ def login_page(request):
         success_url='main_page',
         extra_form_kwargs={'request': request}
     )
+
+
 def logout_view(request):
     """Выход из системы."""
     logout(request)
     return redirect('main_page')
+
+
 def quizzes_view(request):
     """Страница квизов"""
     sort_type = request.GET.get('sort', 'new')
@@ -51,6 +65,8 @@ def quizzes_view(request):
         'current_sort': sort_type,
     }
     return render(request, 'quizzes_view.html', context)
+
+
 def my_quizzes(request):
     """Страница квиза (учителя)"""
     return render(request, 'my_quizzes.html')
