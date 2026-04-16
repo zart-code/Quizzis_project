@@ -1,13 +1,26 @@
 {% extends "base.html" %}
-{% block title %}Доступ запрещён{% endblock %}
+{% block title %}Доступ запрещён — Quizziz{% endblock %}
+
+{% block extra_css %}
+
+{% endblock %}
 
 {% block content %}
-<div class="container">
-  <h1>Создание квиза недоступно</h1>
-  <p>Ваш аккаунт был заблокирован администратором.</p>
-  <p>Из-за этого вы не можете создавать новые квизы.</p>
-  <p>
-    <a href="{% url 'main_page' %}">На главную</a>
-  </p>
+<div class="banned-wrapper">
+  <div class="banned-card">
+
+    <span class="banned-icon">🚫</span>
+
+    <div class="banned-title">Создание квиза недоступно</div>
+
+    <div class="banned-divider"></div>
+
+    <p class="banned-text">Ваш аккаунт был <strong>заблокирован администратором</strong>.</p>
+    <p class="banned-text">Из-за этого вы не можете создавать новые квизы.</p>
+    <p class="banned-text">Если вы считаете, что это ошибка, свяжитесь с&nbsp;поддержкой.</p>
+
+    <a href="{% url 'main_page' %}" class="banned-btn">← На главную</a>
+
+  </div>
 </div>
 {% endblock %}
