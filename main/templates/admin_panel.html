@@ -379,5 +379,15 @@
 {% endblock %}
 
 {% block extra_js %}
-
+<script>
+function loadMore(tbodyId, btn) {
+    var hidden = document.querySelectorAll('#' + tbodyId + ' tr[style*="display:none"]');
+    var shown = 0;
+    hidden.forEach(function(row) {
+        if (shown < 10) { row.style.display = ''; shown++; }
+    });
+    if (!document.querySelectorAll('#' + tbodyId + ' tr[style*="display:none"]').length)
+        btn.closest('.ap-load-wrap').style.display = 'none';
+}
+</script>
 {% endblock %}
