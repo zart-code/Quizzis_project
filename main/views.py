@@ -5,13 +5,16 @@ from django.shortcuts import render, redirect
 from .forms import CustomUserCreationForm, StyledAuthenticationForm
 
 
-def _handle_form(request, form_class, template_name, success_url, extra_form_kwargs=None):
+
+def _handle_form(request, form_class, template_name, success_url, extra_form_kwargs=None, needs_request=False):
     if extra_form_kwargs is None:
         extra_form_kwargs = {}
-    if request.method == 'POST':
 
-        print(extra_form_kwargs)
-        form = form_class(request)
+    if request.method == 'POST':
+        if needs_request:
+            form = form_class(request, data=request.POST)
+        else:
+            form = form_class(request.POST)
 
         if form.is_valid():
             if form_class == CustomUserCreationForm:
@@ -21,8 +24,8 @@ def _handle_form(request, form_class, template_name, success_url, extra_form_kwa
                 user = form.get_user()
                 login(request, user)
             return redirect(success_url)
-    else:
-        form = form_class(**extra_form_kwargs)
+        else:
+            form = form_class(**extra_form_kwargs)
     return render(request, template_name, {'form': form})
 
 
@@ -48,7 +51,8 @@ def login_page(request):
         form_class=StyledAuthenticationForm,
         template_name='login_page.html',
         success_url='main_page',
-        extra_form_kwargs={'request': request}
+        extra_form_kwargs={'request': request},
+        needs_request = True
     )
 
 
