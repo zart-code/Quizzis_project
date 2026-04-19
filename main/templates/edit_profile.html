@@ -44,7 +44,11 @@
 
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary btn-large">Сохранить изменения</button>
-                    <a href="{% url 'profile' %}" class="btn btn-secondary btn-large">Отмена</a>
+                    {% if is_admin_edit %}
+                        <a href="{% url 'admin_user_profile' user.id %}" class="btn btn-secondary btn-large">Отмена</a>
+                    {% else %}
+                        <a href="{% url 'profile' %}" class="btn btn-secondary btn-large">Отмена</a>
+                    {% endif %}
                 </div>
             </form>
         </div>

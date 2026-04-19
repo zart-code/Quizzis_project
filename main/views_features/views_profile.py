@@ -80,10 +80,18 @@ def profile_view(request, user_id=None):
 
 
 @login_required(login_url='login_page')
-def edit_profile_view(request):
-    """Редактирование профиля пользователя."""
+def edit_profile_view(request, user_id=None):
+    """Редактирование профиля. user_id задаётся только при вызове от админа."""
+    if user_id is not None:
+        if not request.user.profile.is_admin:
+            return redirect('profile')
+        target_user = get_object_or_404(User, id=user_id)
+        is_admin_edit = True
+    else:
+        target_user = request.user
+        is_admin_edit = False
     if request.method == 'POST':
-        user = request.user
+        user = target_user
 
         username = request.POST.get('username')
         email = request.POST.get('email')
@@ -91,7 +99,7 @@ def edit_profile_view(request):
         if username and username != user.username:
             if User.objects.filter(username=username).exclude(pk=user.pk).exists():
                 messages.error(request, 'Пользователь с таким именем уже существует')
-                return redirect('edit_profile')
+                return redirect('admin_edit_user', user_id=user_id) if is_admin_edit else redirect('edit_profile')
             user.username = username
 
         if email and email != user.email:
@@ -111,14 +119,18 @@ def edit_profile_view(request):
                 messages.error(request, 'Пароль должен быть не менее 8 символов')
                 return redirect('edit_profile')
             user.set_password(password)
-            update_session_auth_hash(request, user)
+            if not is_admin_edit:
+                update_session_auth_hash(request, user)
 
         user.save()
-        messages.success(request, 'Профиль успешно обновлен')
+        messages.success(request, 'Профиль успешно обновлён')
+        if is_admin_edit:
+            return redirect('admin_user_profile', user_id=user_id)
         return redirect('profile')
 
     context = {
         'user': request.user,
+        'is_admin_edit': is_admin_edit,
     }
     return render(request, 'edit_profile.html', context)
 

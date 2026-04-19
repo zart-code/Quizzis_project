@@ -77,6 +77,7 @@ urlpatterns = [
     path('admin-panel/ban/<int:user_id>/', admin_ban_user_view, name='admin_ban_user'),
     path('admin-panel/delete-quiz/<int:quiz_id>/', admin_delete_quiz_view, name='admin_delete_quiz'),
     path('admin-panel/user/<int:user_id>/', profile_view, name='admin_user_profile'),
+    path('admin-panel/user/<int:user_id>/edit/', edit_profile_view, name='admin_edit_user'),
     path('admin-panel/api/stats/', api_admin_stats_view, name='api_admin_stats'),
     path('admin-panel/api/users/', api_admin_users_view, name='api_admin_users'),
     path('admin-panel/api/quizzes/', api_admin_quizzes_view, name='api_admin_quizzes'),
