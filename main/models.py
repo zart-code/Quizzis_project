@@ -5,19 +5,16 @@ import random
 import string
 from django.db import models
 from django.contrib.auth.models import User
-
-
 def generate_pin():
     """
     Генератор случайного ключа сессии
     """
     return ''.join(random.choices(string.digits, k=6))
-
-
 class Category(models.Model):
     """
     Категория для группировки викторин.
     """
+    objects = models.Manager()  # явное объявление менеджера
     name = models.CharField(
         max_length=50,
         unique=True,
@@ -27,7 +24,6 @@ class Category(models.Model):
         blank=True,
         verbose_name='Описание'
     )
-
     class Meta:
         """
         Метаданные
@@ -35,30 +31,27 @@ class Category(models.Model):
         verbose_name = 'Категория'
         verbose_name_plural = 'Категории'
         ordering = ['name']
-
     def __str__(self):
         """
         Отладочная информация
         """
-        return str(self.name)
-
-
+        return str(self.name
+)
 class Quiz(models.Model):
     """
     Модель quiz
     """
+    objects = models.Manager()  # явное объявление менеджера
     title = models.CharField(
         max_length=200,
         verbose_name='Название квиза',
     )
-
     creator = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name='created_quizzes',
         verbose_name='Создатель',
     )
-
     category = models.ForeignKey(
         Category,
         on_delete=models.SET_NULL,
@@ -67,22 +60,18 @@ class Quiz(models.Model):
         related_name='quizzes',
         verbose_name='Категория',
     )
-
     description = models.TextField(
         blank=True,
         verbose_name='Описание',
     )
-
     additional_info = models.TextField(
         blank=True,
         verbose_name='Дополнительная информация',
     )
-
     is_published = models.BooleanField(
         default=False,
         verbose_name='Опубликован',
     )
-
     created_at = models.DateTimeField(auto_now_add=True)
     time_limit = models.IntegerField(
         blank=True,
@@ -90,28 +79,24 @@ class Quiz(models.Model):
         help_text='Ограничение по времени в минутах',
         verbose_name='Лимит времени (мин)',
     )
-
     class Meta:
         """
         Метаданные
         """
         verbose_name_plural = 'Quizzes'
-
     def __str__(self):
         """
         Отладочная информация
         """
         return str(self.title)
-
     def total_questions(self) -> object:
         """Возвращает количество вопросов в викторине."""
         return self.questions.count()
-
-
 class Question(models.Model):
     """
     Модель вопроса
     """
+    objects = models.Manager()  # явное объявление менеджера
     SINGLE = 'single'
     MULTIPLE = 'multiple'
     TEXT = 'text'
@@ -122,7 +107,6 @@ class Question(models.Model):
         (TEXT, 'Текстовый'),
         (NUMBER, 'Числовой'),
     ]
-
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='questions')
     text = models.TextField(verbose_name='Текст вопроса')
     question_type = models.CharField(
@@ -138,7 +122,6 @@ class Question(models.Model):
     )
     time_limit = models.IntegerField(default=30, verbose_name='Время на ответ (сек)')
     order = models.IntegerField(default=0)
-
     class Meta:
         """
         Метаданные
@@ -146,18 +129,16 @@ class Question(models.Model):
         verbose_name = 'Вопрос'
         verbose_name_plural = 'Вопросы'
         ordering = ['order']
-
     def __str__(self):
         """
         Отладочная информация
         """
         return str(self.text)
-
-
 class Answer(models.Model):
     """
     Модель ответа
     """
+    objects = models.Manager()  # явное объявление менеджера
     question = models.ForeignKey(
         Question,
         on_delete=models.CASCADE,
@@ -171,18 +152,16 @@ class Answer(models.Model):
         default=False,
         verbose_name='Правильный',
     )
-
     def __str__(self):
         """
         Отладочная информация
         """
         return str(self.text)
-
-
 class QuizResult(models.Model):
     """
     Модель результата прохождения quiz
     """
+    objects = models.Manager()  # явное объявление менеджера
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -199,9 +178,7 @@ class QuizResult(models.Model):
     completed = models.BooleanField(default=False)
     started_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(blank=True, null=True)
-
     order = models.PositiveIntegerField(default=0)
-
     class Meta:
         """
         Метаданные
@@ -209,33 +186,30 @@ class QuizResult(models.Model):
         verbose_name = 'Вариант ответа'
         verbose_name_plural = 'Варианты ответов'
         ordering = ['order']
-
     def __str__(self):
         """
         Отладочная информация
         """
-        return self.score
-
-
+        return str(self.score)
 class Achievement(models.Model):
     """
     Модель достижений
     """
+    objects = models.Manager()  # явное объявление менеджера
     name = models.CharField(max_length=100)
     description = models.TextField()
     icon = models.CharField(max_length=10, default='🏆')
-
     def __str__(self):
         """
         Отладочная информация
         """
-        return str(self.name)
-
-
+        return str(self.name
+)
 class UserAchievement(models.Model):
     """
     Модель достижений пользователя
     """
+    objects = models.Manager()  # явное объявление менеджера
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -247,25 +221,23 @@ class UserAchievement(models.Model):
         related_name='user_achievements',
     )
     unlocked_at = models.DateTimeField(auto_now_add=True)
-
     class Meta:
         """
         Методанные
         """
         unique_together = ['user', 'achievement']
         ordering = ['-unlocked_at']
-
     def __str__(self):
         """
         Отладочная информация
         """
-        return f'{self.achievement.name} {self.unlocked_at}'
-
-
+        return f'{self.achievement.name
+} {self.unlocked_at}'
 class GameSession(models.Model):
     """
     Класс сессии
     """
+    objects = models.Manager()  # явное объявление менеджера
     WAITING = 'waiting'
     IN_PROGRESS = 'in_progress'
     FINISHED = 'finished'
@@ -274,7 +246,6 @@ class GameSession(models.Model):
         (IN_PROGRESS, 'Идёт игра'),
         (FINISHED, 'Завершена'),
     ]
-
     quiz = models.ForeignKey(
         Quiz,
         on_delete=models.CASCADE,
@@ -308,21 +279,19 @@ class GameSession(models.Model):
         verbose_name='Текущий вопрос',
     )
     created_at = models.DateTimeField(auto_now_add=True)
-
     class Meta:
         ordering = ['-created_at']
-
     def __str__(self):
         """
         Отладочная информация
         """
-        return f'{self.quiz} [{self.pin}]'
-
-
+        return f'{self.quiz} [{self.pin
+}]'
 class GameParticipant(models.Model):
     """
     Игра ??
     """
+    objects = models.Manager()  # явное объявление менеджера
     session = models.ForeignKey(
         GameSession,
         on_delete=models.CASCADE,
@@ -333,33 +302,29 @@ class GameParticipant(models.Model):
         User,
         on_delete=models.CASCADE,
         related_name='game_participations',
-        verbose_name='Игрок',
-    )
+        verbose_name='Игрок',)
     score = models.IntegerField(default=0, verbose_name='Счёт')
     is_answered = models.BooleanField(
         default=False,
         verbose_name='Ответил на текущий вопрос',
     )
     joined_at = models.DateTimeField(auto_now_add=True)
-
     class Meta:
         """
         Метаданные
         """
         unique_together = ['session', 'user']
         ordering = ['-score']
-
     def __str__(self):
         """
         Отладочная информация
         """
         return f'присоединился: {self.joined_at}'
-
-
 class GameAnswer(models.Model):
     """
     Ответы игры
     """
+    objects = models.Manager()  # явное объявление менеджера
     session = models.ForeignKey(
         GameSession,
         on_delete=models.CASCADE,
@@ -387,13 +352,11 @@ class GameAnswer(models.Model):
     )
     is_correct = models.BooleanField(default=False, verbose_name='Верно')
     answered_at = models.DateTimeField(null=True, blank=True)
-
     class Meta:
         """
         Метаданные
         """
         unique_together = ['participant', 'question']
-
     def __str__(self):
         """
         Отладочная информация
