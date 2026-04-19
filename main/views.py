@@ -11,6 +11,7 @@ def _handle_form(request, form_class, template_name, success_url, extra_form_kwa
         extra_form_kwargs = {}
 
     if request.method == 'POST':
+        # Создаём связанную форму с данными из POST
         if needs_request:
             form = form_class(request, data=request.POST)
         else:
@@ -24,8 +25,11 @@ def _handle_form(request, form_class, template_name, success_url, extra_form_kwa
                 user = form.get_user()
                 login(request, user)
             return redirect(success_url)
-        else:
-            form = form_class(**extra_form_kwargs)
+        # Если форма не валидна, продолжим и вернём её же (с ошибками)
+    else:
+        # GET-запрос: создаём пустую (несвязанную) форму
+        form = form_class(**extra_form_kwargs)
+
     return render(request, template_name, {'form': form})
 
 
