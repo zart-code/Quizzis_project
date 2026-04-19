@@ -259,7 +259,7 @@
           {% for u in users %}
           <tr {% if forloop.counter > 10 %}style="display:none;"{% endif %}>
             <td class="ap-muted">{{ u.id }}</td>
-            <td><a href="{% url 'profile' %}" class="ap-link">{{ u.username }}</a></td>
+            <td><a href="{% url 'admin_user_profile' u.id %}" class="ap-link">{{ u.username }}</a></td>
             <td class="ap-muted">{{ u.email|default:"—" }}</td>
             <td>
               {% if u.profile.role == 'admin' %}
@@ -323,7 +323,7 @@
           <tr {% if forloop.counter > 10 %}style="display:none;"{% endif %}>
             <td class="ap-muted">{{ quiz.id }}</td>
             <td><a href="{% url 'play_quiz' quiz.id %}" class="ap-link">{{ quiz.title }}</a></td>
-            <td><a href="{% url 'profile' %}" class="ap-link">{{ quiz.creator.username }}</a></td>
+            <td><a href="{% url 'admin_user_profile' quiz.creator.id %}" class="ap-link">{{ quiz.creator.username }}</a></td>
             <td>
               {% if quiz.is_published %}
                 <span class="ap-badge ap-badge-pub">Опубликован</span>

@@ -9,9 +9,18 @@ from main.models import Achievement, Quiz, QuizResult, UserAchievement
 
 
 @login_required(login_url='login_page')
-def profile_view(request):
-    """Страница профиля пользователя."""
-    user = request.user
+def profile_view(request, user_id=None):
+    """Страница профиля пользователя. Если передан user_id и запрос от админа — показывает чужой профиль."""
+
+    if user_id is not None:
+        # Только админ может смотреть чужой профиль
+        if not request.user.profile.is_admin:
+            return redirect('profile')
+        user = get_object_or_404(User, id=user_id)
+        is_admin_view = True
+    else:
+        user = request.user
+        is_admin_view = False
 
     total_quizzes = Quiz.objects.count()
     completed_quizzes = QuizResult.objects.filter(user=user, completed=True).count()
@@ -64,6 +73,7 @@ def profile_view(request):
         'category_stats': category_stats,
         'quiz_history': quiz_history,
         'achievements': achievements,
+        'is_admin_view': is_admin_view,
     }
 
     return render(request, 'profile.html', context)
