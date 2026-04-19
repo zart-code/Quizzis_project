@@ -1,4 +1,5 @@
 """Views для панели администратора"""
+from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -72,3 +73,39 @@ def admin_delete_quiz_view(request, quiz_id):
         quiz.delete()
         messages.success(request, f'Квиз «{title}» удалён.')
     return redirect('admin_panel')
+
+
+@admin_required
+def api_admin_stats_view(request):
+    """API: текущая статистика для авто-обновления карточек"""
+    data = {
+        'total_users':        User.objects.count(),
+        'total_quizzes':      Quiz.objects.count(),
+        'total_admins':       Profile.objects.filter(role=Profile.ADMIN).count(),
+        'total_banned_users': Profile.objects.filter(is_banned=True).count(),
+    }
+    return JsonResponse(data)
+
+
+@admin_required
+def api_admin_users_view(request):
+    """API: список пользователей для авто-обновления таблицы"""
+    users = User.objects.annotate(
+        quiz_count=Count('created_quizzes')
+    ).select_related('profile').order_by('id').values(
+        'id', 'username', 'email', 'date_joined',
+        'quiz_count', 'profile__role', 'profile__is_banned'
+    )
+    return JsonResponse({'users': list(users)}, json_dumps_params={'default': str})
+
+
+@admin_required
+def api_admin_quizzes_view(request):
+    """API: список квизов для авто-обновления таблицы"""
+    quizzes = Quiz.objects.select_related('creator').annotate(
+        question_count=Count('questions')
+    ).order_by('-created_at').values(
+        'id', 'title', 'is_published', 'created_at',
+        'question_count', 'creator__id', 'creator__username'
+    )
+    return JsonResponse({'quizzes': list(quizzes)}, json_dumps_params={'default': str})
