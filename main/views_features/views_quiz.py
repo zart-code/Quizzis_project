@@ -79,7 +79,9 @@ def my_quizzes_view(request):
         return redirect('main_page')
 
     quizzes = Quiz.objects.filter(creator=request.user).order_by('-created_at')
-    total_questions = Question.objects.filter(quiz__creator=request.user).count()
+    total_questions = 0
+    for quiz in quizzes:
+        total_questions += quiz.total_questions()
     context = {
         'quizzes': quizzes,
         'total_questions': total_questions,
