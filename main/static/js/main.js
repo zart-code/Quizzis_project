@@ -403,12 +403,15 @@ if (addQuestionBtn) {
     makeQuestion(count);
 }
 
-
 // Lobby polling is declared in lobby.html, where Django can render the URL.
 const lobbyApiUrlFromStatic = null;
 function copyLink(){navigator.clipboard.writeText(document.getElementById('join-link').textContent)}
 function fetchPlayers(){
-    if (!lobbyApiUrlFromStatic) return;
+    // Проверяем, находимся ли мы на странице создания квиза
+    if (window.location.pathname.includes('/quiz/create/')) {
+        window.isCreateQuizPage = true;
+    }
+    if (!lobbyApiUrlFromStatic || window.isCreateQuizPage) return;
     fetch(lobbyApiUrlFromStatic).then(r=>r.json()).then(data=>{
         document.getElementById('player-count').textContent=data.count;
         const list=document.getElementById('players-list');
