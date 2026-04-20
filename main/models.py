@@ -129,10 +129,6 @@ class Quiz(models.Model):
         blank=True,
         verbose_name='Дополнительная информация',
     )
-    is_published = models.BooleanField(
-        default=False,
-        verbose_name='Опубликован',
-    )
     created_at = models.DateTimeField(auto_now_add=True)
     time_limit = models.IntegerField(
         blank=True,

@@ -79,7 +79,12 @@ def my_quizzes_view(request):
         return redirect('main_page')
 
     quizzes = Quiz.objects.filter(creator=request.user).order_by('-created_at')
-    return render(request, 'my_quizzes.html', {'quizzes': quizzes})
+    total_questions = Question.objects.filter(quiz__creator=request.user).count()
+    context = {
+        'quizzes': quizzes,
+        'total_questions': total_questions,
+    }
+    return render(request, 'my_quizzes.html', context)
 
 
 @login_required
