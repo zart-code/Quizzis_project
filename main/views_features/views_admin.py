@@ -105,7 +105,7 @@ def api_admin_quizzes_view(request):
     quizzes = Quiz.objects.select_related('creator').annotate(
         question_count=Count('questions')
     ).order_by('-created_at').values(
-        'id', 'title', 'is_published', 'created_at',
+        'id', 'title', 'status', 'created_at',
         'question_count', 'creator__id', 'creator__username'
     )
     return JsonResponse({'quizzes': list(quizzes)}, json_dumps_params={'default': str})

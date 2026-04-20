@@ -9,6 +9,10 @@ from main.models import GameSession, Quiz, GameParticipant, GameAnswer
 @login_required
 def create_lobby_view(request, quiz_id):
     quiz = get_object_or_404(Quiz, id=quiz_id, creator=request.user)
+
+    if quiz.status == Quiz.DRAFT:
+        return redirect('my_quizzes')
+
     session = GameSession.objects.create(quiz=quiz, host=request.user)
     return redirect('lobby', pin=session.pin)
 

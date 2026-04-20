@@ -95,9 +95,14 @@ class Category(models.Model):
 
 
 class Quiz(models.Model):
-    """
-    Модель quiz
-    """
+    """ Модель quiz """
+
+    DRAFT = 'draft'
+    ACTIVE = 'active'
+    STATUS_CHOICES = [
+        (DRAFT, 'Черновик'),
+        (ACTIVE, 'Активен'),
+    ]
     title = models.CharField(
         max_length=200,
         verbose_name='Название квиза',
@@ -134,6 +139,12 @@ class Quiz(models.Model):
         null=True,
         help_text='Ограничение по времени в минутах',
         verbose_name='Лимит времени (мин)',
+    )
+    status = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default=DRAFT,
+        verbose_name='Статус',
     )
 
     class Meta:

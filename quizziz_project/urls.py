@@ -61,6 +61,7 @@ urlpatterns = [
     path('profile/edit/', edit_profile_view, name='edit_profile'),
     path('quiz/create/', create_quiz_view, name='create_quiz'),
     path('my-quizzes/', my_quizzes_view, name='my_quizzes'),
+    path('quiz/<int:quiz_id>/toggle-status/', toggle_quiz_status_view, name='toggle_quiz_status'),
     path('quiz/<int:quiz_id>/play/', play_quiz_view, name='play_quiz'),
     path('quiz/<int:quiz_id>/lobby/create/', create_lobby_view, name='create_lobby'),
     path('lobby/<str:pin>/', lobby_view, name='lobby'),

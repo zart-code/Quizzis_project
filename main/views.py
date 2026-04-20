@@ -3,7 +3,7 @@
 from django.contrib.auth import login, logout
 from django.shortcuts import render, redirect
 from .forms import CustomUserCreationForm, StyledAuthenticationForm
-
+from main.models import Quiz
 
 
 def _handle_form(request, form_class, template_name, success_url, extra_form_kwargs=None, needs_request=False):
@@ -69,8 +69,11 @@ def logout_view(request):
 def quizzes_view(request):
     """Страница квизов"""
     sort_type = request.GET.get('sort', 'new')
+    quizzes = Quiz.objects.filter(status=Quiz.ACTIVE).order_by('-created_at')
+
     context = {
         'current_sort': sort_type,
+        'quizzes': quizzes,
     }
     return render(request, 'quizzes_view.html', context)
 

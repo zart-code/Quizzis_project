@@ -328,8 +328,8 @@
             <td><a href="{% url 'play_quiz' quiz.id %}" class="ap-link">{{ quiz.title }}</a></td>
             <td><a href="{% url 'admin_user_profile' quiz.creator.id %}" class="ap-link">{{ quiz.creator.username }}</a></td>
             <td>
-              {% if quiz.is_published %}
-                <span class="ap-badge ap-badge-pub">Опубликован</span>
+              {% if quiz.status == 'active' %}
+                <span class="ap-badge ap-badge-pub">Активен</span>
               {% else %}
                 <span class="ap-badge ap-badge-draft">Черновик</span>
               {% endif %}
@@ -445,8 +445,8 @@ function updateQuizzes(quizzes) {
       <td class="ap-muted">${q.id}</td>
       <td><a href="${URL_PLAY}${q.id}/play/" class="ap-link">${q.title}</a></td>
       <td><a href="${URL_PROFILE}${q.creator__id}/" class="ap-link">${q.creator__username}</a></td>
-      <td>${q.is_published
-        ? '<span class="ap-badge ap-badge-pub">Опубликован</span>'
+      <td>${q.status === 'active'
+        ? '<span class="ap-badge ap-badge-pub">Активен</span>'
         : '<span class="ap-badge ap-badge-draft">Черновик</span>'}</td>
       <td>${q.question_count}</td>
       <td class="ap-muted">${dateStr}</td>
