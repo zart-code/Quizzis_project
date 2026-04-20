@@ -272,7 +272,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Конвертация минут в секунды при отправке формы создания квиза
 document.addEventListener('DOMContentLoaded', function() {
-    const createQuizForm = document.getElementById('createQuizForm');
+    const createQuizForm = document.getElementById('createQuizForm') || document.getElementById('quiz-form');
     if (createQuizForm) {
         createQuizForm.addEventListener('submit', function(e) {
             const timeLimitInput = document.getElementById('time_limit');
@@ -299,18 +299,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Валидация формы создания квиза
 document.addEventListener('DOMContentLoaded', function() {
-    const createQuizForm = document.getElementById('createQuizForm');
+    const createQuizForm = document.getElementById('createQuizForm') || document.getElementById('quiz-form');
     if (createQuizForm) {
         createQuizForm.addEventListener('submit', function(e) {
+            const themeRadios = document.querySelectorAll('.theme-radio');
             const themeSelected = document.querySelector('.theme-radio:checked');
 
-            if (!themeSelected) {
+            if (themeRadios.length > 0 && !themeSelected) {
                 e.preventDefault();
                 alert('Пожалуйста, выберите тему квиза');
                 return false;
             }
 
-            const titleInput = document.getElementById('title');
+            const titleInput = document.getElementById('title') || document.getElementById('quiz-title');
             if (titleInput) {
                 const title = titleInput.value.trim();
                 if (!title) {
@@ -348,6 +349,11 @@ function makeAnswersText(){
 }
 
 function makeQuestion(i){
+    const questionsContainer = document.getElementById('questions-container');
+    if (!questionsContainer) {
+        return;
+    }
+
     const html=`<div class="q-block" id="qblock${i}">
         <div class="q-block-header">
             <span class="q-block-title">Вопрос ${i}</span>
@@ -372,7 +378,7 @@ function makeQuestion(i){
             <div class="time-opts">${makeTimeOpts(i)}</div>
         </div>
     </div>`;
-    document.getElementById('questions-container').insertAdjacentHTML('beforeend',html);
+    questionsContainer.insertAdjacentHTML('beforeend',html);
 }
 
 function removeQuestion(i){
@@ -389,16 +395,21 @@ function updateAnswers(i){
     else c.innerHTML=makeAnswersText();
 }
 
-document.getElementById('add-question-btn').addEventListener('click',()=>{count++;makeQuestion(count);});
+const addQuestionBtn = document.getElementById('add-question-btn');
+if (addQuestionBtn) {
+    addQuestionBtn.addEventListener('click',()=>{count++;makeQuestion(count);});
 
-count++;
-makeQuestion(count);
+    count++;
+    makeQuestion(count);
+}
 
 
-const apiUrl = "{% url 'api_players' session.pin %}";
+// Lobby polling is declared in lobby.html, where Django can render the URL.
+const lobbyApiUrlFromStatic = null;
 function copyLink(){navigator.clipboard.writeText(document.getElementById('join-link').textContent)}
 function fetchPlayers(){
-    fetch(apiUrl).then(r=>r.json()).then(data=>{
+    if (!lobbyApiUrlFromStatic) return;
+    fetch(lobbyApiUrlFromStatic).then(r=>r.json()).then(data=>{
         document.getElementById('player-count').textContent=data.count;
         const list=document.getElementById('players-list');
         list.innerHTML=data.players.length===0?'<li class="players-empty">Ожидание игроков...</li>':data.players.map(p=>`<li class="player-chip">👤 ${p.username}</li>`).join('');
@@ -406,8 +417,6 @@ function fetchPlayers(){
         document.getElementById('lock-status-badge').innerHTML=data.is_locked?'<span class="lbadge lbadge-danger">Закрыто</span>':'<span class="lbadge lbadge-success">Открыто</span>';
     });
 }
-fetchPlayers();
-setInterval(fetchPlayers,3000);
 
 
 // Экспортируем функции для использования в других файлах
