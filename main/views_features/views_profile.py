@@ -139,4 +139,4 @@ def edit_profile_view(request, user_id=None):
 def continue_quiz_view(request, quiz_id):
     """Продолжить прохождение квиза."""
     quiz = get_object_or_404(Quiz, id=quiz_id)
-    return redirect('take_quiz', quiz_id=quiz_id)
+    return redirect('play_quiz', quiz_id=quiz_id)
