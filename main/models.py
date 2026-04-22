@@ -256,10 +256,7 @@ class QuizResult(models.Model):
         ordering = ['order']
 
     def __str__(self):
-        """
-        Отладочная информация
-        """
-        return self.score
+        return str(self.score)
 
 
 class Achievement(models.Model):
