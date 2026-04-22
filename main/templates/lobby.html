@@ -26,7 +26,8 @@
                     </div>
                     <div class="status-row">
                         <span class="status-label">Статус лобби</span>
-                        <span id="lock-status-badge">{% if session.is_locked %}<span class="lbadge lbadge-danger">Закрыто</span>{% else %}<span class="lbadge lbadge-success">Открыто</span>{% endif %}</span>
+                        <span id="lock-status-badge">{% if session.is_locked %}<span class="lbadge lbadge-danger">Закрыто</span>
+                                                     {% else %}<span class="lbadge lbadge-success">Открыто</span>{% endif %}</span>
                     </div>
                 </div>
             </div>
@@ -41,12 +42,17 @@
             <div class="lobby-actions">
                 <form method="post" action="{% url 'toggle_lock' session.pin %}" style="display:inline">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-secondary">{% if session.is_locked %}🔓 Открыть лобби{% else %}🔒 Закрыть лобби{% endif %}</button>
+                    <button type="submit" class="btn btn-secondary">
+                        {% if session.is_locked %}🔓 Открыть лобби
+                        {% else %}🔒 Закрыть лобби{% endif %}
+                    </button>
                 </form>
+
                 <form method="post" action="{% url 'start_game' session.pin %}" style="display:inline">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-primary" id="start-btn" disabled>▶ Начать игру</button>
+                    <button type="submit" class="btn btn-primary" id="start-btn" disabled>▶ Начать игру </button>
                 </form>
+
                 <form method="post" action="{% url 'delete_session' session.pin %}" style="display:inline">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-danger" onclick="return confirm('Удалить сессию и выйти?')">🗑 Выйти</button>
@@ -58,18 +64,18 @@
 
 
 <script>
-const apiUrl = "{% url 'api_players' session.pin %}";
-function copyLink(){navigator.clipboard.writeText(document.getElementById('join-link').textContent)}
-function fetchPlayers(){
-    fetch(apiUrl).then(r=>r.json()).then(data=>{
-        document.getElementById('player-count').textContent=data.count;
-        const list=document.getElementById('players-list');
-        list.innerHTML=data.players.length===0?'<li class="players-empty">Ожидание игроков...</li>':data.players.map(p=>`<li class="player-chip">👤 ${p.username}</li>`).join('');
-        document.getElementById('start-btn').disabled=data.count===0;
-        document.getElementById('lock-status-badge').innerHTML=data.is_locked?'<span class="lbadge lbadge-danger">Закрыто</span>':'<span class="lbadge lbadge-success">Открыто</span>';
-    });
-}
-fetchPlayers();
-setInterval(fetchPlayers,3000);
+    const apiUrl = "{% url 'api_players' session.pin %}";
+    function copyLink(){navigator.clipboard.writeText(document.getElementById('join-link').textContent)}
+    function fetchPlayers(){
+        fetch(apiUrl).then(r=>r.json()).then(data=>{
+            document.getElementById('player-count').textContent=data.count;
+            const list=document.getElementById('players-list');
+            list.innerHTML=data.players.length===0?'<li class="players-empty">Ожидание игроков...</li>':data.players.map(p=>`<li class="player-chip">👤 ${p.username}</li>`).join('');
+            document.getElementById('start-btn').disabled=data.count===0;
+            document.getElementById('lock-status-badge').innerHTML=data.is_locked?'<span class="lbadge lbadge-danger">Закрыто</span>':'<span class="lbadge lbadge-success">Открыто</span>';
+        });
+    }
+    fetchPlayers();
+    setInterval(fetchPlayers, 3000);
 </script>
 {% endblock %}
