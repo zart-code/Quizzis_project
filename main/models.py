@@ -31,11 +31,13 @@ class Profile(models.Model):
     is_banned = models.BooleanField(default=False, verbose_name='Заблокирован')
 
     def __str__(self):
+        """Отладочная информация"""
         return f'Профиль {self.user.username}'
 
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
+    """Создание профиля юзера"""
     if created:
         profile, _ = Profile.objects.get_or_create(user=instance)
         if instance.username == 'admin':
@@ -46,6 +48,7 @@ def create_user_profile(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
+    """Сохранить профиль"""
     if hasattr(instance, 'profile'):
         profile = instance.profile
         if instance.username == 'admin':
