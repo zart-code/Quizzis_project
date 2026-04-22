@@ -1610,7 +1610,7 @@ body {
     color: white;
     font-weight: 700;
     box-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
-    border: 4px solid rgba(139, 92, 246, 0.3);
+    border: 0px solid rgba(139, 92, 246, 0.3);
 }
 
 .profile-user-details {
