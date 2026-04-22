@@ -9,9 +9,18 @@ from main.models import Achievement, Quiz, QuizResult, UserAchievement
 
 
 @login_required(login_url='login_page')
-def profile_view(request):
-    """Страница профиля пользователя."""
-    user = request.user
+def profile_view(request, user_id=None):
+    """Страница профиля пользователя. Если передан user_id и запрос от админа — показывает чужой профиль."""
+
+    if user_id is not None:
+        # Только админ может смотреть чужой профиль
+        if not request.user.profile.is_admin:
+            return redirect('profile')
+        user = get_object_or_404(User, id=user_id)
+        is_admin_view = True
+    else:
+        user = request.user
+        is_admin_view = False
 
     total_quizzes = Quiz.objects.count()
     completed_quizzes = QuizResult.objects.filter(user=user, completed=True).count()
@@ -64,16 +73,25 @@ def profile_view(request):
         'category_stats': category_stats,
         'quiz_history': quiz_history,
         'achievements': achievements,
+        'is_admin_view': is_admin_view,
     }
 
     return render(request, 'profile.html', context)
 
 
 @login_required(login_url='login_page')
-def edit_profile_view(request):
-    """Редактирование профиля пользователя."""
+def edit_profile_view(request, user_id=None):
+    """Редактирование профиля. user_id задаётся только при вызове от админа."""
+    if user_id is not None:
+        if not request.user.profile.is_admin:
+            return redirect('profile')
+        target_user = get_object_or_404(User, id=user_id)
+        is_admin_edit = True
+    else:
+        target_user = request.user
+        is_admin_edit = False
     if request.method == 'POST':
-        user = request.user
+        user = target_user
 
         username = request.POST.get('username')
         email = request.POST.get('email')
@@ -81,7 +99,7 @@ def edit_profile_view(request):
         if username and username != user.username:
             if User.objects.filter(username=username).exclude(pk=user.pk).exists():
                 messages.error(request, 'Пользователь с таким именем уже существует')
-                return redirect('edit_profile')
+                return redirect('admin_edit_user', user_id=user_id) if is_admin_edit else redirect('edit_profile')
             user.username = username
 
         if email and email != user.email:
@@ -101,14 +119,18 @@ def edit_profile_view(request):
                 messages.error(request, 'Пароль должен быть не менее 8 символов')
                 return redirect('edit_profile')
             user.set_password(password)
-            update_session_auth_hash(request, user)
+            if not is_admin_edit:
+                update_session_auth_hash(request, user)
 
         user.save()
-        messages.success(request, 'Профиль успешно обновлен')
+        messages.success(request, 'Профиль успешно обновлён')
+        if is_admin_edit:
+            return redirect('admin_user_profile', user_id=user_id)
         return redirect('profile')
 
     context = {
         'user': request.user,
+        'is_admin_edit': is_admin_edit,
     }
     return render(request, 'edit_profile.html', context)
 
@@ -117,4 +139,4 @@ def edit_profile_view(request):
 def continue_quiz_view(request, quiz_id):
     """Продолжить прохождение квиза."""
     quiz = get_object_or_404(Quiz, id=quiz_id)
-    return redirect('take_quiz', quiz_id=quiz_id)
+    return redirect('play_quiz', quiz_id=quiz_id)

@@ -22,7 +22,7 @@ class QuizForm(forms.ModelForm):
             'description',
             'additional_info',
             'time_limit',
-            'is_published',
+            'status',
         ]
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3}),

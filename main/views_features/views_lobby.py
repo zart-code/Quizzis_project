@@ -11,10 +11,11 @@ def create_lobby_view(request, quiz_id):
     """Создание квиза/лобби"""
     print(quiz_id)
     quiz = get_object_or_404(Quiz, id=quiz_id, creator=request.user)
-    print(quiz)
+
+    if quiz.status == Quiz.DRAFT:
+        return redirect('my_quizzes')
+
     session = GameSession.objects.create(quiz=quiz, host=request.user)
-    print(session)
-    session.save()
     return redirect('lobby', pin=session.pin)
 
 
@@ -88,7 +89,6 @@ def join_lobby_view(request, pin):
 @login_required
 @require_POST
 def start_game_view(request, pin):
-    print(request, pin)
     session = get_object_or_404(GameSession, pin=pin, host=request.user)
     if session.participants.count() == 0:
         return redirect('lobby', pin=pin)

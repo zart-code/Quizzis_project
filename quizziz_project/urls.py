@@ -48,9 +48,7 @@ from main.views import *
 from main.views_features.views_profile import *
 from main.views_features.views_quiz import *
 from main.views_features.views_lobby import *
-from main.views_features.views_admin import (
-    admin_panel_view, admin_ban_user_view, admin_delete_quiz_view
-)
+from main.views_features.views_admin import *
 
 
 urlpatterns = [
@@ -63,6 +61,7 @@ urlpatterns = [
     path('profile/edit/', edit_profile_view, name='edit_profile'),
     path('quiz/create/', create_quiz_view, name='create_quiz'),
     path('my-quizzes/', my_quizzes_view, name='my_quizzes'),
+    path('quiz/<int:quiz_id>/toggle-status/', toggle_quiz_status_view, name='toggle_quiz_status'),
     path('quiz/<int:quiz_id>/play/', play_quiz_view, name='play_quiz'),
     path('quiz/<int:quiz_id>/lobby/create/', create_lobby_view, name='create_lobby'),
     path('lobby/<str:pin>/', lobby_view, name='lobby'),
@@ -74,8 +73,13 @@ urlpatterns = [
     path('session/<str:pin>/api/state/', api_state_view, name='api_state'),
     path('session/<str:pin>/play/', session_play_view, name='session_play'),
     path('quizzises/', quizzes_view, name='quizzes_view'),
-    path('my_quizzes/', my_quizzes, name='my_quizzes'),
     path('admin-panel/', admin_panel_view, name='admin_panel'),
     path('admin-panel/ban/<int:user_id>/', admin_ban_user_view, name='admin_ban_user'),
     path('admin-panel/delete-quiz/<int:quiz_id>/', admin_delete_quiz_view, name='admin_delete_quiz'),
+    path('admin-panel/user/<int:user_id>/', profile_view, name='admin_user_profile'),
+    path('admin-panel/user/<int:user_id>/edit/', edit_profile_view, name='admin_edit_user'),
+    path('admin-panel/api/stats/', api_admin_stats_view, name='api_admin_stats'),
+    path('admin-panel/api/users/', api_admin_users_view, name='api_admin_users'),
+    path('admin-panel/api/quizzes/', api_admin_quizzes_view, name='api_admin_quizzes'),
+
 ]

@@ -82,11 +82,11 @@
 
                         <!-- Действия -->
                         <div class="quiz-compact-actions">
-                            <a href="{% url 'view_quiz' quiz.id %}" class="btn btn-small btn-secondary">
+                            <a href="{% url 'play_quiz' quiz.id %}" class="btn btn-small btn-secondary">
                                 Подробнее
                             </a>
                             {% if user.is_authenticated %}
-                                <a href="{% url 'take_quiz' quiz.id %}" class="btn btn-small btn-success">
+                                <a href="{% url 'play_quiz' quiz.id %}" class="btn btn-small btn-success">
                                     Пройти
                                 </a>
                             {% endif %}

@@ -3,6 +3,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from main.models import Quiz, Question, Answer, Profile
+from django.views.decorators.http import require_POST
 
 
 @login_required
@@ -16,7 +17,11 @@ def create_quiz_view(request):
 
     if request.method == 'POST':
         title = request.POST.get('title')
-        quiz = Quiz.objects.create(title=title, creator=request.user)
+        quiz = Quiz.objects.create(
+            title=title,
+            creator=request.user,
+            status = Quiz.DRAFT
+        )
 
         i = 1
         while request.POST.get(f'q{i}_text'):
@@ -61,7 +66,7 @@ def create_quiz_view(request):
 
             i += 1
 
-        return redirect('create_lobby', quiz_id=quiz.id)
+        return redirect('my_quizzes')
 
     return render(request, 'create_quiz.html')
 
@@ -74,12 +79,37 @@ def my_quizzes_view(request):
         return redirect('main_page')
 
     quizzes = Quiz.objects.filter(creator=request.user).order_by('-created_at')
-    return render(request, 'my_quizzes.html', {'quizzes': quizzes})
+    total_questions = 0
+    for quiz in quizzes:
+        total_questions += quiz.total_questions()
+    context = {
+        'quizzes': quizzes,
+        'total_questions': total_questions,
+    }
+    return render(request, 'my_quizzes.html', context)
+
+
+@login_required
+@require_POST
+def toggle_quiz_status_view(request, quiz_id):
+    quiz = get_object_or_404(Quiz, id=quiz_id, creator=request.user)
+
+    if quiz.status == Quiz.DRAFT:
+        quiz.status = Quiz.ACTIVE
+    else:
+        quiz.status = Quiz.DRAFT
+
+    quiz.save()
+    return redirect('my_quizzes')
 
 
 @login_required
 def play_quiz_view(request, quiz_id):
     quiz = get_object_or_404(Quiz, id=quiz_id)
+
+    if quiz.status == Quiz.DRAFT and quiz.creator != request.user:
+        return redirect('quizzes_view')
+
     questions = list(quiz.questions.prefetch_related('answers').all())
 
     if not questions:

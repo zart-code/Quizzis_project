@@ -95,9 +95,14 @@ class Category(models.Model):
 
 
 class Quiz(models.Model):
-    """
-    Модель quiz
-    """
+    """ Модель quiz """
+
+    DRAFT = 'draft'
+    ACTIVE = 'active'
+    STATUS_CHOICES = [
+        (DRAFT, 'Черновик'),
+        (ACTIVE, 'Активен'),
+    ]
     title = models.CharField(
         max_length=200,
         verbose_name='Название квиза',
@@ -124,16 +129,18 @@ class Quiz(models.Model):
         blank=True,
         verbose_name='Дополнительная информация',
     )
-    is_published = models.BooleanField(
-        default=False,
-        verbose_name='Опубликован',
-    )
     created_at = models.DateTimeField(auto_now_add=True)
     time_limit = models.IntegerField(
         blank=True,
         null=True,
         help_text='Ограничение по времени в минутах',
         verbose_name='Лимит времени (мин)',
+    )
+    status = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default=DRAFT,
+        verbose_name='Статус',
     )
 
     class Meta:

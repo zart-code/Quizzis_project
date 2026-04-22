@@ -90,16 +90,25 @@
 }
 
 /* ─── Table ─── */
-.ap-table-wrap { overflow-x: auto; }
+.ap-table-wrap {
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 460px;   /* ~10 строк по 42px + заголовок */
+    border-radius: 0 0 16px 16px;
+    position: relative;
+}
+.ap-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: rgba(139, 92, 246, .1);
+    border-bottom: 1px solid rgba(139, 92, 246, .2);
+}
 .ap-table {
     width: 100%;
     border-collapse: collapse;
     font-size: .88rem;
     min-width: 560px;
-}
-.ap-table thead tr {
-    background: rgba(139, 92, 246, .1);
-    border-bottom: 1px solid rgba(139, 92, 246, .2);
 }
 .ap-table th {
     padding: .7rem .9rem;
@@ -215,28 +224,28 @@
     <div class="ap-stat-card">
       <div class="ap-stat-icon">👥</div>
       <div>
-        <div class="ap-stat-num">{{ total_users }}</div>
+        <div class="ap-stat-num" id="stat-users">{{ total_users }}</div>
         <div class="ap-stat-label">Пользователей</div>
       </div>
     </div>
     <div class="ap-stat-card">
       <div class="ap-stat-icon">📝</div>
       <div>
-        <div class="ap-stat-num">{{ total_quizzes }}</div>
+        <div class="ap-stat-num" id="stat-quizzes">{{ total_quizzes }}</div>
         <div class="ap-stat-label">Квизов</div>
       </div>
     </div>
     <div class="ap-stat-card">
       <div class="ap-stat-icon">🛡️</div>
       <div>
-        <div class="ap-stat-num">{{ total_admins }}</div>
+        <div class="ap-stat-num" id="stat-admins">{{ total_admins }}</div>
         <div class="ap-stat-label">Админов</div>
       </div>
     </div>
     <div class="ap-stat-card">
       <div class="ap-stat-icon">🚫</div>
       <div>
-        <div class="ap-stat-num">{{ total_banned_users }}</div>
+        <div class="ap-stat-num" id="stat-banned">{{ total_banned_users }}</div>
         <div class="ap-stat-label">Забаненных</div>
       </div>
     </div>
@@ -257,9 +266,8 @@
         </thead>
         <tbody id="u-tbody">
           {% for u in users %}
-          <tr {% if forloop.counter > 10 %}style="display:none;"{% endif %}>
             <td class="ap-muted">{{ u.id }}</td>
-            <td><a href="{% url 'profile' %}" class="ap-link">{{ u.username }}</a></td>
+            <td><a href="{% url 'admin_user_profile' u.id %}" class="ap-link">{{ u.username }}</a></td>
             <td class="ap-muted">{{ u.email|default:"—" }}</td>
             <td>
               {% if u.profile.role == 'admin' %}
@@ -298,11 +306,6 @@
         </tbody>
       </table>
     </div>
-    {% if users|length > 10 %}
-    <div class="ap-load-wrap">
-      <button class="ap-load-btn" onclick="loadMore('u-tbody', this)">Показать ещё ↓</button>
-    </div>
-    {% endif %}
   </div>
 
   <!-- Quizzes -->
@@ -323,10 +326,10 @@
           <tr {% if forloop.counter > 10 %}style="display:none;"{% endif %}>
             <td class="ap-muted">{{ quiz.id }}</td>
             <td><a href="{% url 'play_quiz' quiz.id %}" class="ap-link">{{ quiz.title }}</a></td>
-            <td><a href="{% url 'profile' %}" class="ap-link">{{ quiz.creator.username }}</a></td>
+            <td><a href="{% url 'admin_user_profile' quiz.creator.id %}" class="ap-link">{{ quiz.creator.username }}</a></td>
             <td>
-              {% if quiz.is_published %}
-                <span class="ap-badge ap-badge-pub">Опубликован</span>
+              {% if quiz.status == 'active' %}
+                <span class="ap-badge ap-badge-pub">Активен</span>
               {% else %}
                 <span class="ap-badge ap-badge-draft">Черновик</span>
               {% endif %}
@@ -347,11 +350,6 @@
         </tbody>
       </table>
     </div>
-    {% if quizzes|length > 10 %}
-    <div class="ap-load-wrap">
-      <button class="ap-load-btn" onclick="loadMore('q-tbody', this)">Показать ещё ↓</button>
-    </div>
-    {% endif %}
   </div>
 
   <!-- Reports -->
@@ -380,14 +378,108 @@
 
 {% block extra_js %}
 <script>
-function loadMore(tbodyId, btn) {
-    var hidden = document.querySelectorAll('#' + tbodyId + ' tr[style*="display:none"]');
-    var shown = 0;
-    hidden.forEach(function(row) {
-        if (shown < 10) { row.style.display = ''; shown++; }
-    });
-    if (!document.querySelectorAll('#' + tbodyId + ' tr[style*="display:none"]').length)
-        btn.closest('.ap-load-wrap').style.display = 'none';
+// ── URL эндпоинтов (Django вставляет при рендере) ──
+const URL_STATS   = "{% url 'api_admin_stats' %}";
+const URL_USERS   = "{% url 'api_admin_users' %}";
+const URL_QUIZZES = "{% url 'api_admin_quizzes' %}";
+const URL_BAN     = "/admin-panel/ban/";     // + user_id + /
+const URL_PROFILE = "/admin-panel/user/";  // + user_id + /
+const URL_PLAY    = "/quiz/";               // + quiz_id + /play/
+const URL_DEL     = "/admin-panel/delete-quiz/"; // + quiz_id + /
+const CURRENT_UID = {{ request.user.id }};
+const CSRF        = "{{ csrf_token }}";
+
+// ── Обновить карточки статистики ──
+function updateStats(data) {
+  document.getElementById('stat-users').textContent   = data.total_users;
+  document.getElementById('stat-quizzes').textContent = data.total_quizzes;
+  document.getElementById('stat-admins').textContent  = data.total_admins;
+  document.getElementById('stat-banned').textContent  = data.total_banned_users;
 }
+
+// ── Роль → бейдж ──
+function roleBadge(role) {
+  if (role === 'admin')   return '<span class="ap-badge ap-badge-admin">Админ</span>';
+  if (role === 'teacher') return '<span class="ap-badge ap-badge-teacher">Учитель</span>';
+  return '<span class="ap-badge ap-badge-user">Ученик</span>';
+}
+
+// ── Обновить таблицу пользователей ──
+function updateUsers(users) {
+  const tbody = document.getElementById('u-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = users.map(u => {
+    const banned  = u.profile__is_banned;
+    const isAdmin = u.profile__role === 'admin';
+    const isSelf  = u.id === CURRENT_UID;
+    const dateStr = new Date(u.date_joined).toLocaleDateString('ru-RU');
+    const actions = (!isAdmin && !isSelf)
+      ? `<form method="post" action="${URL_BAN}${u.id}/" style="display:inline;">
+           <input type="hidden" name="csrfmiddlewaretoken" value="${CSRF}">
+           <button type="submit" class="ap-btn ${banned ? 'ap-btn-unban' : 'ap-btn-ban'}">
+             ${banned ? '✓ Разбанить' : '✕ Забанить'}
+           </button></form>`
+      : '<span class="ap-muted">—</span>';
+    return `<tr>
+      <td class="ap-muted">${u.id}</td>
+      <td><a href="${URL_PROFILE}${u.id}/" class="ap-link">${u.username}</a></td>
+      <td class="ap-muted">${u.email || '—'}</td>
+      <td>${roleBadge(u.profile__role)}</td>
+      <td>${banned
+        ? '<span class="ap-badge ap-badge-banned">Забанен</span>'
+        : '<span class="ap-badge ap-badge-active">Активен</span>'}</td>
+      <td>${u.quiz_count}</td>
+      <td class="ap-muted">${dateStr}</td>
+      <td>${actions}</td>
+    </tr>`;
+  }).join('') || '<tr class="ap-empty"><td colspan="8">Нет пользователей</td></tr>';
+}
+
+// ── Обновить таблицу квизов ──
+function updateQuizzes(quizzes) {
+  const tbody = document.getElementById('q-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = quizzes.map(q => {
+    const dateStr = new Date(q.created_at).toLocaleDateString('ru-RU');
+    return `<tr>
+      <td class="ap-muted">${q.id}</td>
+      <td><a href="${URL_PLAY}${q.id}/play/" class="ap-link">${q.title}</a></td>
+      <td><a href="${URL_PROFILE}${q.creator__id}/" class="ap-link">${q.creator__username}</a></td>
+      <td>${q.status === 'active'
+        ? '<span class="ap-badge ap-badge-pub">Активен</span>'
+        : '<span class="ap-badge ap-badge-draft">Черновик</span>'}</td>
+      <td>${q.question_count}</td>
+      <td class="ap-muted">${dateStr}</td>
+      <td>
+        <form method="post" action="${URL_DEL}${q.id}/"
+              style="display:inline;"
+              onsubmit="return confirm('Удалить квиз «${q.title}»?')">
+          <input type="hidden" name="csrfmiddlewaretoken" value="${CSRF}">
+          <button type="submit" class="ap-btn ap-btn-del">🗑 Удалить</button>
+        </form>
+      </td>
+    </tr>`;
+  }).join('') || '<tr class="ap-empty"><td colspan="7">Квизов пока нет</td></tr>';
+}
+
+// ── Один цикл polling ──
+async function poll() {
+  try {
+    const [statsRes, usersRes, quizzesRes] = await Promise.all([
+      fetch(URL_STATS),
+      fetch(URL_USERS),
+      fetch(URL_QUIZZES),
+    ]);
+    updateStats(await statsRes.json());
+    updateUsers((await usersRes.json()).users);
+    updateQuizzes((await quizzesRes.json()).quizzes);
+  } catch (e) {
+    console.warn('Admin poll error:', e);
+  }
+}
+
+// ── Запуск ──
+poll();                          // сразу при загрузке
+setInterval(poll, 5_000);      // затем каждые 5 секунд
 </script>
 {% endblock %}

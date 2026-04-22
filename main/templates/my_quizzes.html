@@ -25,6 +25,7 @@
             </div>
             <div class="mq-stat-divider"></div>
             <div class="mq-stat">
+                <span class="mq-stat-num">{{ total_questions }}</span>
                 <span class="mq-stat-label">вопросов всего</span>
             </div>
         </div>
@@ -37,8 +38,8 @@
                 <div class="mq-card-top">
                     <div class="mq-card-num">{{ forloop.counter|stringformat:"02d" }}</div>
                     <div class="mq-card-badges">
-                        {% if quiz.is_published %}
-                        <span class="mq-badge mq-badge-pub">● Опубликован</span>
+                        {% if quiz.status == 'active' %}
+                        <span class="mq-badge mq-badge-pub">● Активен</span>
                         {% else %}
                         <span class="mq-badge mq-badge-draft">◌ Черновик</span>
                         {% endif %}
@@ -69,12 +70,26 @@
                 </div>
 
                 <div class="mq-card-actions">
+                    <form method="post" action="{% url 'toggle_quiz_status' quiz.id %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="mq-btn mq-btn-play">
+                            {% if quiz.status == 'draft' %}
+                                <span>✔</span> Активировать
+                            {% else %}
+                                <span>↩</span> В черновик
+                            {% endif %}
+                        </button>
+                    </form>
+
                     <a href="{% url 'play_quiz' quiz.id %}" class="mq-btn mq-btn-play">
                         <span>▶</span> Пройти
                     </a>
+
+                    {% if quiz.status == 'active' %}
                     <a href="{% url 'create_lobby' quiz.id %}" class="mq-btn mq-btn-lobby">
                         <span>🎮</span> Лобби
                     </a>
+                    {% endif %}
                 </div>
             </div>
             {% endfor %}
