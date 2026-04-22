@@ -26,9 +26,10 @@
                     {% if user.profile.role == 'teacher' or user.profile.role == 'admin' %}
                         <a href="{% url 'my_quizzes' %}" class="nav-link">Мои квизы</a>
                     {% endif %}
-                    <a href="{% url 'profile' %}" class="nav-link">Профиль</a>
+
 
                     {% if user.profile.is_admin %}
+                    <a href="{% url 'profile' %}" class="nav-link">Профиль</a>
                         <a href="{% url 'admin_panel' %}" class="nav-link admin-link">Админ</a>
                     {% endif %}
 
