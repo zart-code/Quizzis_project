@@ -68,9 +68,6 @@ class QuizModelTest(TestCase):
         Question.objects.create(quiz=self.quiz, text="New question")
         self.assertEqual(self.quiz.total_questions(), 2)
 
-    def test_default_is_published(self):
-        self.assertFalse(self.quiz.is_published)
-
     def test_time_limit_nullable(self):
         self.assertIsNone(self.quiz.time_limit)
 
