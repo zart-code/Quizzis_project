@@ -7,6 +7,7 @@ from main.models import Quiz
 
 
 def _handle_form(request, form_class, template_name, success_url, extra_form_kwargs=None, needs_request=False):
+    """Создание и проверка валидности формы"""
     if extra_form_kwargs is None:
         extra_form_kwargs = {}
 
