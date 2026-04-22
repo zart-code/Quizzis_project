@@ -83,5 +83,4 @@ urlpatterns = [
     path('admin-panel/api/stats/', api_admin_stats_view, name='api_admin_stats'),
     path('admin-panel/api/users/', api_admin_users_view, name='api_admin_users'),
     path('admin-panel/api/quizzes/', api_admin_quizzes_view, name='api_admin_quizzes'),
-
 ]

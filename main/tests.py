@@ -306,7 +306,8 @@ class GameParticipantModelTest(TestCase):
         self.session = GameSession.objects.get(pk=1)
         self.user = User.objects.get(pk=1)
         # Получаем существующего участника из фикстуры
-        self.existing_participant = GameParticipant.objects.get(session=self.session, user=self.user)
+        self.existing_participant = GameParticipant.objects.get(session=self.session,
+                                                                user=self.user)
 
     def test_unique_together_session_user(self):
         """Уникальность игровых сессий и юзеров"""
