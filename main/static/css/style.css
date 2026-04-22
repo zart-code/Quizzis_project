@@ -369,6 +369,12 @@ body {
     filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.5));
     animation: float 3s ease-in-out infinite;
 }
+.feature-icon-1 {
+    font-size: 2rem;
+    margin-bottom: 0rem;
+    filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.5));
+
+}
 
 @keyframes float {
     0%, 100% { transform: translateY(0); }
