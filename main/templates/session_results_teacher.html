@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Результаты — {{ session.quiz.title }} [{{ session.pin }}]{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="tr-wrapper">
+
+        <div class="tr-header">
+            <a href="{% url 'quiz_sessions_list' session.quiz.id %}" class="tr-back-link">← История сессий</a>
+            <div class="tr-title-row">
+                <div class="tr-icon">📊</div>
+                <div>
+                    <h1 class="tr-title">Результаты прохождения</h1>
+                    <p class="tr-meta">
+                        {{ session.quiz.title }} &nbsp;·&nbsp;
+                        PIN: <span class="tr-pin">{{ session.pin }}</span> &nbsp;·&nbsp;
+                        {{ session.created_at|date:"d.m.Y H:i" }}
+                    </p>
+                </div>
+            </div>
+
+            <div class="tr-summary-bar">
+                <div class="tr-sum-item">
+                    <span class="tr-sum-num">{{ rows|length }}</span>
+                    <span class="tr-sum-label">участников</span>
+                </div>
+                <div class="tr-sum-divider"></div>
+                <div class="tr-sum-item">
+                    <span class="tr-sum-num">{{ questions|length }}</span>
+                    <span class="tr-sum-label">вопросов</span>
+                </div>
+            </div>
+        </div>
+
+        {% if rows %}
+        <div class="tr-table-scroll card">
+            <table class="tr-table">
+                <thead>
+                    <tr>
+                        <th class="tr-th-rank">Место</th>
+                        <th class="tr-th-user">Участник</th>
+                        {% for q in questions %}
+                        <th class="tr-th-q" title="{{ q.text }}">В{{ forloop.counter }}</th>
+                        {% endfor %}
+                        <th class="tr-th-total">Итого</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    <tr class="tr-row {% if row.rank == 1 %}tr-gold{% elif row.rank == 2 %}tr-silver{% elif row.rank == 3 %}tr-bronze{% endif %}">
+                        <td class="tr-td-rank">
+                            {% if row.rank == 1 %}🥇
+                            {% elif row.rank == 2 %}🥈
+                            {% elif row.rank == 3 %}🥉
+                            {% else %}<span class="tr-rank-num">{{ row.rank }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="tr-td-user">
+                            <span class="tr-avatar">{{ row.user.username.0|upper }}</span>
+                            {{ row.user.username }}
+                        </td>
+                        {% for result in row.q_results %}
+                        <td class="tr-td-q">
+                            {% if result is None %}
+                                <span class="tr-ans tr-ans-skip" title="Нет ответа">—</span>
+                            {% elif result %}
+                                <span class="tr-ans tr-ans-ok" title="Верно">✓</span>
+                            {% else %}
+                                <span class="tr-ans tr-ans-no" title="Неверно">✗</span>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                        <td class="tr-td-total">
+                            <span class="tr-total-score">{{ row.score }}</span>
+                            <span class="tr-total-max">/ {{ questions|length }}</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Legend of questions -->
+        <div class="tr-questions-legend card">
+            <h3 class="tr-leg-title">Расшифровка вопросов</h3>
+            <ol class="tr-leg-list">
+                {% for q in questions %}
+                <li class="tr-leg-item">
+                    <span class="tr-leg-num">В{{ forloop.counter }}</span>
+                    <span class="tr-leg-text">{{ q.text }}</span>
+                </li>
+                {% endfor %}
+            </ol>
+        </div>
+
+        {% else %}
+        <div class="tr-empty card">
+            <div class="tr-empty-icon">👥</div>
+            <p class="tr-empty-text">В этой сессии нет участников</p>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+<style>
+.tr-wrapper{max-width:1100px;margin:0 auto;padding:2rem 0}
+.tr-header{margin-bottom:2rem}
+.tr-back-link{display:inline-block;color:var(--primary-light);text-decoration:none;font-size:.9rem;margin-bottom:1.2rem;transition:opacity .2s}
+.tr-back-link:hover{opacity:.7}
+.tr-title-row{display:flex;align-items:center;gap:1.2rem;margin-bottom:1.5rem}
+.tr-icon{font-size:3rem}
+.tr-title{font-size:1.9rem;font-weight:700;background:linear-gradient(135deg,#A78BFA,#EC4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:.3rem}
+.tr-meta{color:var(--text-secondary);font-size:.9rem}
+.tr-pin{font-family:monospace;font-weight:700;color:var(--accent)}
+.tr-summary-bar{display:flex;align-items:center;gap:1.5rem;background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.15);border-radius:12px;padding:.9rem 1.5rem;width:fit-content}
+.tr-sum-item{text-align:center}
+.tr-sum-num{display:block;font-size:1.6rem;font-weight:700;color:var(--accent)}
+.tr-sum-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted)}
+.tr-sum-divider{width:1px;height:2.5rem;background:rgba(139,92,246,.25)}
+
+/* Table */
+.tr-table-scroll{padding:0;overflow-x:auto;margin-bottom:1.5rem}
+.tr-table{width:100%;border-collapse:collapse;min-width:500px}
+.tr-table th{background:rgba(139,92,246,.14);color:var(--primary-light);font-size:.78rem;text-transform:uppercase;letter-spacing:.07em;padding:.85rem 1rem;text-align:center;border-bottom:1px solid rgba(139,92,246,.2);white-space:nowrap}
+.tr-th-user{text-align:left}
+.tr-th-rank{min-width:64px}
+.tr-th-q{min-width:44px;cursor:default}
+.tr-th-total{min-width:80px}
+.tr-table td{padding:.8rem 1rem;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle;text-align:center}
+.tr-table tr:last-child td{border-bottom:none}
+.tr-table tr:hover td{background:rgba(139,92,246,.05)}
+
+/* Rank medals */
+.tr-gold td{background:rgba(251,191,36,.06)!important}
+.tr-silver td{background:rgba(148,163,184,.06)!important}
+.tr-bronze td{background:rgba(180,120,80,.06)!important}
+
+.tr-td-rank{font-size:1.3rem}
+.tr-rank-num{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:rgba(139,92,246,.15);color:var(--text-secondary);font-size:.85rem;font-weight:700}
+.tr-td-user{text-align:left;white-space:nowrap}
+.tr-avatar{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--primary);color:#fff;font-size:.75rem;font-weight:700;margin-right:.5rem;vertical-align:middle}
+
+/* Answer cells */
+.tr-ans{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;font-size:.85rem;font-weight:700}
+.tr-ans-ok{background:rgba(16,185,129,.18);color:#34d399;border:1px solid rgba(16,185,129,.3)}
+.tr-ans-no{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.25)}
+.tr-ans-skip{background:rgba(107,114,128,.12);color:var(--text-muted);border:1px solid rgba(107,114,128,.2)}
+
+/* Total score */
+.tr-total-score{font-size:1.2rem;font-weight:700;color:var(--accent)}
+.tr-total-max{color:var(--text-muted);font-size:.85rem;margin-left:.2rem}
+
+/* Questions legend */
+.tr-questions-legend{padding:1.5rem}
+.tr-leg-title{font-size:1rem;font-weight:700;color:var(--text-primary);margin-bottom:1rem}
+.tr-leg-list{list-style:none;display:flex;flex-direction:column;gap:.5rem}
+.tr-leg-item{display:flex;align-items:flex-start;gap:.75rem;font-size:.9rem;color:var(--text-secondary)}
+.tr-leg-num{flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;padding:.2rem .55rem;border-radius:6px;background:rgba(139,92,246,.18);color:var(--primary-light);font-size:.75rem;font-weight:700;margin-top:.1rem}
+.tr-leg-text{flex:1;line-height:1.4}
+
+/* Empty */
+.tr-empty{padding:3rem;text-align:center}
+.tr-empty-icon{font-size:3rem;margin-bottom:1rem}
+.tr-empty-text{color:var(--text-muted)}
+</style>
+{% endblock %}
