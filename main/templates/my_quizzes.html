@@ -90,6 +90,10 @@
                         <span>🎮</span> Лобби
                     </a>
                     {% endif %}
+
+                    <a href="{% url 'quiz_sessions_list' quiz.id %}" class="mq-btn mq-btn-history">
+                        <span>📋</span> История
+                    </a>
                 </div>
             </div>
             {% endfor %}
@@ -113,4 +117,8 @@
     </div>
 </div>
 
+<style>
+.mq-btn-history{background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);color:var(--primary-light)}
+.mq-btn-history:hover{background:rgba(139,92,246,.25);border-color:var(--primary)}
+</style>
 {% endblock %}
