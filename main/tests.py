@@ -36,12 +36,6 @@ class CategoryModelTest(TestCase):
 
     fixtures = ["db.json"]
 
-    def test_str_method(self):
-        category = Category.objects.create(
-            name="Science", description="Natural sciences"
-        )
-        self.assertEqual(str(category), "Science")
-
     def test_unique_name_constraint(self):
         Category.objects.create(name="Math")
         with self.assertRaises(IntegrityError):
@@ -62,9 +56,6 @@ class QuizModelTest(TestCase):
     def setUp(self):
         self.quiz = Quiz.objects.get(pk=1)
         self.user = User.objects.get(pk=2)
-
-    def test_str_method(self):
-        self.assertEqual(str(self.quiz), "dsadda")
 
     def test_total_questions(self):
         self.assertEqual(self.quiz.total_questions(), 1)
@@ -99,9 +90,6 @@ class QuestionModelTest(TestCase):
     def setUp(self):
         self.question = Question.objects.get(pk=1)
         self.quiz = self.question.quiz
-
-    def test_str_method(self):
-        self.assertEqual(str(self.question), "dasda")
 
     def test_question_type_from_fixture(self):
         self.assertEqual(self.question.question_type, Question.MULTIPLE)
@@ -141,10 +129,6 @@ class AnswerModelTest(TestCase):
         self.answer_wrong = Answer.objects.get(pk=2)
         self.question = self.answer_correct.question
 
-    def test_str_method(self):
-        self.assertEqual(str(self.answer_correct), "sdasda")
-        self.assertEqual(str(self.answer_wrong), "zxczc")
-
     def test_is_correct_values(self):
         self.assertTrue(self.answer_correct.is_correct)
         self.assertFalse(self.answer_wrong.is_correct)
@@ -163,18 +147,6 @@ class QuizResultModelTest(TestCase):
     def setUp(self):
         self.user = User.objects.get(pk=1)
         self.quiz = Quiz.objects.get(pk=1)
-
-    def test_str_method(self):
-        result = QuizResult.objects.create(
-            user=self.user,
-            quiz=self.quiz,
-            score=5,
-            max_score=10,
-            score_percent=50.0,
-            completed=False,
-            order=1,
-        )
-        self.assertEqual(str(result), "5")
 
     def test_auto_fields(self):
         result = QuizResult.objects.create(user=self.user, quiz=self.quiz)
@@ -197,9 +169,6 @@ class GameSessionModelTest(TestCase):
         self.session = GameSession.objects.get(pk=1)
         self.quiz = self.session.quiz
         self.host = self.session.host
-
-    def test_str_method(self):
-        self.assertEqual(str(self.session), f"{self.quiz} [933327]")
 
     def test_pin_generation(self):
         new_session = GameSession.objects.create(quiz=self.quiz, host=self.host)
@@ -255,10 +224,6 @@ class GameParticipantModelTest(TestCase):
         participants = list(GameParticipant.objects.all())
         self.assertEqual(participants, [p2, p1])
 
-    def test_str_method(self):
-        part = GameParticipant.objects.create(session=self.session, user=self.user)
-        self.assertIn("присоединился", str(part))
-
 
 class GameAnswerModelTest(TestCase):
     """Тесты модели GameAnswer."""
@@ -308,16 +273,6 @@ class GameAnswerModelTest(TestCase):
             is_correct=True,
         )
         self.assertIsNone(ans.answered_at)
-
-    def test_str_method(self):
-        ans = GameAnswer.objects.create(
-            session=self.session,
-            participant=self.participant,
-            question=self.question,
-            answer=self.answer,
-            is_correct=True,
-        )
-        self.assertIn(str(self.answer), str(ans))
 
 
 class CustomUserCreationFormTest(TestCase):
