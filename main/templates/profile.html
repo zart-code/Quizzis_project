@@ -51,21 +51,15 @@
                         <div class="profile-history-item">
                             <div class="profile-history-info">
                                 <h4 class="profile-history-title">{{ result.quiz.title }}</h4>
-                                <p class="profile-history-date">{{ result.completed_at|date:"d.m.Y H:i" }}</p>
-                            </div>
-                            <div class="profile-history-stats">
-                                {% if result.completed %}
-                                    <span class="profile-score-badge" style="background-color:
-                                        {% if result.score_percent >= 80 %}#10B981
-                                        {% elif result.score_percent >= 60 %}#F59E0B
-                                        {% else %}#EF4444{% endif %};">
-                                        {{ result.score_percent|floatformat:0 }}%
-                                    </span>
-                                    <a href="{% url 'quiz_result' result.id %}" class="btn btn-small btn-info">Детали</a>
-                                {% else %}
-                                    <span class="profile-status-badge status-progress">В процессе</span>
-                                    <a href="{% url 'continue_quiz' result.quiz.id %}" class="btn btn-small btn-primary">Продолжить</a>
-                                {% endif %}
+                                <p class="profile-history-date">
+                                    Автор: {{ result.quiz.creator.username }}
+                                </p>
+                                <p class="profile-history-date">
+                                    Время прохождения: {{ result.completed_at|date:"d.m.Y H:i" }}
+                                </p>
+                                <p class="profile-history-date">
+                                    Количество вопросов: {{ result.quiz.total_questions }}
+                                </p>
                             </div>
                         </div>
                     {% endfor %}

@@ -23,7 +23,13 @@ def profile_view(request, user_id=None):
         is_admin_view = False
 
     total_quizzes = Quiz.objects.count()
-    completed_quizzes = QuizResult.objects.filter(user=user, completed=True).count()
+    completed_quizzes = (
+        QuizResult.objects
+        .filter(user=user, completed=True)
+        .values('quiz')
+        .distinct()
+        .count()
+    )
 
     score_stats = QuizResult.objects.filter(user=user, completed=True).aggregate(
         avg_score=Avg('score_percent'),
@@ -39,15 +45,12 @@ def profile_view(request, user_id=None):
         best_score=Max('results__score_percent', filter=Q(results__user=user))
     ).filter(quizzes_taken__gt=0)
 
-    status_filter = request.GET.get('status', 'all')
-    quiz_history = QuizResult.objects.filter(user=user).select_related('quiz')
-
-    if status_filter == 'completed':
-        quiz_history = quiz_history.filter(completed=True)
-    elif status_filter == 'in_progress':
-        quiz_history = quiz_history.filter(completed=False)
-
-    quiz_history = quiz_history.order_by('-completed_at', '-started_at')[:10]
+    quiz_history = (
+        QuizResult.objects
+        .filter(user=user, completed=True)
+        .select_related('quiz', 'quiz__creator')
+        .order_by('-completed_at')[:10]
+    )
 
     user_achievements = UserAchievement.objects.filter(user=user).select_related('achievement')
     unlocked_achievement_ids = user_achievements.values_list('achievement_id', flat=True)

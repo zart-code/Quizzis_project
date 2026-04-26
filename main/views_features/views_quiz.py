@@ -2,8 +2,9 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from main.models import Quiz, Question, Answer, Profile
+from main.models import Quiz, Question, Answer, Profile,QuizResult
 from django.views.decorators.http import require_POST
+from django.utils import timezone
 
 
 @login_required
@@ -122,8 +123,26 @@ def play_quiz_view(request, quiz_id):
             answers_log = request.session.get(f'quiz_{quiz_id}_log', [])
             score = sum(1 for r in answers_log if r['correct'])
             total = len(answers_log)
+            score_percent = (score / total * 100) if total else 0
+
+            result_id = request.session.get(f'quiz_{quiz_id}_result_id')
+            if result_id:
+                QuizResult.objects.filter(
+                    id=result_id,
+                    user=request.user,
+                    quiz=quiz
+                ).update(
+                    score=score,
+                    max_score=total,
+                    score_percent=score_percent,
+                    completed=True,
+                    completed_at=timezone.now(),
+                )
+
             request.session.pop(f'quiz_{quiz_id}_log', None)
             request.session.pop(f'quiz_{quiz_id}_index', None)
+            request.session.pop(f'quiz_{quiz_id}_result_id', None)
+
             return render(request, 'play_quiz.html', {
                 'quiz': quiz,
                 'score': score,
@@ -196,8 +215,18 @@ def play_quiz_view(request, quiz_id):
                 'show_result': False,
             })
 
+    result = QuizResult.objects.create(
+        user=request.user,
+        quiz=quiz,
+        score=0,
+        max_score=len(questions),
+        score_percent=0,
+        completed=False,
+    )
+
     request.session[f'quiz_{quiz_id}_log'] = []
     request.session[f'quiz_{quiz_id}_index'] = 0
+    request.session[f'quiz_{quiz_id}_result_id'] = result.id
     return render(request, 'play_quiz.html', {
         'quiz': quiz,
         'question': questions[0],
