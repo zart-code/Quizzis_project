@@ -3,7 +3,8 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
-from main.models import GameSession, Quiz, GameParticipant, GameAnswer, Question
+from main.models import GameSession, Quiz, GameParticipant, GameAnswer, Question, QuizResult
+from django.utils import timezone
 
 
 @login_required
@@ -116,6 +117,19 @@ def session_play_view(request, pin):
 
     # Показать результаты если игра завершена или вопросы кончились
     if session.status == GameSession.FINISHED or session.current_question >= total:
+        result_session_key = f'lobby_result_{pin}'
+        result_id = request.session.get(result_session_key)
+        score_percent = (participant.score / total * 100) if total else 0
+
+        if result_id is not None:
+            QuizResult.objects.filter(id=result_id, user=request.user).update(
+                score=participant.score,
+                max_score=total,
+                score_percent=score_percent,
+                completed=True,
+                completed_at=timezone.now(),
+            )
+
         return render(request, 'session_results.html', {
             'session': session,
             'participant': participant,
@@ -124,6 +138,19 @@ def session_play_view(request, pin):
     if session.status != GameSession.IN_PROGRESS:
         return redirect('join_lobby', pin=pin)
 
+    result_session_key = f'lobby_result_{pin}'
+    result_id = request.session.get(result_session_key)
+
+    if result_id is None:
+        result = QuizResult.objects.create(
+            user=request.user,
+            quiz=session.quiz,
+            score=0,
+            max_score=total,
+            score_percent=0,
+            completed=False,
+        )
+        request.session[result_session_key] = result.id
     question = questions[session.current_question]
 
     if request.method == 'POST':
