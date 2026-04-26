@@ -26,7 +26,7 @@ def profile_view(request, user_id=None):
     completed_quizzes = (
         QuizResult.objects
         .filter(user=user, completed=True)
-        .values('quiz')
+        .values('quiz' )
         .distinct()
         .count()
     )
