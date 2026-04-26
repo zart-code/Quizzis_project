@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}История сессий — {{ quiz.title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="hs-wrapper">
+
+        <div class="hs-header">
+            <a href="{% url 'my_quizzes' %}" class="hs-back-link">← Мои квизы</a>
+            <h1 class="hs-title">📋 История сессий</h1>
+            <p class="hs-quiz-name">{{ quiz.title }}</p>
+        </div>
+
+        {% if sessions %}
+        <div class="hs-table-wrap card">
+            <table class="hs-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>PIN</th>
+                        <th>Дата</th>
+                        <th>Участники</th>
+                        <th>Статус</th>
+                        <th>Действие</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in sessions %}
+                    <tr>
+                        <td class="hs-td-num">{{ forloop.counter }}</td>
+                        <td><span class="hs-pin">{{ s.pin }}</span></td>
+                        <td class="hs-td-date">{{ s.created_at|date:"d.m.Y H:i" }}</td>
+                        <td>{{ s.participants.count }}</td>
+                        <td>
+                            {% if s.status == 'finished' %}
+                                <span class="hs-badge hs-badge-done">✓ Завершена</span>
+                            {% elif s.status == 'in_progress' %}
+                                <span class="hs-badge hs-badge-live">● Идёт</span>
+                            {% else %}
+                                <span class="hs-badge hs-badge-wait">◌ Ожидание</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'session_results_teacher' s.pin %}" class="btn btn-small btn-primary">
+                                📊 Результаты
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="hs-empty card">
+            <div class="hs-empty-icon">📭</div>
+            <p class="hs-empty-text">Сессий по этому квизу ещё не было</p>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+<style>
+.hs-wrapper{max-width:900px;margin:0 auto;padding:2rem 0}
+.hs-header{text-align:center;margin-bottom:2rem}
+.hs-back-link{display:inline-block;color:var(--primary-light);text-decoration:none;font-size:.9rem;margin-bottom:1rem;transition:opacity .2s}
+.hs-back-link:hover{opacity:.7}
+.hs-title{font-size:2rem;font-weight:700;background:linear-gradient(135deg,#A78BFA,#EC4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:.4rem}
+.hs-quiz-name{color:var(--text-secondary)}
+.hs-table-wrap{padding:0;overflow:hidden}
+.hs-table{width:100%;border-collapse:collapse}
+.hs-table th{background:rgba(139,92,246,.15);color:var(--primary-light);font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;padding:.9rem 1.2rem;text-align:left;border-bottom:1px solid rgba(139,92,246,.2)}
+.hs-table td{padding:.85rem 1.2rem;border-bottom:1px solid rgba(255,255,255,.04);color:var(--text-primary);vertical-align:middle}
+.hs-table tr:last-child td{border-bottom:none}
+.hs-table tr:hover td{background:rgba(139,92,246,.06)}
+.hs-td-num{color:var(--text-muted);font-size:.85rem}
+.hs-pin{font-family:monospace;font-size:1.05rem;font-weight:700;color:var(--accent);letter-spacing:.1em}
+.hs-td-date{color:var(--text-secondary);font-size:.9rem}
+.hs-badge{display:inline-block;padding:.25rem .7rem;border-radius:20px;font-size:.78rem;font-weight:600}
+.hs-badge-done{background:rgba(16,185,129,.15);color:#34d399;border:1px solid rgba(16,185,129,.3)}
+.hs-badge-live{background:rgba(245,158,11,.15);color:#fbbf24;border:1px solid rgba(245,158,11,.3)}
+.hs-badge-wait{background:rgba(156,163,175,.1);color:var(--text-muted);border:1px solid rgba(156,163,175,.2)}
+.hs-empty{padding:3rem;text-align:center}
+.hs-empty-icon{font-size:3rem;margin-bottom:1rem}
+.hs-empty-text{color:var(--text-muted)}
+</style>
+{% endblock %}

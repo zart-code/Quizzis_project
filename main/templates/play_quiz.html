@@ -1,124 +1,228 @@
 {% extends "base.html" %}
 
 {% block title %}{{ quiz.title }} - Quizziz{% endblock %}
+{% load static %}
 
 {% block content %}
-<h2>{{ quiz.title }}</h2>
+<div class="container">
+    <div class="sp-wrapper">
 
-{% if finished %}
-    <p>Результат: {{ score }} / {{ total }}</p>
-    <a href="{% url 'play_quiz' quiz.id %}">Пройти ещё раз</a>
-    <br>
-    <a href="{% url 'my_quizzes' %}">← Мои квизы</a>
+        {% if not finished %}
+        <div class="sp-header">
+            <div class="sp-quiz-title">{{ quiz.title }}</div>
+            <div class="sp-progress-row">
+                <span class="sp-progress-text">Вопрос {{ index|add:1 }} из {{ total }}</span>
+                {% if finished %}<span class="sp-score">⭐ {{ score }}</span>{% endif %}
+            </div>
+            <div class="sp-progress-bar-bg">
+                <div class="sp-progress-bar-fill" style="width:{% widthratio index|add:1 total 100 %}%"></div>
+            </div>
+        </div>
+        {% endif %}
 
-{% elif show_result %}
-    {% if timed_out %}
-        <p>Время истекло!</p>
-    {% elif is_correct is None %}
-        <p>Ответ принят — будет проверен преподавателем вручную</p>
-    {% elif is_correct %}
-        <p>Верно!</p>
-    {% else %}
-        <p>Неверно!</p>
-    {% endif %}
+        {% if finished %}
+        {# ─── FINISHED SCREEN ─── #}
+        <div class="card sp-finished-card">
+            <div class="sp-finished-icon">🏆</div>
+            <h2 class="sp-finished-title">Квиз завершён!</h2>
+            <div class="sp-finished-score">{{ score }} / {{ total }}</div>
+            <p class="sp-finished-sub">Правильных ответов</p>
+            <div class="sp-finished-actions">
+                <a href="{% url 'play_quiz' quiz.id %}" class="btn btn-primary btn-large">🔄 Пройти ещё раз</a>
+                <a href="{% url 'main_page' %}" class="btn btn-secondary">← На главную</a>
+                <a href="{% url 'quizzes_view' %}" class="btn btn-secondary">← К квизам</a>
 
-    {% if question.question_type == 'single' and correct_answer %}
-        <p>Правильный ответ: {{ correct_answer.text }}</p>
-    {% elif question.question_type == 'multiple' %}
-        <p>Правильные ответы:
-            {% for answer in question.answers.all %}
-                {% if answer.is_correct %}{{ answer.text }}; {% endif %}
-            {% endfor %}
-        </p>
-    {% elif question.question_type == 'number' %}
-        <p>Правильное число: {{ question.correct_number }}</p>
-    {% endif %}
+            </div>
+        </div>
 
-    <form method="post">
-        {% csrf_token %}
-        <input type="hidden" name="index" value="{{ next_index }}">
-        {% if is_last %}
-            <input type="hidden" name="action" value="finish">
-            <button type="submit">Посмотреть результат</button>
+        {% elif show_result %}
+        {# ─── RESULT SCREEN ─── #}
+        <div class="card sp-result-card">
+            {% if timed_out %}
+                <div class="sp-result-icon sp-timeout">⏰</div>
+                <h2 class="sp-result-title sp-timeout">Время истекло!</h2>
+            {% elif is_correct is None %}
+                <div class="sp-result-icon sp-manual">📋</div>
+                <h2 class="sp-result-title sp-manual">Ответ принят</h2>
+                <p class="sp-result-sub">Будет проверен преподавателем вручную</p>
+            {% elif is_correct %}
+                <div class="sp-result-icon sp-correct">✅</div>
+                <h2 class="sp-result-title sp-correct">Верно!</h2>
+            {% else %}
+                <div class="sp-result-icon sp-wrong">❌</div>
+                <h2 class="sp-result-title sp-wrong">Неверно!</h2>
+            {% endif %}
+
+            {% if question.question_type == 'single' and correct_answer %}
+                <div class="sp-correct-answer">
+                    <span class="sp-correct-label">Правильный ответ:</span>
+                    <span class="sp-correct-value">{{ correct_answer.text }}</span>
+                </div>
+            {% elif question.question_type == 'multiple' %}
+                <div class="sp-correct-answer">
+                    <span class="sp-correct-label">Правильные ответы:</span>
+                    <span class="sp-correct-value">
+                        {% for answer in question.answers.all %}
+                            {% if answer.is_correct %}{{ answer.text }}{% if not forloop.last %}; {% endif %}{% endif %}
+                        {% endfor %}
+                    </span>
+                </div>
+            {% elif question.question_type == 'number' %}
+                <div class="sp-correct-answer">
+                    <span class="sp-correct-label">Правильное число:</span>
+                    <span class="sp-correct-value">{{ question.correct_number }}</span>
+                </div>
+            {% endif %}
+
+            <form method="post" class="sp-result-form">
+                {% csrf_token %}
+                <input type="hidden" name="index" value="{{ next_index }}">
+                {% if is_last %}
+                    <input type="hidden" name="action" value="finish">
+                    <button type="submit" class="btn btn-primary btn-large">🏁 Посмотреть результат</button>
+                {% else %}
+                    <input type="hidden" name="action" value="next">
+                    <button type="submit" class="btn btn-primary btn-large">➡️ Следующий вопрос</button>
+                {% endif %}
+            </form>
+        </div>
+
         {% else %}
-            <input type="hidden" name="action" value="next">
-            <button type="submit">Следующий вопрос</button>
-        {% endif %}
-    </form>
+        {# ─── QUESTION SCREEN ─── #}
+        <div class="card sp-question-card">
+            {% if question.time_limit %}
+            <div class="sp-timer-row">
+                <div class="sp-timer-bar-bg"><div class="sp-timer-bar" id="timer-bar"></div></div>
+                <span class="sp-timer-num" id="timer">{{ question.time_limit }}</span>
+            </div>
+            {% endif %}
 
-{% else %}
-    <p>Вопрос {{ index|add:1 }} из {{ total }}</p>
-    <strong>{{ question.text }}</strong>
+            <h2 class="sp-question-text">{{ question.text }}</h2>
 
-    <form method="post" id="answer-form">
-        {% csrf_token %}
-        <input type="hidden" name="index" value="{{ index }}">
-        <input type="hidden" name="action" value="answer">
-        <input type="hidden" name="timed_out" value="0" id="timed-out-field">
+            <form method="post" id="answer-form">
+                {% csrf_token %}
+                <input type="hidden" name="index" value="{{ index }}">
+                <input type="hidden" name="action" value="answer">
+                <input type="hidden" name="timed_out" value="0" id="timed-out-field">
 
-        {% if question.question_type == 'single' %}
-            <ul>
-                {% for answer in question.answers.all %}
-                <li>
-                    <label>
-                        <input type="radio" name="answer" value="{{ answer.id }}" required>
-                        {{ answer.text }}
+                {% if question.question_type == 'single' %}
+                <div class="sp-answers-grid">
+                    {% for answer in question.answers.all %}
+                    <label class="sp-answer-label">
+                        <input type="radio" name="answer" value="{{ answer.id }}" required class="sp-radio">
+                        <span class="sp-answer-text">{{ answer.text }}</span>
                     </label>
-                </li>
-                {% endfor %}
-            </ul>
-
-        {% elif question.question_type == 'multiple' %}
-            <ul>
-                {% for answer in question.answers.all %}
-                <li>
-                    <label>
-                        <input type="checkbox" name="answer" value="{{ answer.id }}">
-                        {{ answer.text }}
+                    {% endfor %}
+                </div>
+                {% elif question.question_type == 'multiple' %}
+                <div class="sp-answers-grid">
+                    {% for answer in question.answers.all %}
+                    <label class="sp-answer-label">
+                        <input type="checkbox" name="answer" value="{{ answer.id }}" class="sp-check">
+                        <span class="sp-answer-text">{{ answer.text }}</span>
                     </label>
-                </li>
-                {% endfor %}
-            </ul>
+                    {% endfor %}
+                </div>
+                {% elif question.question_type == 'number' %}
+                <div class="sp-input-row">
+                    <input type="number" step="any" name="answer_number" class="form-control" placeholder="Введите число..." required>
+                </div>
+                {% elif question.question_type == 'text' %}
+                <div class="sp-input-row">
+                    <input type="text" name="answer_text" class="form-control" placeholder="Введите ответ...">
+                    <p class="sp-hint">💬 Проверяется вручную</p>
+                </div>
+                {% endif %}
 
-        {% elif question.question_type == 'number' %}
-            <input type="number" step="any" name="answer_number" required>
-
-        {% elif question.question_type == 'text' %}
-            <input type="text" name="answer_text">
-            <p><em>Ответ будет проверен преподавателем вручную</em></p>
+                <div class="sp-submit-row">
+                    <button type="submit" class="btn btn-primary btn-large">✅ Ответить</button>
+                </div>
+            </form>
+        </div>
         {% endif %}
 
-        <p>Осталось времени: <span id="timer">{{ question.time_limit }}</span> сек</p>
-        <button type="submit" id="submit-btn">Ответить</button>
-    </form>
-{% endif %}
+    </div>
+</div>
+
+<style>
+.sp-wrapper{max-width:700px;margin:0 auto;padding:2rem 0}
+.sp-header{margin-bottom:1.5rem}
+.sp-quiz-title{font-size:1rem;color:var(--text-muted);text-align:center;margin-bottom:.5rem}
+.sp-progress-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem}
+.sp-progress-text{color:var(--text-secondary);font-size:.9rem;font-weight:500}
+.sp-score{color:var(--accent);font-weight:700;font-size:1rem}
+.sp-progress-bar-bg{height:6px;background:rgba(139,92,246,.15);border-radius:10px;overflow:hidden}
+.sp-progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--secondary));border-radius:10px;transition:width .4s}
+
+/* Question card */
+.sp-question-card{padding:2rem}
+.sp-timer-row{display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem}
+.sp-timer-bar-bg{flex:1;height:8px;background:rgba(139,92,246,.15);border-radius:10px;overflow:hidden}
+.sp-timer-bar{height:100%;background:linear-gradient(90deg,var(--primary),var(--secondary));border-radius:10px;transition:width 1s linear}
+.sp-timer-num{font-size:1.4rem;font-weight:700;color:var(--primary-light);min-width:2.5rem;text-align:right}
+.sp-question-text{font-size:1.4rem;font-weight:600;color:var(--text-primary);margin-bottom:1.5rem;line-height:1.4;text-align:center}
+.sp-answers-grid{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-bottom:1.5rem}
+@media(max-width:500px){.sp-answers-grid{grid-template-columns:1fr}}
+.sp-answer-label{display:flex;align-items:center;gap:.8rem;background:rgba(139,92,246,.08);border:2px solid rgba(139,92,246,.2);border-radius:14px;padding:1rem 1.2rem;cursor:pointer;transition:all .2s}
+.sp-answer-label:hover{background:rgba(139,92,246,.18);border-color:var(--primary)}
+.sp-answer-label:has(.sp-radio:checked),.sp-answer-label:has(.sp-check:checked){background:rgba(139,92,246,.25);border-color:var(--primary-light)}
+.sp-radio,.sp-check{width:18px;height:18px;accent-color:var(--primary);flex-shrink:0}
+.sp-answer-text{color:var(--text-primary);font-size:.95rem}
+.sp-input-row{margin-bottom:1.5rem}
+.sp-hint{color:var(--text-muted);font-size:.85rem;margin-top:.5rem;font-style:italic}
+.sp-submit-row{text-align:center}
+
+/* Result card */
+.sp-result-card{padding:2.5rem 2rem;text-align:center}
+.sp-result-icon{font-size:3rem;margin-bottom:.75rem}
+.sp-result-title{font-size:1.6rem;font-weight:700;margin-bottom:.5rem}
+.sp-result-title.sp-correct{color:#22c55e}
+.sp-result-title.sp-wrong{color:#ef4444}
+.sp-result-title.sp-timeout{color:#f59e0b}
+.sp-result-title.sp-manual{color:var(--primary-light)}
+.sp-result-sub{color:var(--text-secondary);margin-bottom:1rem}
+.sp-correct-answer{background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.25);border-radius:12px;padding:.9rem 1.2rem;margin:1rem 0 1.5rem;text-align:left}
+.sp-correct-label{display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.25rem;text-transform:uppercase;letter-spacing:.05em}
+.sp-correct-value{color:var(--text-primary);font-weight:600;font-size:1rem}
+.sp-result-form{margin-top:1.5rem}
+
+/* Finished card */
+.sp-finished-card{padding:3rem 2rem;text-align:center}
+.sp-finished-icon{font-size:3.5rem;margin-bottom:1rem}
+.sp-finished-title{font-size:1.6rem;font-weight:700;color:var(--primary-light);margin-bottom:.5rem}
+.sp-finished-score{font-size:3.5rem;font-weight:800;color:var(--accent);line-height:1}
+.sp-finished-sub{color:var(--text-secondary);margin-top:.25rem;margin-bottom:2rem}
+.sp-finished-actions{display:flex;flex-direction:column;gap:.8rem;align-items:center}
+</style>
 {% endblock %}
 
 {% block extra_js %}
 {% if not finished and not show_result %}
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const timeLimit = {{ question.time_limit }};
-        const timerEl = document.getElementById('timer');
-        const form = document.getElementById('answer-form');
-        const timedOutField = document.getElementById('timed-out-field');
+document.addEventListener('DOMContentLoaded', function () {
+    const timeLimit = {{ question.time_limit }};
+    const timerEl = document.getElementById('timer');
+    const bar = document.getElementById('timer-bar');
+    const form = document.getElementById('answer-form');
+    const timedOut = document.getElementById('timed-out-field');
+    let remaining = timeLimit;
+    if (bar) bar.style.width = '100%';
 
-        let remaining = timeLimit;
-
-        const interval = setInterval(function () {
-            remaining--;
-            timerEl.textContent = remaining;
-            if (remaining <= 0) {
-                clearInterval(interval);
-                timedOutField.value = '1';
-                form.submit();
-            }
-        }, 1000);
-
-        form.addEventListener('submit', function () {
+    const interval = setInterval(function () {
+        remaining--;
+        if (timerEl) timerEl.textContent = remaining;
+        if (bar) bar.style.width = (remaining / timeLimit * 100) + '%';
+        if (remaining <= 5 && bar) bar.style.background = 'linear-gradient(90deg,#EF4444,#F59E0B)';
+        if (remaining <= 0) {
             clearInterval(interval);
-        });
-    });
+            timedOut.value = '1';
+            form.submit();
+        }
+    }, 1000);
+
+    form.addEventListener('submit', function () { clearInterval(interval); });
+});
 </script>
 {% endif %}
 {% endblock %}
+

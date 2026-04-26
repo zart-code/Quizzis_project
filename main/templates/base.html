@@ -14,9 +14,10 @@
     <nav class="navbar">
         <div class="container">
             <div class="nav-brand">
-                <a href="{% url 'main_page' %}">
-                    <span class="logo">🎯 Quizziz</span>
-                </a>
+                    <a style="display: flex;" href="{% url 'main_page' %}">
+                    <div class="feature-icon-1">🎯</div>
+                    <div class="logo"> Quizziz</div>
+                    </a>
             </div>
             <div class="nav-menu">
                 <a href="{% url 'main_page' %}" class="nav-link">Главная</a>
@@ -26,11 +27,19 @@
                     {% if user.profile.role == 'teacher' or user.profile.role == 'admin' %}
                         <a href="{% url 'my_quizzes' %}" class="nav-link">Мои квизы</a>
                     {% endif %}
-                    <a href="{% url 'profile' %}" class="nav-link">Профиль</a>
+
+
                     {% if user.profile.is_admin %}
+                    <a href="{% url 'profile' %}" class="nav-link">Профиль</a>
                         <a href="{% url 'admin_panel' %}" class="nav-link admin-link">Админ</a>
                     {% endif %}
+
                     <a href="{% url 'logout' %}" class="nav-link">Выход</a>
+                {% if not user.profile.is_admin %}
+                        <a href="{% url 'profile' %}" class="profile-avatar-large">{{ user.username.0|upper }}</a>
+                    {% endif %}
+
+
                 {% else %}
                     <a href="{% url 'login_page' %}" class="nav-link">Вход</a>
                     <a href="{% url 'register_page' %}" class="nav-link btn-primary">Регистрация</a>
@@ -59,3 +68,4 @@
     {% block extra_js %}{% endblock %}
 </body>
 </html>
+
