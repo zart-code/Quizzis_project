@@ -57,7 +57,7 @@
                         <!-- Заголовок квиза -->
                         <div class="quiz-compact-header">
                             <h3 class="quiz-compact-title">{{ quiz.title }}</h3>
-                            <span class="quiz-compact-count">{{ quiz.questions_count }} вопр.</span>
+                            <span class="quiz-compact-count">{{ quiz.total_questions }} вопр.</span>
                         </div>
 
                         <!-- Описание -->
@@ -68,10 +68,11 @@
                         <!-- Статистика -->
                         <div class="quiz-compact-stats">
                             <span class="quiz-stat-item">
-                                👤 {{ quiz.author.username }}
+                                👤 {{ quiz.creator }}
                             </span>
                             <span class="quiz-stat-item">
-                                📊 {{ quiz.results_count }} прохожд.
+                                📊 {{ quiz.history_count }} прохожд.
+                                <!-- history_count ещё нет в models.py поэтому ничего не отображается -->
                             </span>
                             {% if quiz.avg_score %}
                                 <span class="quiz-stat-item">
