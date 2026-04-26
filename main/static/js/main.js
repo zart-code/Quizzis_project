@@ -348,6 +348,52 @@ function makeAnswersText(){
     return `<p class="text-hint">💬 Ответ проверяется преподавателем вручную</p>`;
 }
 
+function collectAnswerState(i){
+    const state = {
+        texts: [],
+        checked: [],
+        numberValue: ''
+    };
+
+    for(let j = 0; j < 4; j++){
+        const textInput = document.querySelector(`input[name="q${i}_ans${j}"]`);
+        if(textInput){
+            state.texts[j] = textInput.value;
+        }
+    }
+
+    const checkedInputs = document.querySelectorAll(`input[name="q${i}_correct"]:checked`);
+    state.checked = Array.from(checkedInputs).map(input => input.value);
+
+    const numberInput = document.querySelector(`input[name="q${i}_correct_number"]`);
+    if(numberInput){
+        state.numberValue = numberInput.value;
+    }
+
+    return state;
+}
+
+function restoreAnswerState(i, state){
+    for(let j = 0; j < 4; j++){
+        const textInput = document.querySelector(`input[name="q${i}_ans${j}"]`);
+        if(textInput && state.texts[j] !== undefined){
+            textInput.value = state.texts[j];
+        }
+    }
+
+    state.checked.forEach(value => {
+        const input = document.querySelector(`input[name="q${i}_correct"][value="${value}"]`);
+        if(input){
+            input.checked = true;
+        }
+    });
+
+    const numberInput = document.querySelector(`input[name="q${i}_correct_number"]`);
+    if(numberInput && state.numberValue !== undefined){
+        numberInput.value = state.numberValue;
+    }
+}
+
 function makeQuestion(i){
     const questionsContainer = document.getElementById('questions-container');
     if (!questionsContainer) {
@@ -387,12 +433,16 @@ function removeQuestion(i){
 }
 
 function updateAnswers(i){
-    const type=document.getElementById(`q${i}_type`).value;
-    const c=document.getElementById(`q${i}_answers`);
-    if(type==='single') c.innerHTML=makeAnswersSingle(i);
-    else if(type==='multiple') c.innerHTML=makeAnswersMultiple(i);
-    else if(type==='number') c.innerHTML=makeAnswersNumber(i);
-    else c.innerHTML=makeAnswersText();
+    const type = document.getElementById(`q${i}_type`).value;
+    const c = document.getElementById(`q${i}_answers`);
+    const state = collectAnswerState(i);
+
+    if(type === 'single') c.innerHTML = makeAnswersSingle(i);
+    else if(type === 'multiple') c.innerHTML = makeAnswersMultiple(i);
+    else if(type === 'number') c.innerHTML = makeAnswersNumber(i);
+    else c.innerHTML = makeAnswersText();
+
+    restoreAnswerState(i, state);
 }
 
 const addQuestionBtn = document.getElementById('add-question-btn');
