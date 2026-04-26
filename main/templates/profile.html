@@ -10,12 +10,12 @@
         <div class="profile-card-main">
             <div class="profile-user-info">
                 <div class="profile-avatar-large">
-                    {{ user.username.0|upper }}
+                    {{ profile_user.username.0|upper }}
                 </div>
                 <div class="profile-user-details">
-                    <h2 class="profile-username">{{ user.username }}</h2>
-                    <p class="profile-email">{{ user.email }}</p>
-                    <p class="profile-joined">Присоединился: {{ user.date_joined|date:"d.m.Y" }}</p>
+                    <h2 class="profile-username">{{ profile_user.username }}</h2>
+                    <p class="profile-email">{{ profile_user.email }}</p>
+                    <p class="profile-joined">Присоединился: {{ profile_user.date_joined|date:"d.m.Y" }}</p>
                 </div>
             </div>
 
@@ -35,7 +35,7 @@
 
                 <div class="profile-stat-card">
                     <div class="profile-stat-icon">✏️</div>
-                    <div class="profile-stat-value">{{ user.created_quizzes.count|default:0 }}</div>
+                    <div class="profile-stat-value">{{ profile_user.created_quizzes.count|default:0 }}</div>
                     <div class="profile-stat-label">Создано квизов</div>
                 </div>
             </div>
@@ -122,7 +122,7 @@
         <!-- Кнопки действий -->
         <div class="profile-actions">
             {% if is_admin_view %}
-                <a href="{% url 'admin_edit_user' user.id %}" class="btn btn-secondary btn-large">✏️ Редактировать профиль</a>
+                <a href="{% url 'admin_edit_user' profile_user.id %}" class="btn btn-secondary btn-large">✏️ Редактировать профиль</a>
                 <a href="{% url 'admin_panel' %}" class="btn btn-secondary btn-large">← Назад в панель</a>
             {% else %}
                 <a href="{% url 'edit_profile' %}" class="btn btn-secondary btn-large">Редактировать профиль</a>

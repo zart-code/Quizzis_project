@@ -35,9 +35,7 @@
                     {% endif %}
 
                     <a href="{% url 'logout' %}" class="nav-link">Выход</a>
-                {% if not user.profile.is_admin %}
-                        <a href="{% url 'profile' %}" class="profile-avatar-large">{{ user.username.0|upper }}</a>
-                    {% endif %}
+                <a href="{% url 'profile' %}" class="profile-avatar-large">{{ user.username.0|upper }}</a>
 
 
                 {% else %}
