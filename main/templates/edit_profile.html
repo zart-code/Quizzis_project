@@ -18,7 +18,7 @@
                            id="username"
                            name="username"
                            class="form-control"
-                           value="{{ user.username }}"
+                           value="{{ edited_user.username }}"
                            required>
                 </div>
 
@@ -29,7 +29,8 @@
                            id="password"
                            name="password"
                            class="form-control"
-                           minlength="8">
+                           minlength="8"
+                           required>
                     <small class="form-hint">Минимум 8 символов</small>
                 </div>
 
@@ -39,13 +40,14 @@
                            id="password_confirm"
                            name="password_confirm"
                            class="form-control"
-                           minlength="8">
+                           minlength="8"
+                           required>
                 </div>
 
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary btn-large">Сохранить изменения</button>
                     {% if is_admin_edit %}
-                        <a href="{% url 'admin_user_profile' user.id %}" class="btn btn-secondary btn-large">Отмена</a>
+                        <a href="{% url 'admin_user_profile' edited_user.id %}" class="btn btn-secondary btn-large">Отмена</a>
                     {% else %}
                         <a href="{% url 'profile' %}" class="btn btn-secondary btn-large">Отмена</a>
                     {% endif %}

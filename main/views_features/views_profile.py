@@ -23,7 +23,13 @@ def profile_view(request, user_id=None):
         is_admin_view = False
 
     total_quizzes = Quiz.objects.count()
-    completed_quizzes = QuizResult.objects.filter(user=user, completed=True).count()
+    completed_quizzes = (
+        QuizResult.objects
+        .filter(user=user, completed=True)
+        .values('quiz' )
+        .distinct()
+        .count()
+    )
 
     score_stats = QuizResult.objects.filter(user=user, completed=True).aggregate(
         avg_score=Avg('score_percent'),
@@ -39,15 +45,12 @@ def profile_view(request, user_id=None):
         best_score=Max('results__score_percent', filter=Q(results__user=user))
     ).filter(quizzes_taken__gt=0)
 
-    status_filter = request.GET.get('status', 'all')
-    quiz_history = QuizResult.objects.filter(user=user).select_related('quiz')
-
-    if status_filter == 'completed':
-        quiz_history = quiz_history.filter(completed=True)
-    elif status_filter == 'in_progress':
-        quiz_history = quiz_history.filter(completed=False)
-
-    quiz_history = quiz_history.order_by('-completed_at', '-started_at')[:10]
+    quiz_history = (
+        QuizResult.objects
+        .filter(user=user, completed=True)
+        .select_related('quiz', 'quiz__creator')
+        .order_by('-completed_at')[:10]
+    )
 
     user_achievements = UserAchievement.objects.filter(user=user).select_related('achievement')
     unlocked_achievement_ids = user_achievements.values_list('achievement_id', flat=True)
@@ -65,7 +68,7 @@ def profile_view(request, user_id=None):
         })
 
     context = {
-        'user': user,
+        'profile_user': user,
         'total_quizzes': total_quizzes,
         'completed_quizzes': completed_quizzes,
         'average_score': average_score,
@@ -111,13 +114,17 @@ def edit_profile_view(request, user_id=None):
         password = request.POST.get('password')
         password_confirm = request.POST.get('password_confirm')
 
+        if is_admin_edit and not password:
+            messages.error(request, 'При редактировании пользователя нужно указать пароль')
+            return redirect('admin_edit_user', user_id=user_id)
+
         if password:
             if password != password_confirm:
                 messages.error(request, 'Пароли не совпадают')
-                return redirect('edit_profile')
+                return redirect('admin_edit_user', user_id=user_id) if is_admin_edit else redirect('edit_profile')
             if len(password) < 8:
                 messages.error(request, 'Пароль должен быть не менее 8 символов')
-                return redirect('edit_profile')
+                return redirect('admin_edit_user', user_id=user_id) if is_admin_edit else redirect('edit_profile')
             user.set_password(password)
             if not is_admin_edit:
                 update_session_auth_hash(request, user)
@@ -129,7 +136,7 @@ def edit_profile_view(request, user_id=None):
         return redirect('profile')
 
     context = {
-        'user': request.user,
+        'edited_user': target_user,
         'is_admin_edit': is_admin_edit,
     }
     return render(request, 'edit_profile.html', context)

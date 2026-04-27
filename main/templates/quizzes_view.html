@@ -102,7 +102,7 @@
                 {% if search_query %}
                     <h3>Ничего не найдено</h3>
                     <p>По запросу "{{ search_query }}" квизы не найдены</p>
-                    <a href="{% url 'quizzes' %}" class="btn btn-primary">Сбросить поиск</a>
+                    <a href="{% url 'quizzes_view' %}" class="btn btn-primary">Сбросить поиск</a>
                 {% else %}
                     <h3>Пока нет доступных квизов</h3>
                     <p>Станьте первым, кто создаст квиз!</p>

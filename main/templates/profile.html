@@ -10,12 +10,12 @@
         <div class="profile-card-main">
             <div class="profile-user-info">
                 <div class="profile-avatar-large">
-                    {{ user.username.0|upper }}
+                    {{ profile_user.username.0|upper }}
                 </div>
                 <div class="profile-user-details">
-                    <h2 class="profile-username">{{ user.username }}</h2>
-                    <p class="profile-email">{{ user.email }}</p>
-                    <p class="profile-joined">Присоединился: {{ user.date_joined|date:"d.m.Y" }}</p>
+                    <h2 class="profile-username">{{ profile_user.username }}</h2>
+                    <p class="profile-email">{{ profile_user.email }}</p>
+                    <p class="profile-joined">Присоединился: {{ profile_user.date_joined|date:"d.m.Y" }}</p>
                 </div>
             </div>
 
@@ -35,7 +35,7 @@
 
                 <div class="profile-stat-card">
                     <div class="profile-stat-icon">✏️</div>
-                    <div class="profile-stat-value">{{ user.created_quizzes.count|default:0 }}</div>
+                    <div class="profile-stat-value">{{ profile_user.created_quizzes.count|default:0 }}</div>
                     <div class="profile-stat-label">Создано квизов</div>
                 </div>
             </div>
@@ -51,21 +51,15 @@
                         <div class="profile-history-item">
                             <div class="profile-history-info">
                                 <h4 class="profile-history-title">{{ result.quiz.title }}</h4>
-                                <p class="profile-history-date">{{ result.completed_at|date:"d.m.Y H:i" }}</p>
-                            </div>
-                            <div class="profile-history-stats">
-                                {% if result.completed %}
-                                    <span class="profile-score-badge" style="background-color:
-                                        {% if result.score_percent >= 80 %}#10B981
-                                        {% elif result.score_percent >= 60 %}#F59E0B
-                                        {% else %}#EF4444{% endif %};">
-                                        {{ result.score_percent|floatformat:0 }}%
-                                    </span>
-                                    <a href="{% url 'quiz_result' result.id %}" class="btn btn-small btn-info">Детали</a>
-                                {% else %}
-                                    <span class="profile-status-badge status-progress">В процессе</span>
-                                    <a href="{% url 'continue_quiz' result.quiz.id %}" class="btn btn-small btn-primary">Продолжить</a>
-                                {% endif %}
+                                <p class="profile-history-date">
+                                    Автор: {{ result.quiz.creator.username }}
+                                </p>
+                                <p class="profile-history-date">
+                                    Время прохождения: {{ result.completed_at|date:"d.m.Y H:i" }}
+                                </p>
+                                <p class="profile-history-date">
+                                    Количество вопросов: {{ result.quiz.total_questions }}
+                                </p>
                             </div>
                         </div>
                     {% endfor %}
@@ -128,7 +122,7 @@
         <!-- Кнопки действий -->
         <div class="profile-actions">
             {% if is_admin_view %}
-                <a href="{% url 'admin_edit_user' user.id %}" class="btn btn-secondary btn-large">✏️ Редактировать профиль</a>
+                <a href="{% url 'admin_edit_user' profile_user.id %}" class="btn btn-secondary btn-large">✏️ Редактировать профиль</a>
                 <a href="{% url 'admin_panel' %}" class="btn btn-secondary btn-large">← Назад в панель</a>
             {% else %}
                 <a href="{% url 'edit_profile' %}" class="btn btn-secondary btn-large">Редактировать профиль</a>
