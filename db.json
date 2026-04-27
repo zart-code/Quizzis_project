@@ -1,0 +1,91 @@
+[
+  {
+    "model": "auth.user",
+    "pk": 1,
+    "fields": {
+      "password": "",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "user1",
+      "first_name": "",
+      "last_name": "",
+      "email": "user1@example.com",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2023-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "auth.user",
+    "pk": 2,
+    "fields": {
+      "password": "",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "user2",
+      "first_name": "",
+      "last_name": "",
+      "email": "user2@example.com",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2023-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "main.quiz",
+    "pk": 1,
+    "fields": {
+      "title": "dsadda",
+      "creator": 2,
+      "category": null,
+      "description": "",
+      "additional_info": "",
+      "is_published": false,
+      "created_at": "2023-01-01T00:00:00Z",
+      "time_limit": null
+    }
+  },
+  {
+    "model": "main.question",
+    "pk": 1,
+    "fields": {
+      "quiz": 1,
+      "text": "dasda",
+      "question_type": "multiple",
+      "correct_number": null,
+      "time_limit": 30,
+      "order": 1
+    }
+  },
+  {
+    "model": "main.answer",
+    "pk": 1,
+    "fields": {
+      "question": 1,
+      "text": "sdasda",
+      "is_correct": true
+    }
+  },
+  {
+    "model": "main.answer",
+    "pk": 2,
+    "fields": {
+      "question": 1,
+      "text": "zxczc",
+      "is_correct": false
+    }
+  },
+  {
+    "model": "main.gamesession",
+    "pk": 1,
+    "fields": {
+      "quiz": 1,
+      "host": 1,
+      "pin": "933327",
+      "status": "waiting",
+      "is_locked": false,
+      "current_question": 0,
+      "created_at": "2023-01-01T00:00:00Z"
+    }
+  }
+]
