@@ -1,6 +1,5 @@
-# .gitlab-ci.yml
-
 stages:
+  - lint
   - test
 
 variables:
@@ -15,15 +14,21 @@ before_script:
   - apt-get update -qq && apt-get install -y -qq sqlite3 libsqlite3-dev
   - python -V
   - pip install --upgrade pip
-  - pip install coverage
+  - pip install pylint coverage
   - pip install -r requirements.txt
+
+pylint:
+  stage: lint
+  script:
+    - pylint --fail-under=8.0 --exit-zero main/
+  allow_failure: true   # пайплайн не краснеет из-за стилистических ошибок
 
 test:
   stage: test
   script:
-    - coverage run manage.py test
+    - coverage run manage.py test main   # если все тесты в приложении main
     - coverage report --fail-under=70
-  coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)/'
+  coverage: '/TOTAL.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)/'
   artifacts:
     when: always
     reports:
