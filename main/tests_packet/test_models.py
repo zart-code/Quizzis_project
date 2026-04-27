@@ -1,3 +1,6 @@
+"""Тесты для файла models.py"""
+
+
 from django.db import IntegrityError
 from django.contrib.auth.models import User
 from main.models import (
