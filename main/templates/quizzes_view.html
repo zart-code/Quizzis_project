@@ -99,6 +99,7 @@
 
                         <div class="quiz-info-content-template" id="quiz-info-{{ quiz.id }}">
                             <div class="quiz-info-popup-title">Информация о квизе</div>
+                            <div class="quiz-info-quiz-title">{{ quiz.title }}</div>
                             <div class="quiz-info-grid">
                                 <div class="quiz-info-row">
                                     <span class="quiz-info-label">Автор</span>
@@ -191,6 +192,13 @@
     display:flex;
     flex-direction:column;
     gap:.7rem;
+}
+.quiz-info-quiz-title{
+    font-size:1.35rem;
+    font-weight:700;
+    color:var(--text-primary);
+    margin-bottom:.9rem;
+    line-height:1.35;
 }
 .quiz-info-row{
     display:flex;
