@@ -72,17 +72,6 @@
             {% endif %}
         </div>
 
-        {% if best_score > 0 %}
-        <!-- Лучший результат -->
-        <div class="profile-best-score">
-            <div class="profile-trophy-icon">🏆</div>
-            <div class="profile-best-info">
-                <h4>Лучший результат</h4>
-                <p class="profile-best-value">{{ best_score|floatformat:0 }}%</p>
-            </div>
-        </div>
-        {% endif %}
-
         {% if category_stats %}
         <!-- Статистика по категориям -->
         <div class="profile-category-stats">

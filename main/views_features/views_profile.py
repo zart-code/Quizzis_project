@@ -4,7 +4,7 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Avg, Max, Count, Q
+from django.db.models import Avg, Count, Q
 from main.models import Achievement, Quiz, QuizResult, UserAchievement
 
 
@@ -32,17 +32,14 @@ def profile_view(request, user_id=None):
     )
 
     score_stats = QuizResult.objects.filter(user=user, completed=True).aggregate(
-        avg_score=Avg('score_percent'),
-        best_score=Max('score_percent')
+        avg_score=Avg('score_percent')
     )
 
     average_score = score_stats['avg_score'] or 0
-    best_score = score_stats['best_score'] or 0
 
     category_stats = Quiz.objects.values('category__name').annotate(
         quizzes_taken=Count('results', filter=Q(results__user=user)),
         average_score=Avg('results__score_percent', filter=Q(results__user=user)),
-        best_score=Max('results__score_percent', filter=Q(results__user=user))
     ).filter(quizzes_taken__gt=0)
 
     quiz_history = (
@@ -72,7 +69,6 @@ def profile_view(request, user_id=None):
         'total_quizzes': total_quizzes,
         'completed_quizzes': completed_quizzes,
         'average_score': average_score,
-        'best_score': best_score,
         'category_stats': category_stats,
         'quiz_history': quiz_history,
         'achievements': achievements,

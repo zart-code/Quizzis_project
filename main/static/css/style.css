@@ -1777,36 +1777,6 @@ body {
     margin-bottom: 2rem;
 }
 
-.profile-best-score {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
-    border-radius: 25px;
-    padding: 2rem;
-    display: flex;
-    align-items: center;
-    gap: 2rem;
-    margin-bottom: 2rem;
-    border: 1px solid rgba(245, 158, 11, 0.3);
-}
-
-.profile-trophy-icon {
-    font-size: 4rem;
-}
-
-.profile-best-info h4 {
-    font-size: 1.3rem;
-    color: var(--text-secondary);
-    margin-bottom: 0.5rem;
-}
-
-.profile-best-value {
-    font-size: 2.5rem;
-    font-weight: 700;
-    background: linear-gradient(135deg, #F59E0B 0%, #8B5CF6 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
 .profile-category-stats {
     background: rgba(26, 26, 46, 0.8);
     backdrop-filter: blur(20px);
