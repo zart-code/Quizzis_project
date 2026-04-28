@@ -42,12 +42,12 @@ def profile_view(request, user_id=None):
         average_score=Avg('results__score_percent', filter=Q(results__user=user)),
     ).filter(quizzes_taken__gt=0)
 
-    quiz_history = (
+    recent_quiz_history = (
         QuizResult.objects
         .filter(user=user, completed=True)
         .select_related('quiz', 'quiz__creator')
-        .order_by('-completed_at')[:10]
-    )
+        .order_by('-completed_at')
+    )[:5]
 
     user_achievements = UserAchievement.objects.filter(user=user).select_related('achievement')
     unlocked_achievement_ids = user_achievements.values_list('achievement_id', flat=True)
@@ -70,12 +70,39 @@ def profile_view(request, user_id=None):
         'completed_quizzes': completed_quizzes,
         'average_score': average_score,
         'category_stats': category_stats,
-        'quiz_history': quiz_history,
+        'recent_quiz_history': recent_quiz_history,
         'achievements': achievements,
         'is_admin_view': is_admin_view,
     }
 
     return render(request, 'profile.html', context)
+
+
+@login_required(login_url='login_page')
+def profile_history_view(request, user_id=None):
+    """Полная история прохождений пользователя."""
+    if user_id is not None:
+        if not request.user.profile.is_admin:
+            return redirect('profile')
+        user = get_object_or_404(User, id=user_id)
+        is_admin_view = True
+    else:
+        user = request.user
+        is_admin_view = False
+
+    quiz_history = (
+        QuizResult.objects
+        .filter(user=user, completed=True)
+        .select_related('quiz', 'quiz__creator')
+        .order_by('-completed_at')
+    )
+
+    context = {
+        'profile_user': user,
+        'quiz_history': quiz_history,
+        'is_admin_view': is_admin_view,
+    }
+    return render(request, 'profile_history.html', context)
 
 
 @login_required(login_url='login_page')

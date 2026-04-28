@@ -43,26 +43,43 @@
 
         <!-- История прохождений -->
         <div class="profile-history-section">
-            <h3 class="profile-section-title">История прохождений</h3>
+            <div class="profile-history-header">
+                <h3 class="profile-section-title">Последние 5 прохождений</h3>
+                {% if is_admin_view %}
+                    <a href="{% url 'admin_user_history' profile_user.id %}" class="btn btn-secondary">Вся история</a>
+                {% else %}
+                    <a href="{% url 'profile_history' %}" class="btn btn-secondary">Вся история</a>
+                {% endif %}
+            </div>
 
-            {% if quiz_history %}
-                <div class="profile-quiz-history">
-                    {% for result in quiz_history %}
-                        <div class="profile-history-item">
-                            <div class="profile-history-info">
-                                <h4 class="profile-history-title">{{ result.quiz.title }}</h4>
-                                <p class="profile-history-date">
-                                    Автор: {{ result.quiz.creator.username }}
-                                </p>
-                                <p class="profile-history-date">
-                                    Время прохождения: {{ result.completed_at|date:"d.m.Y H:i" }}
-                                </p>
-                                <p class="profile-history-date">
-                                    Количество вопросов: {{ result.quiz.total_questions }}
-                                </p>
-                            </div>
-                        </div>
-                    {% endfor %}
+            {% if recent_quiz_history %}
+                <div class="hs-table-wrap card">
+                    <table class="hs-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Квиз</th>
+                                <th>Автор</th>
+                                <th>Дата</th>
+                                <th>Вопросы</th>
+                                <th>Результат</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for result in recent_quiz_history %}
+                            <tr>
+                                <td class="hs-td-num">{{ forloop.counter }}</td>
+                                <td>{{ result.quiz.title }}</td>
+                                <td>{{ result.quiz.creator.username }}</td>
+                                <td class="hs-td-date">{{ result.completed_at|date:"d.m.Y H:i" }}</td>
+                                <td>{{ result.quiz.total_questions }}</td>
+                                <td>
+                                    <span class="hs-badge hs-badge-done">{{ result.score_percent|floatformat:0 }}%</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             {% else %}
                 <div class="profile-empty-state">
@@ -122,4 +139,16 @@
 </div>
 
 
+<style>
+.hs-table-wrap{padding:0;overflow-x:auto}
+.hs-table{width:100%;border-collapse:collapse;min-width:720px}
+.hs-table th{background:rgba(139,92,246,.15);color:var(--primary-light);font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;padding:.9rem 1.2rem;text-align:left;border-bottom:1px solid rgba(139,92,246,.2)}
+.hs-table td{padding:.85rem 1.2rem;border-bottom:1px solid rgba(255,255,255,.04);color:var(--text-primary);vertical-align:middle}
+.hs-table tr:last-child td{border-bottom:none}
+.hs-table tr:hover td{background:rgba(139,92,246,.06)}
+.hs-td-num{color:var(--text-muted);font-size:.85rem}
+.hs-td-date{color:var(--text-secondary);font-size:.9rem}
+.hs-badge{display:inline-block;padding:.25rem .7rem;border-radius:20px;font-size:.78rem;font-weight:600}
+.hs-badge-done{background:rgba(16,185,129,.15);color:#34d399;border:1px solid rgba(16,185,129,.3)}
+</style>
 {% endblock %}
