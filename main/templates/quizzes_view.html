@@ -78,21 +78,65 @@
                                 <span class="mq-meta-icon">👤</span>
                                 {{ quiz.creator }}
                             </span>
-                            {% if quiz.avg_score %}
+                            {% if quiz.avg_score_percent %}
                                 <span class="mq-meta-item">
                                     <span class="mq-meta-icon">⭐</span>
-                                    {{ quiz.avg_score|floatformat:0 }}%
+                                    {{ quiz.avg_score_percent|floatformat:0 }}%
                                 </span>
                             {% endif %}
                         </div>
 
                         <div class="mq-card-actions">
-                            <a href="{% url 'play_quiz' quiz.id %}" class="mq-btn mq-btn-history">
+                            <button type="button"
+                                    class="mq-btn mq-btn-history js-info-toggle"
+                                    data-quiz-id="quiz-info-{{ quiz.id }}">
                                 <span>ℹ</span> Информация
-                            </a>
+                            </button>
                             <a href="{% url 'play_quiz' quiz.id %}" class="mq-btn mq-btn-play">
                                 <span>▶</span> Пройти
                             </a>
+                        </div>
+
+                        <div class="quiz-info-content-template" id="quiz-info-{{ quiz.id }}">
+                            <div class="quiz-info-popup-title">Информация о квизе</div>
+                            <div class="quiz-info-grid">
+                                <div class="quiz-info-row">
+                                    <span class="quiz-info-label">Автор</span>
+                                    <span class="quiz-info-value">{{ quiz.creator }}</span>
+                                </div>
+                                <div class="quiz-info-row">
+                                    <span class="quiz-info-label">Количество вопросов</span>
+                                    <span class="quiz-info-value">{{ quiz.total_questions }}</span>
+                                </div>
+                                <div class="quiz-info-row">
+                                    <span class="quiz-info-label">Уже прошли</span>
+                                    <span class="quiz-info-value">{{ quiz.passed_count }}</span>
+                                </div>
+                                <div class="quiz-info-row">
+                                    <span class="quiz-info-label">Средний результат</span>
+                                    <span class="quiz-info-value">
+                                        {% if quiz.avg_score_percent %}
+                                            {{ quiz.avg_score_percent|floatformat:1 }}%
+                                        {% else %}
+                                            Нет данных
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div class="quiz-info-row">
+                                    <span class="quiz-info-label">Средний балл</span>
+                                    <span class="quiz-info-value">
+                                        {% if quiz.avg_score_points != None and quiz.avg_max_points != None %}
+                                            {{ quiz.avg_score_points|floatformat:1 }} / {{ quiz.avg_max_points|floatformat:1 }}
+                                        {% else %}
+                                            Нет данных
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div class="quiz-info-row">
+                                    <span class="quiz-info-label">Дата создания</span>
+                                    <span class="quiz-info-value">{{ quiz.created_at|date:"d.m.Y H:i" }}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 {% endfor %}
@@ -115,6 +159,13 @@
             </div>
 
     </div>
+
+    <div class="quiz-info-modal-backdrop" id="quizInfoBackdrop">
+        <div class="quiz-info-modal" role="dialog" aria-modal="true" aria-labelledby="quizInfoModalTitle">
+            <button type="button" class="quiz-info-close-btn" id="quizInfoCloseBtn">✕</button>
+            <div id="quizInfoModalBody"></div>
+        </div>
+    </div>
 </div>
 <style>
 .mq-btn-history{
@@ -126,5 +177,145 @@
     background:rgba(59,130,246,.25);
     border-color:var(--info);
 }
+.quiz-info-content-template{
+    display:none;
+}
+.quiz-info-popup-title{
+    font-size:1.15rem;
+    font-weight:700;
+    color:#C4B5FD;
+    margin-bottom:1rem;
+    letter-spacing:.03em;
+}
+.quiz-info-grid{
+    display:flex;
+    flex-direction:column;
+    gap:.7rem;
+}
+.quiz-info-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:1rem;
+    padding:.55rem .7rem;
+    border-radius:10px;
+    background:rgba(139,92,246,.08);
+}
+.quiz-info-label{
+    font-size:1rem;
+    color:var(--text-muted);
+}
+.quiz-info-value{
+    font-size:1rem;
+    color:var(--text-primary);
+    text-align:right;
+    font-weight:600;
+}
+.quiz-info-modal-backdrop{
+    position:fixed;
+    inset:0;
+    background:rgba(5,8,18,.72);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:1.2rem;
+    z-index:2500;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s ease;
+}
+.quiz-info-modal-backdrop.is-open{
+    opacity:1;
+    pointer-events:auto;
+}
+.quiz-info-modal{
+    width:min(760px, 100%);
+    max-height:90vh;
+    overflow:auto;
+    background:linear-gradient(160deg, rgba(14,21,44,.98), rgba(12,16,34,.98));
+    border:1px solid rgba(139,92,246,.42);
+    border-radius:20px;
+    box-shadow:0 30px 60px rgba(0,0,0,.45);
+    padding:1.4rem;
+    position:relative;
+}
+.quiz-info-close-btn{
+    position:absolute;
+    top:.9rem;
+    right:.9rem;
+    border:1px solid rgba(139,92,246,.35);
+    background:rgba(139,92,246,.12);
+    color:var(--text-primary);
+    width:36px;
+    height:36px;
+    border-radius:10px;
+    cursor:pointer;
+    font-size:1rem;
+    font-weight:700;
+    transition:all .2s;
+}
+.quiz-info-close-btn:hover{
+    background:rgba(139,92,246,.28);
+    transform:translateY(-1px);
+}
+@media (max-width: 768px){
+    .quiz-info-modal{
+        padding:1rem;
+    }
+    .quiz-info-label,
+    .quiz-info-value{
+        font-size:.92rem;
+    }
+    .quiz-info-row{
+        align-items:flex-start;
+        flex-direction:column;
+        gap:.35rem;
+    }
+}
 </style>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const toggles = document.querySelectorAll('.js-info-toggle');
+    const backdrop = document.getElementById('quizInfoBackdrop');
+    const modalBody = document.getElementById('quizInfoModalBody');
+    const closeBtn = document.getElementById('quizInfoCloseBtn');
+
+    function closeModal() {
+        backdrop.classList.remove('is-open');
+        document.body.style.overflow = '';
+    }
+
+    toggles.forEach(function (toggle) {
+        toggle.addEventListener('click', function (event) {
+            event.preventDefault();
+
+            const popupId = toggle.dataset.quizId;
+            const template = document.getElementById(popupId);
+            if (!template || !modalBody || !backdrop) {
+                return;
+            }
+
+            modalBody.innerHTML = template.innerHTML;
+            backdrop.classList.add('is-open');
+            document.body.style.overflow = 'hidden';
+        });
+    });
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeModal);
+    }
+
+    document.addEventListener('click', function (event) {
+        if (event.target === backdrop) {
+            closeModal();
+        }
+    });
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            closeModal();
+        }
+    });
+});
+</script>
 {% endblock %}

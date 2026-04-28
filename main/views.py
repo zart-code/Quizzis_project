@@ -2,6 +2,7 @@
 
 from django.contrib.auth import login, logout
 from django.shortcuts import render, redirect
+from django.db.models import Count, Avg, Q
 from .forms import CustomUserCreationForm, StyledAuthenticationForm
 from main.models import Quiz
 
@@ -75,7 +76,32 @@ def logout_view(request):
 def quizzes_view(request):
     """Страница квизов"""
     sort_type = request.GET.get('sort', 'new')
-    quizzes = Quiz.objects.filter(status=Quiz.ACTIVE).order_by('-created_at')
+    quizzes = (
+        Quiz.objects
+        .filter(status=Quiz.ACTIVE)
+        .select_related('creator')
+        .annotate(
+            total_questions=Count('questions', distinct=True),
+            passed_count=Count(
+                'results',
+                filter=Q(results__completed=True),
+                distinct=True,
+            ),
+            avg_score_percent=Avg(
+                'results__score_percent',
+                filter=Q(results__completed=True),
+            ),
+            avg_score_points=Avg(
+                'results__score',
+                filter=Q(results__completed=True),
+            ),
+            avg_max_points=Avg(
+                'results__max_score',
+                filter=Q(results__completed=True),
+            ),
+        )
+        .order_by('-created_at')
+    )
 
     context = {
         'current_sort': sort_type,
