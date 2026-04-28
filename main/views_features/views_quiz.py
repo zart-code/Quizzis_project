@@ -121,8 +121,8 @@ def play_quiz_view(request, quiz_id):
 
         if action == 'finish':
             answers_log = request.session.get(f'quiz_{quiz_id}_log', [])
-            score = sum(1 for r in answers_log if r['correct'])
-            total = len(answers_log)
+            score = sum(r['points'] for r in answers_log)
+            total = sum(r['max_points'] for r in answers_log)
             score_percent = (score / total * 100) if total else 0
 
             result_id = request.session.get(f'quiz_{quiz_id}_result_id')

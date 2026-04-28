@@ -191,6 +191,10 @@ class Question(models.Model):
         blank=True,
         verbose_name='Правильное число',
     )
+    coefficient = models.PositiveIntegerField(
+        default=1,
+        verbose_name='Коэффициент',
+    )
     time_limit = models.IntegerField(default=30, verbose_name='Время на ответ (сек)')
     order = models.IntegerField(default=0)
 
