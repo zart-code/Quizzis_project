@@ -26,7 +26,7 @@
             <div class="sp-finished-icon">🏆</div>
             <h2 class="sp-finished-title">Квиз завершён!</h2>
             <div class="sp-finished-score">{{ score }} / {{ total }}</div>
-            <p class="sp-finished-sub">Правильных ответов</p>
+            <p class="sp-finished-sub">Баллов</p>
             <div class="sp-finished-actions">
                 <a href="{% url 'play_quiz' quiz.id %}" class="btn btn-primary btn-large">🔄 Пройти ещё раз</a>
                 <a href="{% url 'main_page' %}" class="btn btn-secondary">← На главную</a>
@@ -81,6 +81,10 @@
                     <input type="hidden" name="action" value="finish">
                     <button type="submit" class="btn btn-primary btn-large">🏁 Посмотреть результат</button>
                 {% else %}
+                    <div class="sp-correct-answer">
+                        <span class="sp-correct-label">Баллы за вопрос:</span>
+                        <span class="sp-correct-value">{{ earned_points }} / {{ question_max_points }}</span>
+                    </div>
                     <input type="hidden" name="action" value="next">
                     <button type="submit" class="btn btn-primary btn-large">➡️ Следующий вопрос</button>
                 {% endif %}

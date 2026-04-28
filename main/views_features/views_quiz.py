@@ -166,10 +166,8 @@ def play_quiz_view(request, quiz_id):
                     answers = list(question.answers.all())
                     correct_answer = next((a for a in answers if a.is_correct), None)
 
-                    for answer in answers:
-                        user_marked = str(answer.id) == chosen_id
-                        if user_marked == answer.is_correct:
-                            earned_points += k
+                    if correct_answer and str(correct_answer.id) == chosen_id:
+                        earned_points += 4 * k
 
                     is_correct = earned_points == max_points
 
@@ -177,12 +175,22 @@ def play_quiz_view(request, quiz_id):
                     chosen_ids = set(request.POST.getlist('answer'))
                     answers = list(question.answers.all())
 
+                    mistakes = 0
                     for answer in answers:
                         user_marked = str(answer.id) in chosen_ids
-                        if user_marked == answer.is_correct:
-                            earned_points += k
+                        if user_marked != answer.is_correct:
+                            mistakes += 1
 
-                    is_correct = earned_points == max_points
+                    if mistakes == 0:
+                        earned_points = 4 * k
+                    elif mistakes == 1:
+                        earned_points = 2 * k
+                    elif mistakes == 2:
+                        earned_points = 1 * k
+                    else:
+                        earned_points = 0
+
+                    is_correct = mistakes == 0
 
                 elif question.question_type == 'number':
                     raw = request.POST.get('answer_number', '')
