@@ -154,38 +154,57 @@ def play_quiz_view(request, quiz_id):
             index = int(request.POST.get('index', 0))
             question = questions[index]
             timed_out = request.POST.get('timed_out') == '1'
+            k = question.coefficient
+            max_points = 4 * k
+            earned_points = 0
             is_correct = False
             correct_answer = None
 
             if not timed_out:
                 if question.question_type == 'single':
                     chosen_id = request.POST.get('answer')
-                    correct_answer = question.answers.filter(is_correct=True).first()
-                    is_correct = (
-                        bool(chosen_id)
-                        and correct_answer is not None
-                        and str(correct_answer.id) == chosen_id
-                    )
+                    answers = list(question.answers.all())
+                    correct_answer = next((a for a in answers if a.is_correct), None)
+
+                    for answer in answers:
+                        user_marked = str(answer.id) == chosen_id
+                        if user_marked == answer.is_correct:
+                            earned_points += k
+
+                    is_correct = earned_points == max_points
 
                 elif question.question_type == 'multiple':
                     chosen_ids = set(request.POST.getlist('answer'))
-                    correct_ids = set(
-                        str(a.id) for a in question.answers.filter(is_correct=True)
-                    )
-                    is_correct = chosen_ids == correct_ids
+                    answers = list(question.answers.all())
+
+                    for answer in answers:
+                        user_marked = str(answer.id) in chosen_ids
+                        if user_marked == answer.is_correct:
+                            earned_points += k
+
+                    is_correct = earned_points == max_points
 
                 elif question.question_type == 'number':
                     raw = request.POST.get('answer_number', '')
                     try:
-                        is_correct = float(raw) == question.correct_number
+                        if float(raw) == question.correct_number:
+                            earned_points = max_points
                     except ValueError:
-                        is_correct = False
+                        earned_points = 0
+
+                    is_correct = earned_points == max_points
 
                 elif question.question_type == 'text':
-                    is_correct = None  # проверяется вручную
+                    is_correct = None
+                    max_points = 0
+                    earned_points = 0
 
             log = request.session.get(f'quiz_{quiz_id}_log', [])
-            log.append({'correct': bool(is_correct)})
+            log.append({
+                'points': earned_points,
+                'max_points': max_points,
+                'correct': is_correct,
+            })
             request.session[f'quiz_{quiz_id}_log'] = log
 
             next_index = index + 1
@@ -201,6 +220,8 @@ def play_quiz_view(request, quiz_id):
                 'is_last': is_last,
                 'finished': False,
                 'show_result': True,
+                'earned_points': earned_points,
+                'question_max_points': max_points,
             })
 
         if action == 'next':
