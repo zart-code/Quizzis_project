@@ -154,6 +154,15 @@ def session_play_view(request, pin):
     question = questions[session.current_question]
 
     if request.method == 'POST':
+        existing_answer = GameAnswer.objects.filter(
+            session=session,
+            participant=participant,
+            question=question
+        ).first()
+
+        if existing_answer:
+            return redirect('session_play', pin=pin)
+
         if not participant.is_answered:
             timed_out = request.POST.get('timed_out') == '1'
             is_correct = False
