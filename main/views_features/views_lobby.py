@@ -312,60 +312,7 @@ def session_results_teacher_view(request, pin):
             'rank': rank,
             'user': p.user,
             'score': p.score,
-            'q_results': q_results,
-        })
-
-    return render(request, 'session_results_teacher.html', {
-        'session': session,
-        'questions': questions,
-        'rows': rows,
-    })
-
-
-@login_required
-def quiz_sessions_list_view(request, quiz_id):
-    """Список всех сессий квиза для учителя (история прохождений)"""
-    quiz = get_object_or_404(Quiz, id=quiz_id, creator=request.user)
-    sessions = quiz.sessions.all().order_by('-created_at')
-    return render(request, 'quiz_sessions_list.html', {
-        'quiz': quiz,
-        'sessions': sessions,
-    })
-
-
-@login_required
-def session_results_teacher_view(request, pin):
-    """Детальные результаты сессии для учителя: таблица участник × вопрос"""
-    session = get_object_or_404(GameSession, pin=pin, host=request.user)
-
-    # Questions in order
-    questions = list(session.quiz.questions.all())
-
-    # Participants sorted by score descending (rank 1 = best)
-    participants = list(
-        session.participants.select_related('user').order_by('-score')
-    )
-
-    # Build answers lookup: {participant_id: {question_id: is_correct}}
-    answers_qs = GameAnswer.objects.filter(session=session).values(
-        'participant_id', 'question_id', 'is_correct'
-    )
-    answers_map = {}
-    for ga in answers_qs:
-        answers_map.setdefault(ga['participant_id'], {})[ga['question_id']] = ga['is_correct']
-
-    # Build rows for template
-    rows = []
-    for rank, p in enumerate(participants, 1):
-        q_results = []
-        for q in questions:
-            val = answers_map.get(p.id, {}).get(q.id, None)
-            q_results.append(val)
-        rows.append({
-            'rank': rank,
-            'user': p.user,
-            'score': p.score,
-            'max_score': sum(4 * q.coefficient for q in questions if q.question_type != Question.TEXT),
+            'max_score': sum(4 * q.coefficient for q in questions),
             'q_results': q_results,
         })
 
