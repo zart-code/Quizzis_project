@@ -29,7 +29,7 @@
             {% if question.time_limit %}
             <div class="sp-timer-row">
                 <div class="sp-timer-bar-bg"><div class="sp-timer-bar" id="timer-bar"></div></div>
-                <span class="sp-timer-num" id="timer">{{ question.time_limit }}</span>
+                <span class="sp-timer-num" id="timer">{{ remaining_seconds }}</span>
             </div>
             {% endif %}
             <h2 class="sp-question-text">{{ question.text }}</h2>
@@ -75,7 +75,7 @@
 
         <script>
         document.addEventListener('DOMContentLoaded',function(){
-            const timeLimit={{ question.time_limit }};
+            const timeLimit={{ remaining_seconds }};
             const timerEl=document.getElementById('timer');
             const bar=document.getElementById('timer-bar');
             const form=document.getElementById('answer-form');

@@ -94,6 +94,7 @@ def start_game_view(request, pin):
     if session.participants.count() == 0:
         return redirect('lobby', pin=pin)
     session.status = GameSession.IN_PROGRESS
+    session.current_question_started_at = timezone.now()
     session.save()
     return redirect('lobby', pin=pin)
 
@@ -152,7 +153,10 @@ def session_play_view(request, pin):
         )
         request.session[result_session_key] = result.id
     question = questions[session.current_question]
-
+    question_started_at = session.current_question_started_at or timezone.now()
+    elapsed_seconds = int((timezone.now() - question_started_at).total_seconds())
+    remaining_seconds = max(0, question.time_limit - elapsed_seconds)
+    server_timed_out = remaining_seconds <= 0
     if request.method == 'POST':
         existing_answer = GameAnswer.objects.filter(
             session=session,
@@ -164,7 +168,7 @@ def session_play_view(request, pin):
             return redirect('session_play', pin=pin)
 
         if not participant.is_answered:
-            timed_out = request.POST.get('timed_out') == '1'
+            timed_out = request.POST.get('timed_out') == '1' or server_timed_out
             is_correct = False
 
             if not timed_out:
@@ -208,18 +212,23 @@ def session_play_view(request, pin):
                 session.current_question += 1
                 if session.current_question >= total:
                     session.status = GameSession.FINISHED
+                    session.current_question_started_at = None
+                else:
+                    session.current_question_started_at = timezone.now()
                 session.save()
 
         return redirect('session_play', pin=pin)
 
-    return render(request, 'session_play.html', {
+    response = render(request, 'session_play.html', {
         'session': session,
         'question': question,
         'participant': participant,
         'index': session.current_question,
         'total': total,
         'answered': participant.is_answered,
+        'remaining_seconds': remaining_seconds,
     })
+    return response
 
 
 
