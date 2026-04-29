@@ -169,32 +169,59 @@ def session_play_view(request, pin):
 
         if not participant.is_answered:
             timed_out = request.POST.get('timed_out') == '1' or server_timed_out
+            k = question.coefficient
+            max_points = 4 * k
+            earned_points = 0
             is_correct = False
 
             if not timed_out:
                 if question.question_type == 'single':
                     chosen_id = request.POST.get('answer')
-                    correct = question.answers.filter(is_correct=True).first()
-                    is_correct = (
-                        bool(chosen_id)
-                        and correct is not None
-                        and str(correct.id) == chosen_id
-                    )
+                    answers = list(question.answers.all())
+                    correct_answer = next((a for a in answers if a.is_correct), None)
+
+                    if correct_answer and str(correct_answer.id) == chosen_id:
+                        earned_points += 4 * k
+
+                    is_correct = earned_points == max_points
+
                 elif question.question_type == 'multiple':
                     chosen_ids = set(request.POST.getlist('answer'))
-                    correct_ids = set(
-                        str(a.id) for a in question.answers.filter(is_correct=True)
-                    )
-                    is_correct = chosen_ids == correct_ids
+                    answers = list(question.answers.all())
+
+                    mistakes = 0
+                    for answer in answers:
+                        user_marked = str(answer.id) in chosen_ids
+                        if user_marked != answer.is_correct:
+                            mistakes += 1
+
+                    if mistakes == 0:
+                        earned_points = 4 * k
+                    elif mistakes == 1:
+                        earned_points = 2 * k
+                    elif mistakes == 2:
+                        earned_points = 1 * k
+                    else:
+                        earned_points = 0
+
+                    is_correct = mistakes == 0
+
                 elif question.question_type == 'number':
                     raw = request.POST.get('answer_number', '')
                     try:
-                        is_correct = float(raw) == question.correct_number
+                        if float(raw) == question.correct_number:
+                            earned_points = max_points
                     except ValueError:
-                        is_correct = False
+                        earned_points = 0
 
-            if is_correct:
-                participant.score += 1
+                    is_correct = earned_points == max_points
+
+                elif question.question_type == 'text':
+                    is_correct = None
+                    max_points = 0
+                    earned_points = 0
+
+            participant.score += earned_points
             participant.is_answered = True
             participant.save()
 
