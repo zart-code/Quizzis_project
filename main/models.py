@@ -447,6 +447,7 @@ class GameAnswer(models.Model):
         verbose_name='Выбранный ответ',
     )
     is_correct = models.BooleanField(default=False, verbose_name='Верно')
+    points = models.IntegerField(default=0, verbose_name='Баллы')
     answered_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
