@@ -363,6 +363,11 @@ class GameSession(models.Model):
         default=0,
         verbose_name='Текущий вопрос',
     )
+    current_question_started_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Время старта текущего вопроса',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
