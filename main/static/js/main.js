@@ -427,9 +427,82 @@ function makeQuestion(i){
     questionsContainer.insertAdjacentHTML('beforeend',html);
 }
 
+function renumberQuestions(){
+    const blocks = document.querySelectorAll('#questions-container .q-block');
+
+    blocks.forEach((block, index) => {
+        const i = index + 1;
+
+        block.id = `qblock${i}`;
+
+        const title = block.querySelector('.q-block-title');
+        if (title) {
+            title.textContent = `Вопрос ${i}`;
+        }
+
+        const removeBtn = block.querySelector('.q-remove-btn');
+        if (removeBtn) {
+            removeBtn.setAttribute('onclick', `removeQuestion(${i})`);
+        }
+
+        const typeSelect = block.querySelector('.q-select');
+        if (typeSelect) {
+            typeSelect.name = `q${i}_type`;
+            typeSelect.id = `q${i}_type`;
+            typeSelect.setAttribute('onchange', `updateAnswers(${i})`);
+        }
+
+        const questionInput = block.querySelector('.q-row input.q-input[name$="_text"]');
+        if (questionInput) {
+            questionInput.name = `q${i}_text`;
+        }
+
+        const answersContainer = block.querySelector('[id$="_answers"]');
+        if (answersContainer) {
+            answersContainer.id = `q${i}_answers`;
+
+            const answerRows = answersContainer.querySelectorAll('.answer-row');
+            answerRows.forEach((row, j) => {
+                const correctInput = row.querySelector('input[type="radio"], input[type="checkbox"]');
+                if (correctInput) {
+                    correctInput.name = `q${i}_correct`;
+                    correctInput.id = `q${i}c${j}`;
+                }
+
+                const answerTextInput = row.querySelector('input.q-input');
+                if (answerTextInput) {
+                    answerTextInput.name = `q${i}_ans${j}`;
+                }
+            });
+
+            const numberInput = answersContainer.querySelector('input[name$="_correct_number"]');
+            if (numberInput) {
+                numberInput.name = `q${i}_correct_number`;
+            }
+        }
+
+        const timeInputs = block.querySelectorAll('.time-opt');
+        const timeLabels = block.querySelectorAll('.time-opts label');
+
+        timeInputs.forEach((input, idx) => {
+            input.name = `q${i}_time`;
+            input.id = `qt${i}_${input.value}`;
+
+            if (timeLabels[idx]) {
+                timeLabels[idx].setAttribute('for', input.id);
+            }
+        });
+    });
+
+    count = blocks.length;
+}
+
 function removeQuestion(i){
-    const el=document.getElementById(`qblock${i}`);
-    if(el) el.remove();
+    const el = document.getElementById(`qblock${i}`);
+    if (el) {
+        el.remove();
+        renumberQuestions();
+    }
 }
 
 function updateAnswers(i){
