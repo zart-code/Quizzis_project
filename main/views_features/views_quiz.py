@@ -154,6 +154,7 @@ def play_quiz_view(request, quiz_id):
             request.session.pop(f'quiz_{quiz_id}_log', None)
             request.session.pop(f'quiz_{quiz_id}_index', None)
             request.session.pop(f'quiz_{quiz_id}_result_id', None)
+            request.session.pop(f'quiz_{quiz_id}_answered', None)
 
             return render(request, 'play_quiz.html', {
                 'quiz': quiz,
@@ -171,6 +172,33 @@ def play_quiz_view(request, quiz_id):
             earned_points = 0
             is_correct = False
             correct_answer = None
+
+            answered_key = f'quiz_{quiz_id}_answered'
+            answered_questions = request.session.get(answered_key, {})
+            question_key = str(question.id)
+
+            if question_key in answered_questions:
+                stored = answered_questions[question_key]
+
+                if question.question_type == 'single':
+                    correct_answer = question.answers.filter(is_correct=True).first()
+
+                next_index = index + 1
+                is_last = next_index >= len(questions)
+
+                return render(request, 'play_quiz.html', {
+                    'quiz': quiz,
+                    'question': question,
+                    'correct_answer': correct_answer,
+                    'is_correct': stored['is_correct'],
+                    'timed_out': stored['timed_out'],
+                    'next_index': next_index,
+                    'is_last': is_last,
+                    'finished': False,
+                    'show_result': True,
+                    'earned_points': stored['earned_points'],
+                    'question_max_points': stored['max_points'],
+                })
 
             if not timed_out:
                 if question.question_type == 'single':
@@ -218,6 +246,14 @@ def play_quiz_view(request, quiz_id):
                     is_correct = None
                     max_points = 0
                     earned_points = 0
+
+            answered_questions[question_key] = {
+                'earned_points': earned_points,
+                'max_points': max_points,
+                'is_correct': is_correct,
+                'timed_out': timed_out,
+            }
+            request.session[answered_key] = answered_questions
 
             log = request.session.get(f'quiz_{quiz_id}_log', [])
             log.append({
@@ -268,6 +304,8 @@ def play_quiz_view(request, quiz_id):
     request.session[f'quiz_{quiz_id}_log'] = []
     request.session[f'quiz_{quiz_id}_index'] = 0
     request.session[f'quiz_{quiz_id}_result_id'] = result.id
+    request.session[f'quiz_{quiz_id}_answered'] = {}
+
     return render(request, 'play_quiz.html', {
         'quiz': quiz,
         'question': questions[0],
