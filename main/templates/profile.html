@@ -34,9 +34,15 @@
                 </div>
 
                 <div class="profile-stat-card">
-                    <div class="profile-stat-icon">✏️</div>
-                    <div class="profile-stat-value">{{ profile_user.created_quizzes.count|default:0 }}</div>
-                    <div class="profile-stat-label">Создано квизов</div>
+                    {% if is_student %}
+                        <div class="profile-stat-icon">🎮</div>
+                        <div class="profile-stat-value">{{ total_played_quizzes }}</div>
+                        <div class="profile-stat-label">Всего сыграно квизов</div>
+                    {% else %}
+                        <div class="profile-stat-icon">✏️</div>
+                        <div class="profile-stat-value">{{ profile_user.created_quizzes.count|default:0 }}</div>
+                        <div class="profile-stat-label">Создано квизов</div>
+                    {% endif %}
                 </div>
             </div>
         </div>

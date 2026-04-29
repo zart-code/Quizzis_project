@@ -30,6 +30,8 @@ def profile_view(request, user_id=None):
         .distinct()
         .count()
     )
+    total_played_quizzes = QuizResult.objects.filter(user=user, completed=True).count()
+    is_student = user.profile.role == 'student'
 
     score_stats = QuizResult.objects.filter(user=user, completed=True).aggregate(
         avg_score=Avg('score_percent')
@@ -68,11 +70,13 @@ def profile_view(request, user_id=None):
         'profile_user': user,
         'total_quizzes': total_quizzes,
         'completed_quizzes': completed_quizzes,
+        'total_played_quizzes': total_played_quizzes,
         'average_score': average_score,
         'category_stats': category_stats,
         'recent_quiz_history': recent_quiz_history,
         'achievements': achievements,
         'is_admin_view': is_admin_view,
+        'is_student': is_student,
     }
 
     return render(request, 'profile.html', context)
