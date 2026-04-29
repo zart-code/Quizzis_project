@@ -5,6 +5,7 @@ from django.contrib import messages
 from main.models import Quiz, Question, Answer, Profile,QuizResult
 from django.views.decorators.http import require_POST
 from django.utils import timezone
+import re
 
 
 @login_required
@@ -18,14 +19,27 @@ def create_quiz_view(request):
 
     if request.method == 'POST':
         title = request.POST.get('title')
+
+        question_indexes = []
+        for key, value in request.POST.items():
+            match = re.fullmatch(r'q(\d+)_text', key)
+            if match and value.strip():
+                question_indexes.append(int(match.group(1)))
+
+        question_indexes.sort()
+
+        if not question_indexes:
+            messages.error(request, 'Нельзя создать пустой квиз. Добавьте хотя бы один вопрос.')
+            return render(request, 'create_quiz.html')
+
         quiz = Quiz.objects.create(
             title=title,
             creator=request.user,
-            status = Quiz.DRAFT
+            status=Quiz.DRAFT
         )
 
-        i = 1
-        while request.POST.get(f'q{i}_text'):
+        order = 1
+        for i in question_indexes:
             q_type = request.POST.get(f'q{i}_type', 'single')
             time_limit = int(request.POST.get(f'q{i}_time', 30))
 
@@ -33,7 +47,7 @@ def create_quiz_view(request):
                 quiz=quiz,
                 text=request.POST.get(f'q{i}_text'),
                 question_type=q_type,
-                order=i,
+                order=order,
                 time_limit=time_limit,
             )
 
@@ -63,9 +77,7 @@ def create_quiz_view(request):
                     q.correct_number = 0
                 q.save()
 
-            # text — ответ не сохраняем, проверка вручную
-
-            i += 1
+            order += 1
 
         return redirect('my_quizzes')
 
