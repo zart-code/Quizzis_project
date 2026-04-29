@@ -115,17 +115,19 @@ def session_play_view(request, pin):
     )
     questions = list(session.quiz.questions.prefetch_related('answers').all())
     total = len(questions)
-
+    total_max_score = sum(
+        4 * q.coefficient for q in questions
+    )
     # Показать результаты если игра завершена или вопросы кончились
     if session.status == GameSession.FINISHED or session.current_question >= total:
         result_session_key = f'lobby_result_{pin}'
         result_id = request.session.get(result_session_key)
-        score_percent = (participant.score / total * 100) if total else 0
+        score_percent = (participant.score / total_max_score * 100) if total_max_score else 0
 
         if result_id is not None:
             QuizResult.objects.filter(id=result_id, user=request.user).update(
                 score=participant.score,
-                max_score=total,
+                max_score=total_max_score,
                 score_percent=score_percent,
                 completed=True,
                 completed_at=timezone.now(),
@@ -147,7 +149,7 @@ def session_play_view(request, pin):
             user=request.user,
             quiz=session.quiz,
             score=0,
-            max_score=total,
+            max_score=total_max_score,
             score_percent=0,
             completed=False,
         )
@@ -158,15 +160,6 @@ def session_play_view(request, pin):
     remaining_seconds = max(0, question.time_limit - elapsed_seconds)
     server_timed_out = remaining_seconds <= 0
     if request.method == 'POST':
-        existing_answer = GameAnswer.objects.filter(
-            session=session,
-            participant=participant,
-            question=question
-        ).first()
-
-        if existing_answer:
-            return redirect('session_play', pin=pin)
-
         if not participant.is_answered:
             timed_out = request.POST.get('timed_out') == '1' or server_timed_out
             k = question.coefficient
@@ -229,7 +222,10 @@ def session_play_view(request, pin):
                 session=session,
                 participant=participant,
                 question=question,
-                defaults={'is_correct': is_correct},
+                defaults={
+                    'is_correct': is_correct,
+                    'points': earned_points,
+                },
             )
 
             total_participants = session.participants.count()
@@ -289,11 +285,14 @@ def session_results_teacher_view(request, pin):
 
     # Build answers lookup: {participant_id: {question_id: is_correct}}
     answers_qs = GameAnswer.objects.filter(session=session).values(
-        'participant_id', 'question_id', 'is_correct'
+        'participant_id', 'question_id', 'is_correct', 'points'
     )
     answers_map = {}
     for ga in answers_qs:
-        answers_map.setdefault(ga['participant_id'], {})[ga['question_id']] = ga['is_correct']
+        answers_map.setdefault(ga['participant_id'], {})[ga['question_id']] = {
+            'is_correct': ga['is_correct'],
+            'points': ga['points'],
+        }
 
     # Build rows for template
     rows = []
@@ -301,7 +300,14 @@ def session_results_teacher_view(request, pin):
         q_results = []
         for q in questions:
             val = answers_map.get(p.id, {}).get(q.id, None)
-            q_results.append(val)
+            if val is None:
+                q_results.append(None)
+            else:
+                q_results.append({
+                    'points': val['points'],
+                    'max_points': 4 * q.coefficient,
+                    'is_correct': val['is_correct'],
+                })
         rows.append({
             'rank': rank,
             'user': p.user,
@@ -359,6 +365,7 @@ def session_results_teacher_view(request, pin):
             'rank': rank,
             'user': p.user,
             'score': p.score,
+            'max_score': sum(4 * q.coefficient for q in questions if q.question_type != Question.TEXT),
             'q_results': q_results,
         })
 

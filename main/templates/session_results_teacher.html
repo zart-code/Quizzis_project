@@ -64,16 +64,17 @@
                         <td class="tr-td-q">
                             {% if result is None %}
                                 <span class="tr-ans tr-ans-skip" title="Нет ответа">—</span>
-                            {% elif result %}
-                                <span class="tr-ans tr-ans-ok" title="Верно">✓</span>
                             {% else %}
-                                <span class="tr-ans tr-ans-no" title="Неверно">✗</span>
+                                <span class="tr-ans {% if result.is_correct %}tr-ans-ok{% elif result.points > 0 %}tr-ans-partial{% else %}tr-ans-no{% endif %}"
+                                      title="Баллы: {{ result.points }} / {{ result.max_points }}">
+                                    {{ result.points }}/{{ result.max_points }}
+                                </span>
                             {% endif %}
                         </td>
                         {% endfor %}
                         <td class="tr-td-total">
                             <span class="tr-total-score">{{ row.score }}</span>
-                            <span class="tr-total-max">/ {{ questions|length }}</span>
+                            <span class="tr-total-max">/ {{ row.max_score }}</span>
                         </td>
                     </tr>
                     {% endfor %}
@@ -146,6 +147,11 @@
 .tr-ans{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;font-size:.85rem;font-weight:700}
 .tr-ans-ok{background:rgba(16,185,129,.18);color:#34d399;border:1px solid rgba(16,185,129,.3)}
 .tr-ans-no{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.25)}
+.tr-ans-partial{
+    background:rgba(245,158,11,.15);
+    color:#fbbf24;
+    border:1px solid rgba(245,158,11,.25)
+}
 .tr-ans-skip{background:rgba(107,114,128,.12);color:var(--text-muted);border:1px solid rgba(107,114,128,.2)}
 
 /* Total score */
