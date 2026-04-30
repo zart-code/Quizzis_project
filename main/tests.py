@@ -4,4 +4,3 @@
 """
 
 from .tests_packet import *
-
