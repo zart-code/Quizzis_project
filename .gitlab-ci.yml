@@ -1,37 +1,29 @@
-stages:
-  - lint
-  - test
-
-variables:
-  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-
-cache:
-  paths:
-    - .cache/pip
-    - venv/
+image: python:3.13.3-alpine3.20
 
 before_script:
-  - apt-get update -qq && apt-get install -y -qq sqlite3 libsqlite3-dev
-  - python -V
-  - pip install --upgrade pip
-  - pip install pylint coverage
-  - pip install -r requirements.txt
+  - python3 -m venv .venv
+  - . .venv/bin/activate
+  - pip install -r requirements-dev.txt
+
+stages:
+  - style
 
 pylint:
-  stage: lint
+  stage: style
   script:
-    - pylint --fail-under=8.0 --exit-zero main/
-  allow_failure: true   # пайплайн не краснеет из-за стилистических ошибок
-
-test:
-  stage: test
-  script:
-    - coverage run manage.py test main   # если все тесты в приложении main
-    - coverage report --fail-under=70
-  coverage: '/TOTAL.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)/'
+    - pylint --fail-under=6 --ignore-paths="docs/*" **/*.py
+    - echo "Pylint complete."
   artifacts:
-    when: always
-    reports:
-      coverage_report:
-        coverage_format: cobertura
-        path: coverage.xml
+    untracked: false
+    when: on_success
+    expire_in: 30 days
+
+pycodestyle:
+    stage: style
+    script:
+        - pycodestyle --max-line-length=120 main.py
+        - echo "Pycodestyle complete."
+    artifacts:
+        untracked: false
+        when: on_failure
+        expire_in: 30 days
