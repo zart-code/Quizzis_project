@@ -4,7 +4,7 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Avg, Max, Count, Q
+from django.db.models import Avg, Count, Q
 from main.models import Achievement, Quiz, QuizResult, UserAchievement
 
 
@@ -30,27 +30,26 @@ def profile_view(request, user_id=None):
         .distinct()
         .count()
     )
+    total_played_quizzes = QuizResult.objects.filter(user=user, completed=True).count()
+    is_student = user.profile.role == 'student'
 
     score_stats = QuizResult.objects.filter(user=user, completed=True).aggregate(
-        avg_score=Avg('score_percent'),
-        best_score=Max('score_percent')
+        avg_score=Avg('score_percent')
     )
 
     average_score = score_stats['avg_score'] or 0
-    best_score = score_stats['best_score'] or 0
 
     category_stats = Quiz.objects.values('category__name').annotate(
         quizzes_taken=Count('results', filter=Q(results__user=user)),
         average_score=Avg('results__score_percent', filter=Q(results__user=user)),
-        best_score=Max('results__score_percent', filter=Q(results__user=user))
     ).filter(quizzes_taken__gt=0)
 
-    quiz_history = (
+    recent_quiz_history = (
         QuizResult.objects
         .filter(user=user, completed=True)
         .select_related('quiz', 'quiz__creator')
-        .order_by('-completed_at')[:10]
-    )
+        .order_by('-completed_at')
+    )[:5]
 
     user_achievements = UserAchievement.objects.filter(user=user).select_related('achievement')
     unlocked_achievement_ids = user_achievements.values_list('achievement_id', flat=True)
@@ -71,15 +70,43 @@ def profile_view(request, user_id=None):
         'profile_user': user,
         'total_quizzes': total_quizzes,
         'completed_quizzes': completed_quizzes,
+        'total_played_quizzes': total_played_quizzes,
         'average_score': average_score,
-        'best_score': best_score,
         'category_stats': category_stats,
-        'quiz_history': quiz_history,
+        'recent_quiz_history': recent_quiz_history,
         'achievements': achievements,
         'is_admin_view': is_admin_view,
+        'is_student': is_student,
     }
 
     return render(request, 'profile.html', context)
+
+
+@login_required(login_url='login_page')
+def profile_history_view(request, user_id=None):
+    """Полная история прохождений пользователя."""
+    if user_id is not None:
+        if not request.user.profile.is_admin:
+            return redirect('profile')
+        user = get_object_or_404(User, id=user_id)
+        is_admin_view = True
+    else:
+        user = request.user
+        is_admin_view = False
+
+    quiz_history = (
+        QuizResult.objects
+        .filter(user=user, completed=True)
+        .select_related('quiz', 'quiz__creator')
+        .order_by('-completed_at')
+    )
+
+    context = {
+        'profile_user': user,
+        'quiz_history': quiz_history,
+        'is_admin_view': is_admin_view,
+    }
+    return render(request, 'profile_history.html', context)
 
 
 @login_required(login_url='login_page')

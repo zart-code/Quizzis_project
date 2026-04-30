@@ -51,46 +51,93 @@
 
         <!-- Список квизов -->
         {% if quizzes %}
-            <div class="quizzes-grid">
+            <div class="mq-grid">
                 {% for quiz in quizzes %}
-                    <div class="quiz-card-compact" style="border-left: 4px solid {{ quiz.color }};">
-                        <!-- Заголовок квиза -->
-                        <div class="quiz-compact-header">
-                            <h3 class="quiz-compact-title">{{ quiz.title }}</h3>
-                            <span class="quiz-compact-count">{{ quiz.total_questions }} вопр.</span>
+                    <div class="mq-card" style="--accent-hue: {{ forloop.counter0|add:200 }}">
+                        <div class="mq-card-glow"></div>
+
+                        <div class="mq-card-top">
+                            <div class="mq-card-num">{{ forloop.counter|stringformat:"02d" }}</div>
+                            <div class="mq-card-badges">
+                                <span class="mq-badge mq-badge-pub">● Доступен</span>
+                            </div>
                         </div>
 
-                        <!-- Описание -->
+                        <h3 class="mq-card-title">{{ quiz.title }}</h3>
+
                         {% if quiz.description %}
-                            <p class="quiz-compact-description">{{ quiz.description|truncatewords:15 }}</p>
+                            <p class="mq-card-desc">{{ quiz.description|truncatechars:80 }}</p>
                         {% endif %}
 
-                        <!-- Статистика -->
-                        <div class="quiz-compact-stats">
-                            <span class="quiz-stat-item">
-                                👤 {{ quiz.creator }}
+                        <div class="mq-card-meta">
+                            <span class="mq-meta-item">
+                                <span class="mq-meta-icon">❓</span>
+                                {{ quiz.total_questions }} вопр.
                             </span>
-                            <span class="quiz-stat-item">
-                                📊 {{ quiz.history_count }} прохожд.
-                                <!-- history_count ещё нет в models.py поэтому ничего не отображается -->
+                            <span class="mq-meta-item">
+                                <span class="mq-meta-icon">👤</span>
+                                {{ quiz.creator }}
                             </span>
-                            {% if quiz.avg_score %}
-                                <span class="quiz-stat-item">
-                                    ⭐ {{ quiz.avg_score|floatformat:0 }}%
+                            {% if quiz.avg_score_percent %}
+                                <span class="mq-meta-item">
+                                    <span class="mq-meta-icon">⭐</span>
+                                    {{ quiz.avg_score_percent|floatformat:0 }}%
                                 </span>
                             {% endif %}
                         </div>
 
-                        <!-- Действия -->
-                        <div class="quiz-compact-actions">
-                            <a href="{% url 'play_quiz' quiz.id %}" class="btn btn-small btn-secondary">
-                                Подробнее
+                        <div class="mq-card-actions">
+                            <button type="button"
+                                    class="mq-btn mq-btn-history js-info-toggle"
+                                    data-quiz-id="quiz-info-{{ quiz.id }}">
+                                <span>ℹ</span> Информация
+                            </button>
+                            <a href="{% url 'play_quiz' quiz.id %}" class="mq-btn mq-btn-play">
+                                <span>▶</span> Пройти
                             </a>
-                            {% if user.is_authenticated %}
-                                <a href="{% url 'play_quiz' quiz.id %}" class="btn btn-small btn-success">
-                                    Пройти
-                                </a>
-                            {% endif %}
+                        </div>
+
+                        <div class="quiz-info-content-template" id="quiz-info-{{ quiz.id }}">
+                            <div class="quiz-info-popup-title">Информация о квизе</div>
+                            <div class="quiz-info-quiz-title">{{ quiz.title }}</div>
+                            <div class="quiz-info-grid">
+                                <div class="quiz-info-row">
+                                    <span class="quiz-info-label">Автор</span>
+                                    <span class="quiz-info-value">{{ quiz.creator }}</span>
+                                </div>
+                                <div class="quiz-info-row">
+                                    <span class="quiz-info-label">Количество вопросов</span>
+                                    <span class="quiz-info-value">{{ quiz.total_questions }}</span>
+                                </div>
+                                <div class="quiz-info-row">
+                                    <span class="quiz-info-label">Уже прошли</span>
+                                    <span class="quiz-info-value">{{ quiz.passed_count }}</span>
+                                </div>
+                                <div class="quiz-info-row">
+                                    <span class="quiz-info-label">Средний результат</span>
+                                    <span class="quiz-info-value">
+                                        {% if quiz.avg_score_percent %}
+                                            {{ quiz.avg_score_percent|floatformat:1 }}%
+                                        {% else %}
+                                            Нет данных
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div class="quiz-info-row">
+                                    <span class="quiz-info-label">Средний балл</span>
+                                    <span class="quiz-info-value">
+                                        {% if quiz.avg_score_points != None and quiz.avg_max_points != None %}
+                                            {{ quiz.avg_score_points|floatformat:1 }} / {{ quiz.avg_max_points|floatformat:1 }}
+                                        {% else %}
+                                            Нет данных
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div class="quiz-info-row">
+                                    <span class="quiz-info-label">Дата создания</span>
+                                    <span class="quiz-info-value">{{ quiz.created_at|date:"d.m.Y H:i" }}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 {% endfor %}
@@ -112,6 +159,13 @@
                 {% endif %}
             </div>
 
+    </div>
+
+    <div class="quiz-info-modal-backdrop" id="quizInfoBackdrop">
+        <div class="quiz-info-modal" role="dialog" aria-modal="true" aria-labelledby="quizInfoModalTitle">
+            <button type="button" class="quiz-info-close-btn" id="quizInfoCloseBtn">✕</button>
+            <div id="quizInfoModalBody"></div>
+        </div>
     </div>
 </div>
 {% endblock %}

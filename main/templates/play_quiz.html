@@ -14,9 +14,6 @@
                 <span class="sp-progress-text">Вопрос {{ index|add:1 }} из {{ total }}</span>
                 {% if finished %}<span class="sp-score">⭐ {{ score }}</span>{% endif %}
             </div>
-            <div class="sp-progress-bar-bg">
-                <div class="sp-progress-bar-fill" style="width:{% widthratio index|add:1 total 100 %}%"></div>
-            </div>
         </div>
         {% endif %}
 
@@ -155,8 +152,6 @@
 .sp-progress-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem}
 .sp-progress-text{color:var(--text-secondary);font-size:.9rem;font-weight:500}
 .sp-score{color:var(--accent);font-weight:700;font-size:1rem}
-.sp-progress-bar-bg{height:6px;background:rgba(139,92,246,.15);border-radius:10px;overflow:hidden}
-.sp-progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--secondary));border-radius:10px;transition:width .4s}
 
 /* Question card */
 .sp-question-card{padding:2rem}

@@ -178,6 +178,8 @@
 .ap-btn-unban:hover { background: rgba(16,185,129,.22); border-color: #10B981; transform: translateY(-1px); }
 .ap-btn-del   { color: #FCA5A5; border-color: rgba(239,68,68,.3);   background: rgba(239,68,68,.08); }
 .ap-btn-del:hover   { background: rgba(239,68,68,.22); border-color: #EF4444; transform: translateY(-1px); }
+.ap-btn-draft { color: #FCD34D; border-color: rgba(245,158,11,.3); background: rgba(245,158,11,.08); }
+.ap-btn-draft:hover { background: rgba(245,158,11,.2); border-color: #F59E0B; transform: translateY(-1px); }
 
 /* ─── Load more ─── */
 .ap-load-wrap {
@@ -337,6 +339,12 @@
             <td>{{ quiz.question_count }}</td>
             <td class="ap-muted">{{ quiz.created_at|date:"d.m.Y" }}</td>
             <td>
+              {% if quiz.status == 'active' %}
+              <form method="post" action="{% url 'admin_unpublish_quiz' quiz.id %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="ap-btn ap-btn-draft">↩ В черновик</button>
+              </form>
+              {% endif %}
               <form method="post" action="{% url 'admin_delete_quiz' quiz.id %}" style="display:inline;"
                     onsubmit="return confirm('Удалить квиз «{{ quiz.title }}»?')">
                 {% csrf_token %}
@@ -385,6 +393,7 @@ const URL_QUIZZES = "{% url 'api_admin_quizzes' %}";
 const URL_BAN     = "/admin-panel/ban/";     // + user_id + /
 const URL_PROFILE = "/admin-panel/user/";  // + user_id + /
 const URL_PLAY    = "/quiz/";               // + quiz_id + /play/
+const URL_UNPUB   = "/admin-panel/unpublish-quiz/"; // + quiz_id + /
 const URL_DEL     = "/admin-panel/delete-quiz/"; // + quiz_id + /
 const CURRENT_UID = {{ request.user.id }};
 const CSRF        = "{{ csrf_token }}";
@@ -441,6 +450,12 @@ function updateQuizzes(quizzes) {
   if (!tbody) return;
   tbody.innerHTML = quizzes.map(q => {
     const dateStr = new Date(q.created_at).toLocaleDateString('ru-RU');
+    const draftAction = q.status === 'active'
+      ? `<form method="post" action="${URL_UNPUB}${q.id}/" style="display:inline;">
+           <input type="hidden" name="csrfmiddlewaretoken" value="${CSRF}">
+           <button type="submit" class="ap-btn ap-btn-draft">↩ В черновик</button>
+         </form>`
+      : '';
     return `<tr>
       <td class="ap-muted">${q.id}</td>
       <td><a href="${URL_PLAY}${q.id}/play/" class="ap-link">${q.title}</a></td>
@@ -451,6 +466,7 @@ function updateQuizzes(quizzes) {
       <td>${q.question_count}</td>
       <td class="ap-muted">${dateStr}</td>
       <td>
+        ${draftAction}
         <form method="post" action="${URL_DEL}${q.id}/"
               style="display:inline;"
               onsubmit="return confirm('Удалить квиз «${q.title}»?')">

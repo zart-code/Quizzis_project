@@ -76,6 +76,20 @@ def admin_delete_quiz_view(request, quiz_id):
 
 
 @admin_required
+def admin_unpublish_quiz_view(request, quiz_id):
+    """Вернуть квиз в черновик"""
+    if request.method == 'POST':
+        quiz = get_object_or_404(Quiz, id=quiz_id)
+        if quiz.status != Quiz.DRAFT:
+            quiz.status = Quiz.DRAFT
+            quiz.save(update_fields=['status'])
+            messages.success(request, f'Квиз «{quiz.title}» возвращён в черновик.')
+        else:
+            messages.info(request, f'Квиз «{quiz.title}» уже находится в черновиках.')
+    return redirect('admin_panel')
+
+
+@admin_required
 def api_admin_stats_view(request):
     """API: текущая статистика для авто-обновления карточек"""
     data = {
