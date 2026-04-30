@@ -7,6 +7,7 @@ before_script:
 
 stages:
   - style
+  - test
 
 pylint:
   stage: style
@@ -27,3 +28,13 @@ pycodestyle:
         untracked: false
         when: on_failure
         expire_in: 30 days
+
+python:
+  stage: test
+  script:
+    - python manage.py test
+    - echo "tests complete."
+  artifacts:
+    untracked: false
+    when: on_failure
+    expire_in: 30 days
