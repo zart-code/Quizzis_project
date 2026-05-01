@@ -34,7 +34,6 @@ class GeneratePinTest(TestCase):
 
 
 class CategoryModelTest(TestCase):
-    """Тесты модели Category (используем данные из фикстуры)."""
     """Тесты модели Category."""
 
     fixtures = ["db.json"]
@@ -149,7 +148,7 @@ class GameAnswerModelTest(TestCase):
     fixtures = ["db.json"]
 
     def setUp(self):
-        """Настройка данных для проведения тестировавния"""
+        """Настройка данных для проведения тестирования"""
         self.session = GameSession.objects.get(pk=1)
         self.user = User.objects.get(pk=1)
         self.participant = GameParticipant.objects.get(session=self.session, user=self.user)
@@ -199,6 +198,7 @@ class GameAnswerModelTest(TestCase):
         question_id = self.question.id
         self.question.delete()
         self.assertEqual(Answer.objects.filter(question_id=question_id).count(), 0)
+
     def test_str_method(self):
         """Тест метода"""
         ans = GameAnswer.objects.create(
@@ -224,7 +224,7 @@ class QuizResultModelTest(TestCase):
         QuizResult.objects.all().delete()
 
     def test_str_method(self):
-        """Тестирование магического метода (зачем?)"""
+        """Тестирование магического метода"""
         result = QuizResult.objects.create(
             user=self.user,
             quiz=self.quiz,
@@ -279,7 +279,7 @@ class GameSessionModelTest(TestCase):
             )
 
     def test_default_status_and_locked(self):
-        """Тестирование открытия и закрытия ишровой сессии"""
+        """Тестирование открытия и закрытия игровой сессии"""
         new_session = GameSession.objects.create(quiz=self.quiz, host=self.host)
         self.assertEqual(new_session.status, GameSession.WAITING)
         self.assertFalse(new_session.is_locked)
@@ -316,20 +316,24 @@ class GameParticipantModelTest(TestCase):
 
     def test_default_score_and_is_answered(self):
         """Тестирование набирает балл по умолчанию и получает ответ"""
+        # Создаём новую сессию, чтобы избежать конфликта уникальности
+        new_session = GameSession.objects.create(quiz=self.session.quiz, host=self.user)
         user2 = User.objects.get(pk=2)
-        part = GameParticipant.objects.create(session=self.session, user=user2)
+        part = GameParticipant.objects.create(session=new_session, user=user2)
         self.assertEqual(part.score, 0)
         self.assertFalse(part.is_answered)
 
     def test_ordering_by_score_desc(self):
-        """Тестирование моих нервов"""
+        """Тестирование сортировки по убыванию score"""
+        # Создаём новую сессию
+        new_session = GameSession.objects.create(quiz=self.session.quiz, host=self.user)
         user2 = User.objects.get(pk=2)
-        p1 = GameParticipant.objects.create(session=self.session, user=user2, score=10)
         user3 = User.objects.create(username='user3', password='test')
-        p2 = GameParticipant.objects.create(session=self.session, user=user3, score=20)
-        participants = list(GameParticipant.objects.all())
-        # Ожидаемый порядок: p2 (20), p1 (10), existing (0)
-        self.assertEqual(participants, [p2, p1, self.existing_participant])
+        p1 = GameParticipant.objects.create(session=new_session, user=user2, score=10)
+        p2 = GameParticipant.objects.create(session=new_session, user=user3, score=20)
+        participants = list(GameParticipant.objects.filter(session=new_session))
+        # Ожидаемый порядок: p2 (20), p1 (10)
+        self.assertEqual(participants, [p2, p1])
 
     def test_str_method(self):
         """Тестирование магического метода"""
