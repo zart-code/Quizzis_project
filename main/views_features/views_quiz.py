@@ -5,86 +5,61 @@ from django.contrib import messages
 from main.models import Quiz, Question, Answer, Profile,QuizResult
 from django.views.decorators.http import require_POST
 from django.utils import timezone
-from main.services.quiz_revisions import *
+from main.services.quiz_revisions import (
+    collect_question_payloads_from_post,
+    create_revision_from_payloads,
+    get_current_revision,
+    get_quiz_max_score,
+    get_quiz_questions,
+)
 from main.services.quiz_scoring import score_question
-
 import re
 
 
 @login_required
 def create_quiz_view(request):
     profile = getattr(request.user, 'profile', None)
+
     if profile and profile.is_banned:
         return render(request, 'banned_create_quiz.html')
+
     if profile and profile.role not in [Profile.ADMIN, Profile.TEACHER]:
-        messages.error(request, 'Создавать квизы могут только учителя и администраторы.')
+        messages.error(
+            request,
+            'Создавать квизы могут только учителя и администраторы.',
+        )
         return redirect('main_page')
 
     if request.method == 'POST':
-        title = request.POST.get('title')
+        title = request.POST.get('title', '').strip()
+        if not title:
+            messages.error(request, 'Название квиза не может быть пустым.')
+            return render(request, 'create_quiz.html')
 
-        question_indexes = []
-        for key, value in request.POST.items():
-            match = re.fullmatch(r'q(\d+)_text', key)
-            if match and value.strip():
-                question_indexes.append(int(match.group(1)))
-
-        question_indexes.sort()
-
-        if not question_indexes:
-            messages.error(request, 'Нельзя создать пустой квиз. Добавьте хотя бы один вопрос.')
+        question_payloads = collect_question_payloads_from_post(request)
+        if not question_payloads:
+            messages.error(
+                request,
+                'Нельзя создать пустой квиз. Добавьте хотя бы один вопрос.',
+            )
             return render(request, 'create_quiz.html')
 
         quiz = Quiz.objects.create(
             title=title,
             creator=request.user,
-            status=Quiz.DRAFT
+            status=Quiz.DRAFT,
         )
 
-        order = 1
-        for i in question_indexes:
-            q_type = request.POST.get(f'q{i}_type', 'single')
-            time_limit = int(request.POST.get(f'q{i}_time', 30))
-
-            q = Question.objects.create(
-                quiz=quiz,
-                text=request.POST.get(f'q{i}_text'),
-                question_type=q_type,
-                order=order,
-                time_limit=time_limit,
-            )
-
-            if q_type == 'single':
-                correct = request.POST.get(f'q{i}_correct')
-                for j in range(4):
-                    Answer.objects.create(
-                        question=q,
-                        text=request.POST.get(f'q{i}_ans{j}', ''),
-                        is_correct=(str(j) == correct),
-                    )
-
-            elif q_type == 'multiple':
-                correct_list = request.POST.getlist(f'q{i}_correct')
-                for j in range(4):
-                    Answer.objects.create(
-                        question=q,
-                        text=request.POST.get(f'q{i}_ans{j}', ''),
-                        is_correct=(str(j) in correct_list),
-                    )
-
-            elif q_type == 'number':
-                raw = request.POST.get(f'q{i}_correct_number', '0')
-                try:
-                    q.correct_number = float(raw)
-                except ValueError:
-                    q.correct_number = 0
-                q.save()
-
-            order += 1
+        create_revision_from_payloads(
+            quiz=quiz,
+            title=title,
+            question_payloads=question_payloads,
+        )
 
         return redirect('my_quizzes')
 
     return render(request, 'create_quiz.html')
+
 
 
 @login_required
