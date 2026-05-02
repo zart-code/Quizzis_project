@@ -444,7 +444,7 @@ function makeQuestion(i) {
         return;
     }
 
-    const html = `<div class="q-block" id="qblock${i}">
+        const html = `<div class="q-block" id="qblock${i}">
         <div class="q-block-header">
             <span class="q-block-title">Вопрос ${i}</span>
             <button type="button" class="q-remove-btn" onclick="removeQuestion(${i})">✕ Удалить</button>
@@ -466,6 +466,16 @@ function makeQuestion(i) {
                    placeholder="Введите текст вопроса..."
                    required>
         </div>
+        <div class="q-row">
+            <label>Коэффициент</label>
+            <input type="number"
+                   class="q-input"
+                   name="q${i}_coefficient"
+                   min="1"
+                   step="1"
+                   value="1"
+                   required>
+        </div>
         <div id="q${i}_answers">${makeAnswersSingle(i)}</div>
         <div class="q-row" style="margin-top:1rem">
             <label>⏱ Время на ответ</label>
@@ -479,6 +489,7 @@ function makeQuestion(i) {
 function setQuestionData(i, questionData) {
     const typeSelect = document.getElementById(`q${i}_type`);
     const questionInput = document.querySelector(`input[name="q${i}_text"]`);
+    const coefficientInput = document.querySelector(`input[name="q${i}_coefficient"]`);
 
     if (typeSelect && questionData.type) {
         typeSelect.value = questionData.type;
@@ -487,6 +498,9 @@ function setQuestionData(i, questionData) {
 
     if (questionInput) {
         questionInput.value = questionData.text || '';
+    }
+    if (coefficientInput) {
+        coefficientInput.value = questionData.coefficient || 1;
     }
 
     if (questionData.type === 'single' || questionData.type === 'multiple') {
@@ -571,6 +585,11 @@ function renumberQuestions() {
         const questionInput = block.querySelector('.q-row input.q-input[name$="_text"]');
         if (questionInput) {
             questionInput.name = `q${i}_text`;
+        }
+
+        const coefficientInput = block.querySelector('.q-row input.q-input[name$="_coefficient"]');
+        if (coefficientInput) {
+            coefficientInput.name = `q${i}_coefficient`;
         }
 
         const answersContainer = block.querySelector('[id$="_answers"]');

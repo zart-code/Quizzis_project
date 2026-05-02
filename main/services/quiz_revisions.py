@@ -141,7 +141,13 @@ def collect_question_payloads_from_post(request):
     for order, index in enumerate(question_indexes, start=1):
         question_type = request.POST.get(f'q{index}_type', 'single')
         time_limit = int(request.POST.get(f'q{index}_time', 30))
-        coefficient = int(request.POST.get(f'q{index}_coefficient', 1) or 1)
+        try:
+            coefficient = int(request.POST.get(f'q{index}_coefficient', 1) or 1)
+        except ValueError:
+            coefficient = 1
+
+        if coefficient < 1:
+            coefficient = 1
 
         payload = {
             'text': request.POST.get(f'q{index}_text', '').strip(),
