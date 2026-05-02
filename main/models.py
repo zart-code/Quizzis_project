@@ -145,6 +145,14 @@ class Quiz(models.Model):
         default=DRAFT,
         verbose_name='Статус',
     )
+    current_revision = models.ForeignKey(
+        'QuizRevision',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='+',
+        verbose_name='Текущая ревизия',
+    )
 
     class Meta:
         """
@@ -158,9 +166,47 @@ class Quiz(models.Model):
         """
         return str(self.title)
 
-    def total_questions(self) -> object:
-        """Возвращает количество вопросов в викторине."""
+    def total_questions(self) -> int:
+        """Возвращает количество вопросов в текущей ревизии квиза."""
+        if self.current_revision_id:
+            return self.current_revision.question_count
         return self.questions.count()
+
+    def total_max_score(self) -> int:
+        """Возвращает максимальный балл текущей ревизии квиза."""
+        if self.current_revision_id:
+            return self.current_revision.max_score
+
+        total = 0
+        for question in self.questions.all():
+            if question.question_type != Question.TEXT:
+                total += 4 * question.coefficient
+        return total
+
+
+class QuizRevision(models.Model):
+    """Неизменяемая ревизия квиза."""
+    quiz = models.ForeignKey(
+        Quiz,
+        on_delete=models.CASCADE,
+        related_name='revisions',
+        verbose_name='Квиз',
+    )
+    version = models.PositiveIntegerField(verbose_name='Версия')
+    title = models.CharField(max_length=200, verbose_name='Название ревизии')
+    question_count = models.PositiveIntegerField(default=0, verbose_name='Количество вопросов')
+    max_score = models.PositiveIntegerField(default=0, verbose_name='Максимальный балл')
+    created_at = models.DateTimeField(auto_now_add=True)
+    published_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-version']
+        unique_together = ['quiz', 'version']
+        verbose_name = 'Ревизия квиза'
+        verbose_name_plural = 'Ревизии квиза'
+
+    def __str__(self):
+        return f'{self.quiz.title} v{self.version}'
 
 
 class Question(models.Model):
@@ -213,6 +259,35 @@ class Question(models.Model):
         return str(self.text)
 
 
+class RevisionQuestion(models.Model):
+    """Вопрос внутри конкретной ревизии квиза."""
+    revision = models.ForeignKey(
+        QuizRevision,
+        on_delete=models.CASCADE,
+        related_name='questions',
+        verbose_name='Ревизия',
+    )
+    text = models.TextField(verbose_name='Текст вопроса')
+    question_type = models.CharField(
+        max_length=10,
+        choices=Question.QUESTION_TYPE_CHOICES,
+        default=Question.SINGLE,
+        verbose_name='Тип вопроса',
+    )
+    correct_number = models.FloatField(null=True, blank=True, verbose_name='Правильное число')
+    coefficient = models.PositiveIntegerField(default=1, verbose_name='Коэффициент')
+    time_limit = models.IntegerField(default=30, verbose_name='Время на ответ (сек)')
+    order = models.PositiveIntegerField(default=0, verbose_name='Порядок')
+
+    class Meta:
+        ordering = ['order', 'id']
+        verbose_name = 'Вопрос ревизии'
+        verbose_name_plural = 'Вопросы ревизии'
+
+    def __str__(self):
+        return self.text
+
+
 class Answer(models.Model):
     """
     Модель ответа
@@ -238,6 +313,27 @@ class Answer(models.Model):
         return str(self.text)
 
 
+class RevisionAnswer(models.Model):
+    """Ответ для вопроса ревизии."""
+    question = models.ForeignKey(
+        RevisionQuestion,
+        on_delete=models.CASCADE,
+        related_name='answers',
+        verbose_name='Вопрос ревизии',
+    )
+    text = models.CharField(max_length=255, verbose_name='Текст ответа')
+    is_correct = models.BooleanField(default=False, verbose_name='Правильный')
+    order = models.PositiveIntegerField(default=0, verbose_name='Порядок')
+
+    class Meta:
+        ordering = ['order', 'id']
+        verbose_name = 'Ответ ревизии'
+        verbose_name_plural = 'Ответы ревизии'
+
+    def __str__(self):
+        return self.text
+
+
 class QuizResult(models.Model):
     """
     Модель результата прохождения quiz
@@ -251,6 +347,14 @@ class QuizResult(models.Model):
         Quiz,
         on_delete=models.CASCADE,
         related_name='results',
+    )
+    revision = models.ForeignKey(
+        'QuizRevision',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='results',
+        verbose_name='Ревизия квиза',
     )
     score = models.IntegerField(default=0)
     max_score = models.IntegerField(default=0)
@@ -367,6 +471,14 @@ class GameSession(models.Model):
         null=True,
         blank=True,
         verbose_name='Время старта текущего вопроса',
+    )
+    revision = models.ForeignKey(
+        'QuizRevision',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='sessions',
+        verbose_name='Ревизия квиза',
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
