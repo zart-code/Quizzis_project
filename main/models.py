@@ -547,9 +547,19 @@ class GameAnswer(models.Model):
     )
     question = models.ForeignKey(
         Question,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name='game_answers',
-        verbose_name='Вопрос',
+        verbose_name='Старый вопрос',
+    )
+    revision_question = models.ForeignKey(
+        'RevisionQuestion',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='game_answers',
+        verbose_name='Вопрос ревизии',
     )
     answer = models.ForeignKey(
         Answer,
@@ -563,10 +573,18 @@ class GameAnswer(models.Model):
     answered_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        """
-        Метаданные
-        """
-        unique_together = ['participant', 'question']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['participant', 'question'],
+                condition=models.Q(question__isnull=False),
+                name='unique_gameanswer_legacy_question',
+            ),
+            models.UniqueConstraint(
+                fields=['participant', 'revision_question'],
+                condition=models.Q(revision_question__isnull=False),
+                name='unique_gameanswer_revision_question',
+            ),
+        ]
 
     def __str__(self):
         """

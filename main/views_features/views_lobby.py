@@ -278,48 +278,65 @@ def quiz_sessions_list_view(request, quiz_id):
 
 
 @login_required
+@login_required
 def session_results_teacher_view(request, pin):
-    """Детальные результаты сессии для учителя: таблица участник × вопрос"""
+    """Детальные результаты сессии для учителя: таблица участник × вопрос."""
     session = get_object_or_404(GameSession, pin=pin, host=request.user)
 
-    # Questions in order
-    questions = list(session.quiz.questions.all())
+    questions = get_session_questions(session)
+    max_score = get_session_max_score(session)
 
-    # Participants sorted by score descending (rank 1 = best)
     participants = list(
         session.participants.select_related('user').order_by('-score')
     )
 
-    # Build answers lookup: {participant_id: {question_id: is_correct}}
-    answers_qs = GameAnswer.objects.filter(session=session).values(
-        'participant_id', 'question_id', 'is_correct', 'points'
-    )
+    if session.revision_id:
+        answers_qs = GameAnswer.objects.filter(session=session).values(
+            'participant_id',
+            'revision_question_id',
+            'is_correct',
+            'points',
+        )
+        question_key_name = 'revision_question_id'
+    else:
+        answers_qs = GameAnswer.objects.filter(session=session).values(
+            'participant_id',
+            'question_id',
+            'is_correct',
+            'points',
+        )
+        question_key_name = 'question_id'
+
     answers_map = {}
-    for ga in answers_qs:
-        answers_map.setdefault(ga['participant_id'], {})[ga['question_id']] = {
-            'is_correct': ga['is_correct'],
-            'points': ga['points'],
+    for game_answer in answers_qs:
+        participant_answers = answers_map.setdefault(game_answer['participant_id'], {})
+        participant_answers[game_answer[question_key_name]] = {
+            'is_correct': game_answer['is_correct'],
+            'points': game_answer['points'],
         }
 
-    # Build rows for template
     rows = []
-    for rank, p in enumerate(participants, 1):
+    for rank, participant in enumerate(participants, start=1):
         q_results = []
-        for q in questions:
-            val = answers_map.get(p.id, {}).get(q.id, None)
-            if val is None:
+
+        for question in questions:
+            answer_data = answers_map.get(participant.id, {}).get(question.id)
+
+            if answer_data is None:
                 q_results.append(None)
-            else:
-                q_results.append({
-                    'points': val['points'],
-                    'max_points': 4 * q.coefficient,
-                    'is_correct': val['is_correct'],
-                })
+                continue
+
+            q_results.append({
+                'points': answer_data['points'],
+                'max_points': 0 if question.question_type == 'text' else 4 * question.coefficient,
+                'is_correct': answer_data['is_correct'],
+            })
+
         rows.append({
             'rank': rank,
-            'user': p.user,
-            'score': p.score,
-            'max_score': sum(4 * q.coefficient for q in questions),
+            'user': participant.user,
+            'score': participant.score,
+            'max_score': max_score,
             'q_results': q_results,
         })
 
@@ -328,3 +345,4 @@ def session_results_teacher_view(request, pin):
         'questions': questions,
         'rows': rows,
     })
+
