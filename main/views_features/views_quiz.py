@@ -5,6 +5,7 @@ from django.contrib import messages
 from main.models import Quiz, Question, Answer, Profile,QuizResult
 from django.views.decorators.http import require_POST
 from django.utils import timezone
+from main.services.quiz_revisions import *
 import re
 
 
@@ -123,7 +124,7 @@ def play_quiz_view(request, quiz_id):
     if quiz.status == Quiz.DRAFT and quiz.creator != request.user:
         return redirect('quizzes_view')
 
-    questions = list(quiz.questions.prefetch_related('answers').all())
+    questions = get_quiz_questions(quiz)
 
     if not questions:
         return redirect('my_quizzes')
@@ -295,8 +296,9 @@ def play_quiz_view(request, quiz_id):
     result = QuizResult.objects.create(
         user=request.user,
         quiz=quiz,
+        revision=get_current_revision(quiz),
         score=0,
-        max_score=len(questions),
+        max_score=get_quiz_max_score(quiz),
         score_percent=0,
         completed=False,
     )

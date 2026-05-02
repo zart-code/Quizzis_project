@@ -2,7 +2,8 @@
 
 from django.contrib.auth import login, logout
 from django.shortcuts import render, redirect
-from django.db.models import Count, Avg, Q
+from django.db.models import Count, Avg, Q, F, IntegerField
+from django.db.models.functions import Coalesce
 from .forms import CustomUserCreationForm, StyledAuthenticationForm
 from main.models import Quiz
 
@@ -81,7 +82,11 @@ def quizzes_view(request):
         .filter(status=Quiz.ACTIVE)
         .select_related('creator')
         .annotate(
-            total_questions=Count('questions', distinct=True),
+            total_questions=Coalesce(
+                F('current_revision__question_count'),
+                Count('questions', distinct=True),
+                output_field=IntegerField(),
+            ),
             passed_count=Count(
                 'results',
                 filter=Q(results__completed=True),

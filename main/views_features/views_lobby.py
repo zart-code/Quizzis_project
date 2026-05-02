@@ -16,7 +16,11 @@ def create_lobby_view(request, quiz_id):
     if quiz.status == Quiz.DRAFT:
         return redirect('my_quizzes')
 
-    session = GameSession.objects.create(quiz=quiz, host=request.user)
+    session = GameSession.objects.create(
+        quiz=quiz,
+        revision=quiz.current_revision,
+        host=request.user,
+    )
     return redirect('lobby', pin=session.pin)
 
 

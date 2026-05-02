@@ -47,7 +47,7 @@ def profile_view(request, user_id=None):
     recent_quiz_history = (
         QuizResult.objects
         .filter(user=user, completed=True)
-        .select_related('quiz', 'quiz__creator')
+        .select_related('quiz', 'quiz__creator', 'revision')
         .order_by('-completed_at')
     )[:5]
 
@@ -97,7 +97,7 @@ def profile_history_view(request, user_id=None):
     quiz_history = (
         QuizResult.objects
         .filter(user=user, completed=True)
-        .select_related('quiz', 'quiz__creator')
+        .select_related('quiz', 'quiz__creator', 'revision')
         .order_by('-completed_at')
     )
 
