@@ -75,34 +75,35 @@ def logout_view(request):
 
 
 def quizzes_view(request):
-    """Страница квизов"""
+    """Страница квизов."""
     sort_type = request.GET.get('sort', 'new')
+
+    current_revision_filter = Q(
+        results__completed=True,
+        results__revision=F('current_revision'),
+    )
+
     quizzes = (
         Quiz.objects
         .filter(status=Quiz.ACTIVE)
-        .select_related('creator')
+        .select_related('creator', 'current_revision')
         .annotate(
-            total_questions=Coalesce(
-                F('current_revision__question_count'),
-                Count('questions', distinct=True),
-                output_field=IntegerField(),
-            ),
             passed_count=Count(
                 'results',
-                filter=Q(results__completed=True),
+                filter=current_revision_filter,
                 distinct=True,
             ),
             avg_score_percent=Avg(
                 'results__score_percent',
-                filter=Q(results__completed=True),
+                filter=current_revision_filter,
             ),
             avg_score_points=Avg(
                 'results__score',
-                filter=Q(results__completed=True),
+                filter=current_revision_filter,
             ),
             avg_max_points=Avg(
                 'results__max_score',
-                filter=Q(results__completed=True),
+                filter=current_revision_filter,
             ),
         )
         .order_by('-created_at')
@@ -113,7 +114,6 @@ def quizzes_view(request):
         'quizzes': quizzes,
     }
     return render(request, 'quizzes_view.html', context)
-
 
 def my_quizzes(request):
     """Страница квиза (учителя)"""
