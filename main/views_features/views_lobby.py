@@ -3,14 +3,25 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
-from main.models import GameSession, Quiz, GameParticipant, GameAnswer, Question, QuizResult
 from django.utils import timezone
+from main.models import (
+    GameAnswer,
+    GameParticipant,
+    GameSession,
+    Quiz,
+    QuizResult,
+)
+from main.services.quiz_revisions import (
+    get_current_revision,
+    get_session_max_score,
+    get_session_questions,
+)
+from main.services.quiz_scoring import score_question
 
 
 @login_required
 def create_lobby_view(request, quiz_id):
-    """Создание квиза/лобби"""
-    print(quiz_id)
+    """Создание лобби по текущей ревизии квиза."""
     quiz = get_object_or_404(Quiz, id=quiz_id, creator=request.user)
 
     if quiz.status == Quiz.DRAFT:
@@ -18,7 +29,7 @@ def create_lobby_view(request, quiz_id):
 
     session = GameSession.objects.create(
         quiz=quiz,
-        revision=quiz.current_revision,
+        revision=get_current_revision(quiz),
         host=request.user,
     )
     return redirect('lobby', pin=session.pin)
@@ -115,21 +126,33 @@ def api_state_view(request, pin):
 def session_play_view(request, pin):
     session = get_object_or_404(GameSession, pin=pin)
     participant = get_object_or_404(
-        GameParticipant, session=session, user=request.user
+        GameParticipant,
+        session=session,
+        user=request.user,
     )
-    questions = list(session.quiz.questions.prefetch_related('answers').all())
+
+    questions = get_session_questions(session)
     total = len(questions)
-    total_max_score = sum(
-        4 * q.coefficient for q in questions
-    )
-    # Показать результаты если игра завершена или вопросы кончились
+    total_max_score = get_session_max_score(session)
+
+    if not questions:
+        return render(request, 'lobby_error.html', {
+            'message': 'В этой сессии нет вопросов.',
+        })
+
     if session.status == GameSession.FINISHED or session.current_question >= total:
         result_session_key = f'lobby_result_{pin}'
         result_id = request.session.get(result_session_key)
-        score_percent = (participant.score / total_max_score * 100) if total_max_score else 0
+        score_percent = (
+            participant.score / total_max_score * 100
+            if total_max_score else 0
+        )
 
         if result_id is not None:
-            QuizResult.objects.filter(id=result_id, user=request.user).update(
+            QuizResult.objects.filter(
+                id=result_id,
+                user=request.user,
+            ).update(
                 score=participant.score,
                 max_score=total_max_score,
                 score_percent=score_percent,
@@ -152,96 +175,75 @@ def session_play_view(request, pin):
         result = QuizResult.objects.create(
             user=request.user,
             quiz=session.quiz,
+            revision=session.revision,
             score=0,
             max_score=total_max_score,
             score_percent=0,
             completed=False,
         )
         request.session[result_session_key] = result.id
+
     question = questions[session.current_question]
     question_started_at = session.current_question_started_at or timezone.now()
     elapsed_seconds = int((timezone.now() - question_started_at).total_seconds())
     remaining_seconds = max(0, question.time_limit - elapsed_seconds)
     server_timed_out = remaining_seconds <= 0
+
     if request.method == 'POST':
+        answer_lookup = {
+            'session': session,
+            'participant': participant,
+        }
+        if session.revision_id:
+            answer_lookup['revision_question'] = question
+        else:
+            answer_lookup['question'] = question
+
+        existing_answer = GameAnswer.objects.filter(**answer_lookup).first()
+        if existing_answer is not None:
+            return redirect('session_play', pin=pin)
+
         if not participant.is_answered:
             timed_out = request.POST.get('timed_out') == '1' or server_timed_out
-            k = question.coefficient
-            max_points = 4 * k
-            earned_points = 0
-            is_correct = False
 
-            if not timed_out:
-                if question.question_type == 'single':
-                    chosen_id = request.POST.get('answer')
-                    answers = list(question.answers.all())
-                    correct_answer = next((a for a in answers if a.is_correct), None)
-
-                    if correct_answer and str(correct_answer.id) == chosen_id:
-                        earned_points += 4 * k
-
-                    is_correct = earned_points == max_points
-
-                elif question.question_type == 'multiple':
-                    chosen_ids = set(request.POST.getlist('answer'))
-                    answers = list(question.answers.all())
-
-                    mistakes = 0
-                    for answer in answers:
-                        user_marked = str(answer.id) in chosen_ids
-                        if user_marked != answer.is_correct:
-                            mistakes += 1
-
-                    if mistakes == 0:
-                        earned_points = 4 * k
-                    elif mistakes == 1:
-                        earned_points = 2 * k
-                    elif mistakes == 2:
-                        earned_points = 1 * k
-                    else:
-                        earned_points = 0
-
-                    is_correct = mistakes == 0
-
-                elif question.question_type == 'number':
-                    raw = request.POST.get('answer_number', '')
-                    try:
-                        if float(raw) == question.correct_number:
-                            earned_points = max_points
-                    except ValueError:
-                        earned_points = 0
-
-                    is_correct = earned_points == max_points
-
-                elif question.question_type == 'text':
-                    is_correct = None
-                    max_points = 0
-                    earned_points = 0
+            score_result = score_question(
+                question,
+                request,
+                timed_out=timed_out,
+            )
+            earned_points = score_result.points
+            is_correct = score_result.is_correct
 
             participant.score += earned_points
             participant.is_answered = True
             participant.save()
 
-            GameAnswer.objects.get_or_create(
-                session=session,
-                participant=participant,
-                question=question,
-                defaults={
-                    'is_correct': is_correct,
-                    'points': earned_points,
-                },
-            )
+            game_answer_data = {
+                'session': session,
+                'participant': participant,
+                'is_correct': is_correct,
+                'points': earned_points,
+            }
+            if session.revision_id:
+                game_answer_data['revision_question'] = question
+            else:
+                game_answer_data['question'] = question
+
+            GameAnswer.objects.create(**game_answer_data)
 
             total_participants = session.participants.count()
-            answered = session.participants.filter(is_answered=True).count()
-            if answered >= total_participants:
+            answered_count = session.participants.filter(is_answered=True).count()
+
+            if answered_count >= total_participants:
                 session.participants.update(is_answered=False)
                 session.current_question += 1
+
                 if session.current_question >= total:
                     session.status = GameSession.FINISHED
                     session.current_question_started_at = None
                 else:
                     session.current_question_started_at = timezone.now()
+
                 session.save()
 
         return redirect('session_play', pin=pin)
@@ -259,6 +261,7 @@ def session_play_view(request, pin):
     response['Pragma'] = 'no-cache'
     response['Expires'] = '0'
     return response
+
 
 
 

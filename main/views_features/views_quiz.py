@@ -6,6 +6,8 @@ from main.models import Quiz, Question, Answer, Profile,QuizResult
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from main.services.quiz_revisions import *
+from main.services.quiz_scoring import score_question
+
 import re
 
 
@@ -125,6 +127,7 @@ def play_quiz_view(request, quiz_id):
         return redirect('quizzes_view')
 
     questions = get_quiz_questions(quiz)
+    current_revision = get_current_revision(quiz)
 
     if not questions:
         return redirect('my_quizzes')
@@ -134,8 +137,8 @@ def play_quiz_view(request, quiz_id):
 
         if action == 'finish':
             answers_log = request.session.get(f'quiz_{quiz_id}_log', [])
-            score = sum(r['points'] for r in answers_log)
-            total = sum(r['max_points'] for r in answers_log)
+            score = sum(item['points'] for item in answers_log)
+            total = sum(item['max_points'] for item in answers_log)
             score_percent = (score / total * 100) if total else 0
 
             result_id = request.session.get(f'quiz_{quiz_id}_result_id')
@@ -143,7 +146,7 @@ def play_quiz_view(request, quiz_id):
                 QuizResult.objects.filter(
                     id=result_id,
                     user=request.user,
-                    quiz=quiz
+                    quiz=quiz,
                 ).update(
                     score=score,
                     max_score=total,
@@ -168,10 +171,6 @@ def play_quiz_view(request, quiz_id):
             index = int(request.POST.get('index', 0))
             question = questions[index]
             timed_out = request.POST.get('timed_out') == '1'
-            k = question.coefficient
-            max_points = 4 * k
-            earned_points = 0
-            is_correct = False
             correct_answer = None
 
             answered_key = f'quiz_{quiz_id}_answered'
@@ -201,52 +200,17 @@ def play_quiz_view(request, quiz_id):
                     'question_max_points': stored['max_points'],
                 })
 
-            if not timed_out:
-                if question.question_type == 'single':
-                    chosen_id = request.POST.get('answer')
-                    answers = list(question.answers.all())
-                    correct_answer = next((a for a in answers if a.is_correct), None)
+            score_result = score_question(
+                question,
+                request,
+                timed_out=timed_out,
+            )
+            earned_points = score_result.points
+            max_points = score_result.max_points
+            is_correct = score_result.is_correct
 
-                    if correct_answer and str(correct_answer.id) == chosen_id:
-                        earned_points += 4 * k
-
-                    is_correct = earned_points == max_points
-
-                elif question.question_type == 'multiple':
-                    chosen_ids = set(request.POST.getlist('answer'))
-                    answers = list(question.answers.all())
-
-                    mistakes = 0
-                    for answer in answers:
-                        user_marked = str(answer.id) in chosen_ids
-                        if user_marked != answer.is_correct:
-                            mistakes += 1
-
-                    if mistakes == 0:
-                        earned_points = 4 * k
-                    elif mistakes == 1:
-                        earned_points = 2 * k
-                    elif mistakes == 2:
-                        earned_points = 1 * k
-                    else:
-                        earned_points = 0
-
-                    is_correct = mistakes == 0
-
-                elif question.question_type == 'number':
-                    raw = request.POST.get('answer_number', '')
-                    try:
-                        if float(raw) == question.correct_number:
-                            earned_points = max_points
-                    except ValueError:
-                        earned_points = 0
-
-                    is_correct = earned_points == max_points
-
-                elif question.question_type == 'text':
-                    is_correct = None
-                    max_points = 0
-                    earned_points = 0
+            if question.question_type == 'single':
+                correct_answer = question.answers.filter(is_correct=True).first()
 
             answered_questions[question_key] = {
                 'earned_points': earned_points,
@@ -296,7 +260,7 @@ def play_quiz_view(request, quiz_id):
     result = QuizResult.objects.create(
         user=request.user,
         quiz=quiz,
-        revision=get_current_revision(quiz),
+        revision=current_revision,
         score=0,
         max_score=get_quiz_max_score(quiz),
         score_percent=0,
@@ -316,3 +280,4 @@ def play_quiz_view(request, quiz_id):
         'finished': False,
         'show_result': False,
     })
+
