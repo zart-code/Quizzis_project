@@ -1,21 +1,29 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Создать квиз — Quizziz{% endblock %}
+{% block title %}{% if is_edit %}Редактировать квиз — Quizziz{% else %}Создать квиз — Quizziz{% endif %}{% endblock %}
 
 {% block content %}
 <div class="container">
     <div class="cq-wrapper">
         <div class="cq-header">
-            <h1 class="cq-title">✏️ Создание квиза</h1>
-            <p class="cq-subtitle">Добавьте вопросы и запустите игру</p>
+            <h1 class="cq-title">{% if is_edit %}✏️ Редактирование квиза{% else %}✏️ Создание квиза{% endif %}</h1>
+            <p class="cq-subtitle">{% if is_edit %}Обновите вопросы и сохраните изменения{% else %}Добавьте вопросы и запустите игру{% endif %}</p>
         </div>
 
         <form method="post" id="quiz-form">
             {% csrf_token %}
             <div class="card cq-title-card">
                 <label class="cq-label" for="quiz-title">📚 Название квиза</label>
-                <input type="text" id="quiz-title" name="title" class="form-control" placeholder="Введите название квиза..." required>
+                <input
+                    type="text"
+                    id="quiz-title"
+                    name="title"
+                    class="form-control"
+                    placeholder="Введите название квиза..."
+                    value="{% if quiz_payload %}{{ quiz_payload.title }}{% elif quiz %}{{ quiz.title }}{% endif %}"
+                    required
+                >
             </div>
 
             <div id="questions-container"></div>
@@ -25,12 +33,20 @@
             </div>
 
             <div class="cq-submit-row">
-                <button type="submit" class="btn btn-primary btn-large">🚀 Создать</button>
+                <button type="submit" class="btn btn-primary btn-large">
+                    {% if is_edit %}💾 Сохранить{% else %}🚀 Создать{% endif %}
+                </button>
             </div>
         </form>
     </div>
 </div>
 
-
+{% if quiz_payload %}
+{{ quiz_payload|json_script:"quiz-initial-data" }}
+<script>
+    window.quizFormInitialData = JSON.parse(
+        document.getElementById('quiz-initial-data').textContent
+    );
+</script>
+{% endif %}
 {% endblock %}
-

@@ -2,10 +2,12 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from main.models import Quiz, Question, Answer, Profile,QuizResult
+from main.models import Quiz, Profile, QuizResult
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from main.services.quiz_revisions import (
+    build_quiz_form_payload,
+    build_quiz_payload_for_edit,
     collect_question_payloads_from_post,
     create_revision_from_payloads,
     get_current_revision,
@@ -13,7 +15,15 @@ from main.services.quiz_revisions import (
     get_quiz_questions,
 )
 from main.services.quiz_scoring import score_question
-import re
+
+
+def _render_quiz_form(request, *, quiz=None, quiz_payload=None):
+    """Единая отрисовка формы создания/редактирования квиза."""
+    return render(request, 'create_quiz.html', {
+        'is_edit': quiz is not None,
+        'quiz': quiz,
+        'quiz_payload': quiz_payload,
+    })
 
 
 @login_required
@@ -32,17 +42,24 @@ def create_quiz_view(request):
 
     if request.method == 'POST':
         title = request.POST.get('title', '').strip()
+        question_payloads = collect_question_payloads_from_post(request)
+
         if not title:
             messages.error(request, 'Название квиза не может быть пустым.')
-            return render(request, 'create_quiz.html')
+            return _render_quiz_form(
+                request,
+                quiz_payload=build_quiz_form_payload(title, question_payloads),
+            )
 
-        question_payloads = collect_question_payloads_from_post(request)
         if not question_payloads:
             messages.error(
                 request,
                 'Нельзя создать пустой квиз. Добавьте хотя бы один вопрос.',
             )
-            return render(request, 'create_quiz.html')
+            return _render_quiz_form(
+                request,
+                quiz_payload=build_quiz_form_payload(title, question_payloads),
+            )
 
         quiz = Quiz.objects.create(
             title=title,
@@ -58,8 +75,7 @@ def create_quiz_view(request):
 
         return redirect('my_quizzes')
 
-    return render(request, 'create_quiz.html')
-
+    return _render_quiz_form(request)
 
 
 @login_required
@@ -256,3 +272,58 @@ def play_quiz_view(request, quiz_id):
         'show_result': False,
     })
 
+
+@login_required
+def edit_quiz_view(request, quiz_id):
+    profile = getattr(request.user, 'profile', None)
+
+    if profile and profile.role not in [Profile.ADMIN, Profile.TEACHER]:
+        messages.error(
+            request,
+            'Редактировать квизы могут только учителя и администраторы.',
+        )
+        return redirect('main_page')
+
+    quiz = get_object_or_404(Quiz, id=quiz_id, creator=request.user)
+
+    if request.method == 'POST':
+        title = request.POST.get('title', '').strip()
+        question_payloads = collect_question_payloads_from_post(request)
+        quiz_payload = build_quiz_form_payload(title, question_payloads)
+
+        if not title:
+            messages.error(request, 'Название квиза не может быть пустым.')
+            return _render_quiz_form(
+                request,
+                quiz=quiz,
+                quiz_payload=quiz_payload,
+            )
+
+        if not question_payloads:
+            messages.error(
+                request,
+                'Нельзя сохранить пустой квиз. Добавьте хотя бы один вопрос.',
+            )
+            return _render_quiz_form(
+                request,
+                quiz=quiz,
+                quiz_payload=quiz_payload,
+            )
+
+        quiz.title = title
+        quiz.save(update_fields=['title'])
+
+        create_revision_from_payloads(
+            quiz=quiz,
+            title=title,
+            question_payloads=question_payloads,
+        )
+
+        messages.success(request, 'Квиз успешно обновлён.')
+        return redirect('my_quizzes')
+
+    return _render_quiz_form(
+        request,
+        quiz=quiz,
+        quiz_payload=build_quiz_payload_for_edit(quiz),
+    )

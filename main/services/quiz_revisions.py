@@ -239,3 +239,54 @@ def create_revision_from_payloads(quiz, title, question_payloads):
 
     return revision
 
+
+def build_quiz_form_payload(title, question_payloads):
+    """Готовит payload формы из уже собранных question_payloads."""
+    return {
+        'title': title,
+        'questions': [
+            {
+                'text': question_payload['text'],
+                'type': question_payload['question_type'],
+                'time': question_payload['time_limit'],
+                'coefficient': question_payload['coefficient'],
+                'correct_number': question_payload['correct_number'],
+                'answers': [
+                    {
+                        'text': answer_payload['text'],
+                        'is_correct': answer_payload['is_correct'],
+                    }
+                    for answer_payload in question_payload['answers']
+                ],
+            }
+            for question_payload in question_payloads
+        ],
+    }
+
+
+def build_quiz_payload_for_edit(quiz):
+    """Возвращает payload текущей версии квиза для формы редактирования."""
+    revision = get_current_revision(quiz)
+    if revision is not None:
+        return build_revision_payload(revision)
+
+    return {
+        'title': quiz.title,
+        'questions': [
+            {
+                'text': question.text,
+                'type': question.question_type,
+                'time': question.time_limit,
+                'coefficient': question.coefficient,
+                'correct_number': question.correct_number,
+                'answers': [
+                    {
+                        'text': answer.text,
+                        'is_correct': answer.is_correct,
+                    }
+                    for answer in question.answers.all().order_by('id')
+                ],
+            }
+            for question in quiz.questions.prefetch_related('answers').order_by('order', 'id')
+        ],
+    }

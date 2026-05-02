@@ -46,7 +46,15 @@
                     </div>
                 </div>
 
-                <h3 class="mq-card-title">{{ quiz.title }}</h3>
+                <div class="mq-title-row">
+                    <h3 class="mq-card-title">{{ quiz.title }}</h3>
+                    <a href="{% url 'edit_quiz' quiz.id %}"
+                       class="mq-edit-btn"
+                       title="Редактировать квиз"
+                       aria-label="Редактировать квиз">
+                        ✎
+                    </a>
+                </div>
 
                 {% if quiz.description %}
                 <p class="mq-card-desc">{{ quiz.description|truncatechars:80 }}</p>
@@ -120,5 +128,30 @@
 <style>
 .mq-btn-history{background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);color:var(--primary-light)}
 .mq-btn-history:hover{background:rgba(139,92,246,.25);border-color:var(--primary)}
+    .mq-title-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:.6rem
+}
+.mq-edit-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:28px;
+    height:28px;
+    border-radius:8px;
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.18);
+    color:#fff;
+    text-decoration:none;
+    font-size:.95rem;
+    transition:all .2s ease
+}
+.mq-edit-btn:hover{
+    background:rgba(56,189,248,.2);
+    border-color:rgba(56,189,248,.55);
+    transform:translateY(-1px)
+}
 </style>
 {% endblock %}
