@@ -9,7 +9,7 @@ FIELD_ATTRS = {"class": "form-control"}
 
 
 class CustomUserCreationForm(UserCreationForm):
-    """Форма пользователя"""
+    """Форма регистрации пользователя с выбором роли."""
 
     role = forms.ChoiceField(
         choices=[
@@ -20,7 +20,7 @@ class CustomUserCreationForm(UserCreationForm):
     )
 
     class Meta(UserCreationForm.Meta):
-        """Метаданные"""
+        """Метаданные формы."""
 
         model = User
         fields = ("username", "email")
@@ -43,10 +43,14 @@ class CustomUserCreationForm(UserCreationForm):
         return user
 
 
+# pylint: disable=too-few-public-methods
 class StyledAuthenticationForm(AuthenticationForm):
-    """Стилистическая форма"""
+    """Стилизованная форма аутентификации."""
 
-    def __init__(self, request=None, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
+        # Извлекаем request из kwargs (если передан)
+        request = kwargs.pop('request', None)
         super().__init__(request=request, *args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs.update(FIELD_ATTRS)
+# pylint: enable=too-few-public-methods
