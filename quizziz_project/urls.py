@@ -43,11 +43,47 @@
 
 from django.contrib import admin
 from django.urls import path
-from main.views import *
-from main.views_features.views_profile import *
-from main.views_features.views_quiz import *
-from main.views_features.views_lobby import *
-from main.views_features.views_admin import *
+
+from main.views import (
+    main_page,
+    login_page,
+    register_page,
+    logout_view,
+    quizzes_view
+)
+from main.views_features.views_profile import (
+    profile_view,
+    profile_history_view,
+    edit_profile_view,
+)
+from main.views_features.views_quiz import (
+    create_quiz_view,
+    my_quizzes_view,
+    toggle_quiz_status_view,
+    play_quiz_view,
+)
+from main.views_features.views_lobby import (
+    create_lobby_view,
+    lobby_view,
+    toggle_lock_view,
+    delete_session_view,
+    api_players_view,
+    join_lobby_view,
+    start_game_view,
+    api_state_view,
+    session_play_view,
+    session_results_teacher_view,
+    quiz_sessions_list_view
+)
+from main.views_features.views_admin import (
+    admin_panel_view,
+    admin_ban_user_view,
+    admin_unpublish_quiz_view,
+    admin_delete_quiz_view,
+    api_admin_stats_view,
+    api_admin_users_view,
+    api_admin_quizzes_view,
+)
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -75,11 +111,13 @@ urlpatterns = [
     path("lobby/<str:pin>/start/", start_game_view, name="start_game"),
     path("session/<str:pin>/api/state/", api_state_view, name="api_state"),
     path("session/<str:pin>/play/", session_play_view, name="session_play"),
+
     path(
         "quiz/<int:quiz_id>/sessions/",
         quiz_sessions_list_view,
         name="quiz_sessions_list",
     ),
+
     path(
         "session/<str:pin>/results/teacher/",
         session_results_teacher_view,
