@@ -1,5 +1,7 @@
 """Формы для views"""
 
+# pylint: disable=too-many-ancestors, too-few-public-methods
+
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
 from django import forms
@@ -43,14 +45,11 @@ class CustomUserCreationForm(UserCreationForm):
         return user
 
 
-# pylint: disable=too-few-public-methods
 class StyledAuthenticationForm(AuthenticationForm):
     """Стилизованная форма аутентификации."""
 
     def __init__(self, *args, **kwargs):
-        # Извлекаем request из kwargs (если передан)
         request = kwargs.pop('request', None)
         super().__init__(request=request, *args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs.update(FIELD_ATTRS)
-# pylint: enable=too-few-public-methods

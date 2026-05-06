@@ -1,12 +1,16 @@
 """Файл функций views"""
 
+# pylint: disable=no-member
+
 from django.contrib.auth import login, logout
 from django.shortcuts import render, redirect
 from django.db.models import Count, Avg, Q
-from .forms import CustomUserCreationForm, StyledAuthenticationForm
+
 from main.models import Quiz
+from .forms import CustomUserCreationForm, StyledAuthenticationForm
 
 
+# pylint: disable=too-many-arguments,too-many-positional-arguments
 def _handle_form(
     request,
     form_class,
@@ -20,7 +24,6 @@ def _handle_form(
         extra_form_kwargs = {}
 
     if request.method == "POST":
-        # Создаём связанную форму с данными из POST
         if needs_request:
             form = form_class(request, data=request.POST)
         else:
@@ -34,9 +37,7 @@ def _handle_form(
                 user = form.get_user()
                 login(request, user)
             return redirect(success_url)
-        # Если форма не валидна, продолжим и вернём её же (с ошибками)
     else:
-        # GET-запрос: создаём пустую (несвязанную) форму
         form = form_class(**extra_form_kwargs)
 
     return render(request, template_name, {"form": form})
