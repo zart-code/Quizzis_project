@@ -1,6 +1,5 @@
 """Тесты для файла models.py"""
 
-
 from django.db import IntegrityError
 from django.contrib.auth.models import User
 from main.models import (
@@ -35,6 +34,7 @@ class GeneratePinTest(TestCase):
 
 class CategoryModelTest(TestCase):
     """Тесты модели Category (используем данные из фикстуры)."""
+
     """Тесты модели Category."""
 
     fixtures = ["db.json"]
@@ -53,7 +53,9 @@ class CategoryModelTest(TestCase):
     def test_ordering(self):
         categories = list(Category.objects.all())
         # Проверяем, что сортировка по имени работает (ожидаемый порядок из фикстуры)
-        self.assertEqual([c.name for c in categories], ["Alpha", "Math", "Science", "Zoo"])
+        self.assertEqual(
+            [c.name for c in categories], ["Alpha", "Math", "Science", "Zoo"]
+        )
 
 
 class QuizModelTest(TestCase):
@@ -152,10 +154,14 @@ class GameAnswerModelTest(TestCase):
         """Настройка данных для проведения тестировавния"""
         self.session = GameSession.objects.get(pk=1)
         self.user = User.objects.get(pk=1)
-        self.participant = GameParticipant.objects.get(session=self.session, user=self.user)
+        self.participant = GameParticipant.objects.get(
+            session=self.session, user=self.user
+        )
         self.question = Question.objects.get(pk=1)
         self.answer = Answer.objects.get(pk=1)
-        GameAnswer.objects.filter(participant=self.participant, question=self.question).delete()
+        GameAnswer.objects.filter(
+            participant=self.participant, question=self.question
+        ).delete()
 
     def test_unique_together_participant_question(self):
         """Тестирование уникальности вопроса участника"""
@@ -199,6 +205,7 @@ class GameAnswerModelTest(TestCase):
         question_id = self.question.id
         self.question.delete()
         self.assertEqual(Answer.objects.filter(question_id=question_id).count(), 0)
+
     def test_str_method(self):
         """Тест метода"""
         ans = GameAnswer.objects.create(
@@ -306,8 +313,9 @@ class GameParticipantModelTest(TestCase):
         self.session = GameSession.objects.get(pk=1)
         self.user = User.objects.get(pk=1)
         # Получаем существующего участника из фикстуры
-        self.existing_participant = GameParticipant.objects.get(session=self.session,
-                                                                user=self.user)
+        self.existing_participant = GameParticipant.objects.get(
+            session=self.session, user=self.user
+        )
 
     def test_unique_together_session_user(self):
         """Уникальность игровых сессий и юзеров"""
@@ -325,7 +333,7 @@ class GameParticipantModelTest(TestCase):
         """Тестирование моих нервов"""
         user2 = User.objects.get(pk=2)
         p1 = GameParticipant.objects.create(session=self.session, user=user2, score=10)
-        user3 = User.objects.create(username='user3', password='test')
+        user3 = User.objects.create(username="user3", password="test")
         p2 = GameParticipant.objects.create(session=self.session, user=user3, score=20)
         participants = list(GameParticipant.objects.all())
         # Ожидаемый порядок: p2 (20), p1 (10), existing (0)

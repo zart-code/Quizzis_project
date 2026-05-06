@@ -6,13 +6,15 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('main', '0002_question_coefficient'),
+        ("main", "0002_question_coefficient"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='gamesession',
-            name='current_question_started_at',
-            field=models.DateTimeField(blank=True, null=True, verbose_name='Время старта текущего вопроса'),
+            model_name="gamesession",
+            name="current_question_started_at",
+            field=models.DateTimeField(
+                blank=True, null=True, verbose_name="Время старта текущего вопроса"
+            ),
         ),
     ]

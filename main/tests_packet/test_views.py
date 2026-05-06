@@ -1,6 +1,5 @@
 """Тесты для файла views.py"""
 
-
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
@@ -100,8 +99,8 @@ class RegisterPageViewTest(TestCase):
             "role": "teacher",
         }
         response = self.client.post(reverse("register_page"), data)
-        if response.status_code != 302 and 'form' in response.context:
-            print(response.context['form'].errors)
+        if response.status_code != 302 and "form" in response.context:
+            print(response.context["form"].errors)
         self.assertRedirects(response, reverse("main_page"))
         self.assertTrue(User.objects.filter(username=unique).exists())
 
@@ -176,22 +175,17 @@ class MyQuizzesViewTest(TestCase):
     def setUp(self):
         # Создаём суперпользователя (все права)
         self.user = User.objects.create_superuser(
-            username='testuser_my',
-            password='testpass123',
-            email='test@example.com'
+            username="testuser_my", password="testpass123", email="test@example.com"
         )
         # Получаем профиль и настраиваем его
         profile = self.user.profile
-        profile.role = 'teacher'  # попробуем teacher вместо admin
+        profile.role = "teacher"  # попробуем teacher вместо admin
         profile.is_admin = True
         profile.save()
 
         # Создаём квиз
         self.quiz = Quiz.objects.create(
-            title="Test Quiz",
-            creator=self.user,
-            status=Quiz.ACTIVE,
-            description="Test"
+            title="Test Quiz", creator=self.user, status=Quiz.ACTIVE, description="Test"
         )
         Question.objects.create(quiz=self.quiz, text="Sample question", order=1)
         self.client.force_login(self.user)

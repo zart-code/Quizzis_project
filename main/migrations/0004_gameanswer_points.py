@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('main', '0003_gamesession_current_question_started_at'),
+        ("main", "0003_gamesession_current_question_started_at"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='gameanswer',
-            name='points',
-            field=models.IntegerField(default=0, verbose_name='Баллы'),
+            model_name="gameanswer",
+            name="points",
+            field=models.IntegerField(default=0, verbose_name="Баллы"),
         ),
     ]

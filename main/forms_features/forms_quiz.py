@@ -9,32 +9,32 @@ class QuizForm(forms.ModelForm):
 
     creator_name = forms.CharField(
         max_length=150,
-        label='Имя создателя',
+        label="Имя создателя",
         required=True,
-        help_text='Отображаемое имя автора квиза',
+        help_text="Отображаемое имя автора квиза",
     )
 
     class Meta:
         model = Quiz
         fields = [
-            'title',
-            'category',
-            'description',
-            'additional_info',
-            'time_limit',
-            'status',
+            "title",
+            "category",
+            "description",
+            "additional_info",
+            "time_limit",
+            "status",
         ]
         widgets = {
-            'description': forms.Textarea(attrs={'rows': 3}),
-            'additional_info': forms.Textarea(attrs={'rows': 3}),
+            "description": forms.Textarea(attrs={"rows": 3}),
+            "additional_info": forms.Textarea(attrs={"rows": 3}),
         }
 
     def __init__(self, *args, **kwargs):
-        self.user = kwargs.pop('user', None)
+        self.user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
         if self.user:
             full_name = self.user.get_full_name() or self.user.username
-            self.fields['creator_name'].initial = full_name
+            self.fields["creator_name"].initial = full_name
 
     def save(self, commit=True):
         quiz = super().save(commit=False)
@@ -50,10 +50,10 @@ class QuestionForm(forms.ModelForm):
 
     class Meta:
         model = Question
-        fields = ['text', 'question_type', 'order']
+        fields = ["text", "question_type", "order"]
         widgets = {
-            'text': forms.Textarea(attrs={'rows': 2}),
-            'order': forms.HiddenInput(),
+            "text": forms.Textarea(attrs={"rows": 2}),
+            "order": forms.HiddenInput(),
         }
 
 
@@ -62,7 +62,7 @@ class AnswerForm(forms.ModelForm):
 
     class Meta:
         model = Answer
-        fields = ['text', 'is_correct']
+        fields = ["text", "is_correct"]
 
 
 # Formset для вариантов ответа внутри одного вопроса
