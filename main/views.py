@@ -25,7 +25,7 @@ def _handle_form(
 
     if request.method == "POST":
         if needs_request:
-            form = form_class(request, data=request.POST)
+            form = form_class(data=request.POST, request=request)
         else:
             form = form_class(request.POST)
 
