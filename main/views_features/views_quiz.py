@@ -1,22 +1,36 @@
 """Views для квизов"""
 
+import logging
+import re
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from main.models import Quiz, Question, Answer, Profile, QuizResult
 from django.views.decorators.http import require_POST
 from django.utils import timezone
-import re
+from main.models import Quiz, Question, Answer, Profile, QuizResult
+
+logger = logging.getLogger(__name__)
 
 
 @login_required
 def create_quiz_view(request):
     profile = getattr(request.user, "profile", None)
+
     if profile and profile.is_banned:
+        logger.warning(
+            "Забаненный пользователь %s попытался создать квиз (IP: %s)",
+            request.user.username,
+            request.META.get("REMOTE_ADDR")
+        )
         return render(request, "banned_create_quiz.html")
+
     if profile and profile.role not in [Profile.ADMIN, Profile.TEACHER]:
         messages.error(
             request, "Создавать квизы могут только учителя и администраторы."
+        )
+        logger.warning(
+            "Пользователь %s (роль %s) попытался создать квиз без прав (IP: %s)",
+            request.user.username, profile.role, request.META.get("REMOTE_ADDR")
         )
         return redirect("main_page")
 
@@ -34,6 +48,10 @@ def create_quiz_view(request):
         if not question_indexes:
             messages.error(
                 request, "Нельзя создать пустой квиз. Добавьте хотя бы один вопрос."
+            )
+            logger.warning(
+                "Пользователь %s попытался создать пустой квиз (IP: %s)",
+                request.user.username, request.META.get("REMOTE_ADDR")
             )
             return render(request, "create_quiz.html")
 
@@ -80,6 +98,11 @@ def create_quiz_view(request):
 
             order += 1
 
+        logger.info(
+            "Пользователь %s создал квиз '%s' (ID %d) с %d вопросами (IP: %s)",
+            request.user.username, quiz.title, quiz.id, len(question_indexes),
+            request.META.get("REMOTE_ADDR")
+        )
         return redirect("my_quizzes")
 
     return render(request, "create_quiz.html")
@@ -92,12 +115,22 @@ def my_quizzes_view(request):
         messages.error(
             request, 'Раздел "Мои квизы" доступен только учителям и администраторам.'
         )
+        logger.warning(
+            "Пользователь %s (роль %s) попытался зайти в 'Мои квизы' без прав (IP: %s)",
+            request.user.username, profile.role if profile else "None",
+            request.META.get("REMOTE_ADDR")
+        )
         return redirect("main_page")
 
     quizzes = Quiz.objects.filter(creator=request.user).order_by("-created_at")
-    total_questions = 0
-    for quiz in quizzes:
-        total_questions += quiz.total_questions()
+    total_questions = sum(quiz.total_questions() for quiz in quizzes)
+
+    logger.info(
+        "Пользователь %s просмотрел свои квизы: %d квизов, %d вопросов (IP: %s)",
+        request.user.username, quizzes.count(), total_questions,
+        request.META.get("REMOTE_ADDR")
+    )
+
     context = {
         "quizzes": quizzes,
         "total_questions": total_questions,
@@ -109,6 +142,7 @@ def my_quizzes_view(request):
 @require_POST
 def toggle_quiz_status_view(request, quiz_id):
     quiz = get_object_or_404(Quiz, id=quiz_id, creator=request.user)
+    old_status = quiz.status
 
     if quiz.status == Quiz.DRAFT:
         quiz.status = Quiz.ACTIVE
@@ -116,6 +150,11 @@ def toggle_quiz_status_view(request, quiz_id):
         quiz.status = Quiz.DRAFT
 
     quiz.save()
+    logger.info(
+        "Пользователь %s изменил статус квиза '%s' (ID %d) с %s на %s (IP: %s)",
+        request.user.username, quiz.title, quiz.id, old_status, quiz.status,
+        request.META.get("REMOTE_ADDR")
+    )
     return redirect("my_quizzes")
 
 
@@ -123,14 +162,25 @@ def toggle_quiz_status_view(request, quiz_id):
 def play_quiz_view(request, quiz_id):
     quiz = get_object_or_404(Quiz, id=quiz_id)
 
+    # Проверка доступа к черновику
     if quiz.status == Quiz.DRAFT and quiz.creator != request.user:
+        logger.warning(
+            "Пользователь %s попытался пройти черновик квиза '%s' (автор %s) (IP: %s)",
+            request.user.username, quiz.title, quiz.creator.username,
+            request.META.get("REMOTE_ADDR")
+        )
         return redirect("quizzes_view")
 
     questions = list(quiz.questions.prefetch_related("answers").all())
 
     if not questions:
+        logger.warning(
+            "Пользователь %s попытался пройти пустой квиз '%s' (ID %d) (IP: %s)",
+            request.user.username, quiz.title, quiz.id, request.META.get("REMOTE_ADDR")
+        )
         return redirect("my_quizzes")
 
+    # Обработка POST-запросов (финиш, ответ, следующий вопрос)
     if request.method == "POST":
         action = request.POST.get("action")
 
@@ -157,6 +207,12 @@ def play_quiz_view(request, quiz_id):
             request.session.pop(f"quiz_{quiz_id}_result_id", None)
             request.session.pop(f"quiz_{quiz_id}_answered", None)
 
+            logger.info(
+                "Пользователь %s завершил квиз '%s' (ID %d) с результатом %d/%d баллов (%.1f%%) (IP: %s)",
+                request.user.username, quiz.title, quiz.id,
+                score, total, score_percent, request.META.get("REMOTE_ADDR")
+            )
+
             return render(
                 request,
                 "play_quiz.html",
@@ -182,6 +238,7 @@ def play_quiz_view(request, quiz_id):
             answered_questions = request.session.get(answered_key, {})
             question_key = str(question.id)
 
+            # Если на этот вопрос уже отвечали – показываем сохранённый результат
             if question_key in answered_questions:
                 stored = answered_questions[question_key]
 
@@ -190,6 +247,11 @@ def play_quiz_view(request, quiz_id):
 
                 next_index = index + 1
                 is_last = next_index >= len(questions)
+
+                logger.debug(
+                    "Повторный просмотр ответа на вопрос %d квиза '%s' пользователем %s",
+                    index, quiz.title, request.user.username
+                )
 
                 return render(
                     request,
@@ -209,6 +271,7 @@ def play_quiz_view(request, quiz_id):
                     },
                 )
 
+            # Обработка нового ответа
             if not timed_out:
                 if question.question_type == "single":
                     chosen_id = request.POST.get("answer")
@@ -256,6 +319,7 @@ def play_quiz_view(request, quiz_id):
                     max_points = 0
                     earned_points = 0
 
+            # Сохраняем ответ в сессии
             answered_questions[question_key] = {
                 "earned_points": earned_points,
                 "max_points": max_points,
@@ -273,6 +337,12 @@ def play_quiz_view(request, quiz_id):
                 }
             )
             request.session[f"quiz_{quiz_id}_log"] = log
+
+            logger.info(
+                "Пользователь %s ответил на вопрос %d квиза '%s' (ID %d): тип=%s, таймаут=%s, баллы=%d/%d",
+                request.user.username, index, quiz.title, quiz.id,
+                question.question_type, timed_out, earned_points, max_points
+            )
 
             next_index = index + 1
             is_last = next_index >= len(questions)
@@ -311,6 +381,7 @@ def play_quiz_view(request, quiz_id):
                 },
             )
 
+    # GET-запрос – начало прохождения квиза
     result = QuizResult.objects.create(
         user=request.user,
         quiz=quiz,
@@ -324,6 +395,12 @@ def play_quiz_view(request, quiz_id):
     request.session[f"quiz_{quiz_id}_index"] = 0
     request.session[f"quiz_{quiz_id}_result_id"] = result.id
     request.session[f"quiz_{quiz_id}_answered"] = {}
+
+    logger.info(
+        "Пользователь %s начал прохождение квиза '%s' (ID %d), вопросов: %d (IP: %s)",
+        request.user.username, quiz.title, quiz.id, len(questions),
+        request.META.get("REMOTE_ADDR")
+    )
 
     return render(
         request,

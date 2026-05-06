@@ -92,6 +92,11 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Возможно понадобиться когда будем развёртывать приложение
+BASE_DIR = Path(__file__).resolve().parent.parent
+LOG_DIR = BASE_DIR / 'logs'
+LOG_DIR.mkdir(exist_ok=True)
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -112,8 +117,9 @@ LOGGING = {
         },
         'file': {
             'class': 'logging.FileHandler',
-            'filename': 'logs/users_views.log',
+            'filename':  str(LOG_DIR / 'django.log'),
             'formatter': 'verbose',
+            'encoding': 'utf-8',
         },
     },
     'root': {
@@ -121,10 +127,18 @@ LOGGING = {
         'level': 'INFO',
     },
     'loggers': {
-        'users.views': {  # имя логгера, совпадающее с __name__ в views.py
+
+        'main.views': {
             'handlers': ['console', 'file'],
             'level': 'INFO',
             'propagate': False,
         },
+
+        'main.views_features.views_quiz': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+
     },
 }
