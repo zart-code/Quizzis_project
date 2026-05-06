@@ -17,25 +17,27 @@ from main.models import (
     QuizResult,
     generate_pin,
 )
+from django.test import TestCase
+from django.urls import reverse
 
 
 class GeneratePinTest(TestCase):
     """Тесты генератора PIN-кода."""
 
     def test_pin_length_and_digits(self):
-        """Тестирование длины и цифрового формата."""
+        """Тестирование длины"""
         pin = generate_pin()
         self.assertEqual(len(pin), 6)
         self.assertTrue(pin.isdigit())
 
     def test_pin_uniqueness_probabilistic(self):
-        """Вероятностная проверка уникальности PIN-кодов."""
+        """Тестирование на уникальность"""
         pins = [generate_pin() for _ in range(1000)]
         self.assertGreaterEqual(len(set(pins)), 990)
 
 
 class CategoryModelTest(TestCase):
-    """Тесты модели Category (используем данные из фикстуры)."""
+    """Тесты модели Category."""
 
     fixtures = ["db.json"]
 
@@ -52,7 +54,6 @@ class CategoryModelTest(TestCase):
     def test_ordering(self):
         """Проверка сортировки категорий по имени."""
         categories = list(Category.objects.all())
-        # Ожидаемый порядок из фикстуры: Alpha, Math, Science, Zoo
         self.assertEqual(
             [c.name for c in categories], ["Alpha", "Math", "Science", "Zoo"]
         )
@@ -117,7 +118,7 @@ class QuestionModelTest(TestCase):
         self.assertEqual(self.question.question_type, Question.MULTIPLE)
 
     def test_default_time_limit(self):
-        """Проверка значения времени по умолчанию."""
+        """Тестирование ограничения времени"""
         q = Question.objects.create(quiz=self.quiz, text="No time")
         self.assertEqual(q.time_limit, 30)
 
@@ -151,7 +152,7 @@ class GameAnswerModelTest(TestCase):
     fixtures = ["db.json"]
 
     def setUp(self):
-        """Настройка данных для тестирования."""
+        """Настройка данных для проведения тестировавния"""
         self.session = GameSession.objects.get(pk=1)
         self.user = User.objects.get(pk=1)
         self.participant = GameParticipant.objects.get(
@@ -164,7 +165,7 @@ class GameAnswerModelTest(TestCase):
         ).delete()
 
     def test_unique_together_participant_question(self):
-        """Проверка уникальности пары (участник, вопрос)."""
+        """Тестирование уникальности вопроса участника"""
         GameAnswer.objects.create(
             session=self.session,
             participant=self.participant,
@@ -181,7 +182,7 @@ class GameAnswerModelTest(TestCase):
             )
 
     def test_is_correct_default(self):
-        """Проверка значения is_correct по умолчанию."""
+        """Стандартная проверка корректности"""
         ans = GameAnswer.objects.create(
             session=self.session,
             participant=self.participant,
@@ -191,7 +192,7 @@ class GameAnswerModelTest(TestCase):
         self.assertFalse(ans.is_correct)
 
     def test_answered_at_nullable(self):
-        """Проверка возможности null для поля answered_at."""
+        """Возможность обнуления ответа на тест"""
         ans = GameAnswer.objects.create(
             session=self.session,
             participant=self.participant,
@@ -202,13 +203,11 @@ class GameAnswerModelTest(TestCase):
         self.assertIsNone(ans.answered_at)
 
     def test_cascade_delete_question(self):
-        """Проверка каскадного удаления ответов при удалении вопроса."""
         question_id = self.question.id
         self.question.delete()
         self.assertEqual(Answer.objects.filter(question_id=question_id).count(), 0)
-
     def test_str_method(self):
-        """Проверка строкового представления игрового ответа."""
+        """Тест метода"""
         ans = GameAnswer.objects.create(
             session=self.session,
             participant=self.participant,
@@ -225,13 +224,14 @@ class QuizResultModelTest(TestCase):
     fixtures = ["db.json"]
 
     def setUp(self):
-        """Первичная настройка тестов."""
+        """Первичная настройка тестов"""
         self.user = User.objects.get(pk=1)
         self.quiz = Quiz.objects.get(pk=1)
+        # Удаляем все результаты, чтобы не мешали
         QuizResult.objects.all().delete()
 
     def test_str_method(self):
-        """Проверка строкового представления результата."""
+        """Тестирование магического метода (зачем?)"""
         result = QuizResult.objects.create(
             user=self.user,
             quiz=self.quiz,
@@ -244,13 +244,13 @@ class QuizResultModelTest(TestCase):
         self.assertEqual(str(result), "5")
 
     def test_auto_fields(self):
-        """Проверка автоматического заполнения полей started_at и completed_at."""
+        """Тестирование полей"""
         result = QuizResult.objects.create(user=self.user, quiz=self.quiz)
         self.assertIsNotNone(result.started_at)
         self.assertIsNone(result.completed_at)
 
     def test_ordering(self):
-        """Проверка сортировки результатов по полю order."""
+        """Тестирование order"""
         QuizResult.objects.create(user=self.user, quiz=self.quiz, order=2)
         QuizResult.objects.create(user=self.user, quiz=self.quiz, order=1)
         results = list(QuizResult.objects.all())
@@ -263,41 +263,41 @@ class GameSessionModelTest(TestCase):
     fixtures = ["db.json"]
 
     def setUp(self):
-        """Первичная настройка тестов."""
+        """Первичная настройка тестов"""
         self.session = GameSession.objects.get(pk=1)
         self.quiz = self.session.quiz
         self.host = self.session.host
 
     def test_str_method(self):
-        """Проверка строкового представления игровой сессии."""
+        """Тестирование магического метода"""
         self.assertEqual(str(self.session), f"{self.quiz} [933327]")
 
     def test_pin_generation(self):
-        """Проверка генерации PIN-кода."""
+        """Тестирование генератора pin"""
         new_session = GameSession.objects.create(quiz=self.quiz, host=self.host)
         self.assertEqual(len(new_session.pin), 6)
         self.assertTrue(new_session.pin.isdigit())
 
     def test_pin_unique(self):
-        """Проверка уникальности PIN-кода."""
+        """Тестирование уникальности пинов"""
         with self.assertRaises(IntegrityError):
             GameSession.objects.create(
                 quiz=self.quiz, host=self.host, pin=self.session.pin
             )
 
     def test_default_status_and_locked(self):
-        """Проверка значений по умолчанию для статуса, блокировки и текущего вопроса."""
+        """Тестирование открытия и закрытия ишровой сессии"""
         new_session = GameSession.objects.create(quiz=self.quiz, host=self.host)
         self.assertEqual(new_session.status, GameSession.WAITING)
         self.assertFalse(new_session.is_locked)
         self.assertEqual(new_session.current_question, 0)
 
     def test_ordering(self):
-        """Проверка сортировки сессий по дате создания (новые сверху)."""
+        """Тестирование order"""
         s1 = GameSession.objects.create(quiz=self.quiz, host=self.host)
         s2 = GameSession.objects.create(quiz=self.quiz, host=self.host)
         sessions = list(GameSession.objects.all())
-        # ordering = ['-created_at']
+        # ordering = ['-created_at'] — новые первыми
         self.assertEqual(sessions[0], s2)
         self.assertEqual(sessions[1], s1)
         self.assertEqual(sessions[2], self.session)
@@ -309,35 +309,35 @@ class GameParticipantModelTest(TestCase):
     fixtures = ["db.json"]
 
     def setUp(self):
-        """Первичная настройка тестов."""
+        """Первичная настройка"""
         self.session = GameSession.objects.get(pk=1)
         self.user = User.objects.get(pk=1)
-        self.existing_participant = GameParticipant.objects.get(
-            session=self.session, user=self.user
-        )
+        # Получаем существующего участника из фикстуры
+        self.existing_participant = GameParticipant.objects.get(session=self.session,
+                                                                user=self.user)
 
     def test_unique_together_session_user(self):
-        """Проверка уникальности пары (сессия, пользователь)."""
+        """Уникальность игровых сессий и юзеров"""
         with self.assertRaises(IntegrityError):
             GameParticipant.objects.create(session=self.session, user=self.user)
 
     def test_default_score_and_is_answered(self):
-        """Проверка значений score и is_answered по умолчанию."""
+        """Тестирование набирает балл по умолчанию и получает ответ"""
         user2 = User.objects.get(pk=2)
         part = GameParticipant.objects.create(session=self.session, user=user2)
         self.assertEqual(part.score, 0)
         self.assertFalse(part.is_answered)
 
     def test_ordering_by_score_desc(self):
-        """Проверка сортировки участников по убыванию счёта."""
+        """Тестирование моих нервов"""
         user2 = User.objects.get(pk=2)
         p1 = GameParticipant.objects.create(session=self.session, user=user2, score=10)
-        user3 = User.objects.create(username="user3", password="test")
+        user3 = User.objects.create(username='user3', password='test')
         p2 = GameParticipant.objects.create(session=self.session, user=user3, score=20)
         participants = list(GameParticipant.objects.all())
         # Ожидаемый порядок: p2 (20), p1 (10), existing (0)
         self.assertEqual(participants, [p2, p1, self.existing_participant])
 
     def test_str_method(self):
-        """Проверка строкового представления участника."""
+        """Тестирование магического метода"""
         self.assertIn("присоединился", str(self.existing_participant))
