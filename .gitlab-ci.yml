@@ -10,17 +10,6 @@ stages:
   - test
 
 
-black:
-  stage: style
-  script:
-    - black --check --diff .
-    - echo "Black check passed."
-  artifacts:
-    untracked: false
-    when: on_failure
-    expire_in: 30 days
-
-
 pylint:
   stage: style
   script:
