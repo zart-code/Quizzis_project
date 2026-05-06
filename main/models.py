@@ -2,8 +2,11 @@
 Файл для моделей database
 """
 
+# pylint: disable=no-member, too-few-public-methods
+
 import random
 import string
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
@@ -38,7 +41,7 @@ class Profile(models.Model):
 
 
 @receiver(post_save, sender=User)
-def create_user_profile(sender, instance, created, **kwargs):
+def create_user_profile(sender, instance, created, **kwargs):  # pylint: disable=unused-argument
     """Создание профиля юзера"""
     if created:
         profile, _ = Profile.objects.get_or_create(user=instance)
@@ -49,7 +52,7 @@ def create_user_profile(sender, instance, created, **kwargs):
 
 
 @receiver(post_save, sender=User)
-def save_user_profile(sender, instance, **kwargs):
+def save_user_profile(sender, instance, **kwargs):  # pylint: disable=unused-argument
     """Сохранить профиль"""
     if hasattr(instance, "profile"):
         profile = instance.profile
@@ -94,6 +97,7 @@ class Category(models.Model):
         return str(self.name)
 
 
+# pylint: disable=too-few-public-methods
 class Quiz(models.Model):
     """Модель quiz"""
 
@@ -156,7 +160,7 @@ class Quiz(models.Model):
         """
         return str(self.title)
 
-    def total_questions(self) -> object:
+    def total_questions(self) -> int:
         """Возвращает количество вопросов в викторине."""
         return self.questions.count()
 
@@ -311,7 +315,7 @@ class UserAchievement(models.Model):
 
     class Meta:
         """
-        Методанные
+        Метаданные
         """
 
         unique_together = ["user", "achievement"]
@@ -378,6 +382,7 @@ class GameSession(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        """Метаданные"""
         ordering = ["-created_at"]
 
     def __str__(self):
@@ -389,7 +394,7 @@ class GameSession(models.Model):
 
 class GameParticipant(models.Model):
     """
-    Игра ??
+    Участник игровой сессии
     """
 
     session = models.ForeignKey(
@@ -472,3 +477,6 @@ class GameAnswer(models.Model):
         Отладочная информация
         """
         return f"{self.answer} — {self.question}"
+
+
+# pylint: enable=too-few-public-methods
