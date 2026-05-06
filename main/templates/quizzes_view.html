@@ -78,7 +78,7 @@
                                 <span class="mq-meta-icon">👤</span>
                                 {{ quiz.creator }}
                             </span>
-                            {% if quiz.avg_score_percent %}
+                            {% if quiz.avg_score_percent != None %}
                                 <span class="mq-meta-item">
                                     <span class="mq-meta-icon">⭐</span>
                                     {{ quiz.avg_score_percent|floatformat:0 }}%
@@ -116,7 +116,7 @@
                                 <div class="quiz-info-row">
                                     <span class="quiz-info-label">Средний результат</span>
                                     <span class="quiz-info-value">
-                                        {% if quiz.avg_score_percent %}
+                                        {% if quiz.avg_score_percent != None %}
                                             {{ quiz.avg_score_percent|floatformat:1 }}%
                                         {% else %}
                                             Нет данных

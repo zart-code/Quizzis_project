@@ -325,82 +325,126 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 let count = 0;
-const labels = ['A','B','C','D'];
-const times = [15,20,30,45,60];
+const labels = ['A', 'B', 'C', 'D'];
+const times = [15, 20, 30, 45, 60];
 
-function makeTimeOpts(i){
-    return times.map(t=>`<input type="radio" class="time-opt" name="q${i}_time" value="${t}" id="qt${i}_${t}" ${t===30?'checked':''}><label for="qt${i}_${t}">${t} сек</label>`).join('');
+function makeTimeOpts(i) {
+    return times.map(
+        (timeValue) => `
+            <input type="radio"
+                   class="time-opt"
+                   name="q${i}_time"
+                   value="${timeValue}"
+                   id="qt${i}_${timeValue}"
+                   ${timeValue === 30 ? 'checked' : ''}>
+            <label for="qt${i}_${timeValue}">${timeValue} сек</label>
+        `,
+    ).join('');
 }
 
-function makeAnswersSingle(i){
-    return `<div class="answers-grid">${labels.map((l,j)=>`<div class="answer-row"><input type="radio" name="q${i}_correct" value="${j}" id="q${i}c${j}"><span class="ans-label">${l}</span><input type="text" class="q-input" name="q${i}_ans${j}" placeholder="Вариант ${l}" required></div>`).join('')}</div>`;
+function makeAnswersSingle(i) {
+    return `<div class="answers-grid">${labels.map(
+        (label, index) => `
+            <div class="answer-row">
+                <input type="radio" name="q${i}_correct" value="${index}" id="q${i}c${index}">
+                <span class="ans-label">${label}</span>
+                <input type="text"
+                       class="q-input"
+                       name="q${i}_ans${index}"
+                       placeholder="Вариант ${label}"
+                       required>
+            </div>
+        `,
+    ).join('')}</div>`;
 }
 
-function makeAnswersMultiple(i){
-    return `<div class="answers-grid">${labels.map((l,j)=>`<div class="answer-row"><input type="checkbox" name="q${i}_correct" value="${j}" id="q${i}c${j}"><span class="ans-label">${l}</span><input type="text" class="q-input" name="q${i}_ans${j}" placeholder="Вариант ${l}" required></div>`).join('')}</div>`;
+function makeAnswersMultiple(i) {
+    return `<div class="answers-grid">${labels.map(
+        (label, index) => `
+            <div class="answer-row">
+                <input type="checkbox" name="q${i}_correct" value="${index}" id="q${i}c${index}">
+                <span class="ans-label">${label}</span>
+                <input type="text"
+                       class="q-input"
+                       name="q${i}_ans${index}"
+                       placeholder="Вариант ${label}"
+                       required>
+            </div>
+        `,
+    ).join('')}</div>`;
 }
 
-function makeAnswersNumber(i){
-    return `<div class="q-row"><label>Правильное число</label><input type="number" step="any" class="q-input" name="q${i}_correct_number" placeholder="Введите число..." required></div>`;
+function makeAnswersNumber(i) {
+    return `
+        <div class="q-row">
+            <label>Правильное число</label>
+            <input type="number"
+                   step="any"
+                   class="q-input"
+                   name="q${i}_correct_number"
+                   placeholder="Введите число..."
+                   required>
+        </div>
+    `;
 }
 
-function makeAnswersText(){
-    return `<p class="text-hint">💬 Ответ проверяется преподавателем вручную</p>`;
+function makeAnswersText() {
+    return '<p class="text-hint">💬 Ответ проверяется преподавателем вручную</p>';
 }
 
-function collectAnswerState(i){
+function collectAnswerState(i) {
     const state = {
         texts: [],
         checked: [],
-        numberValue: ''
+        numberValue: '',
     };
 
-    for(let j = 0; j < 4; j++){
+    for (let j = 0; j < 4; j += 1) {
         const textInput = document.querySelector(`input[name="q${i}_ans${j}"]`);
-        if(textInput){
+        if (textInput) {
             state.texts[j] = textInput.value;
         }
     }
 
     const checkedInputs = document.querySelectorAll(`input[name="q${i}_correct"]:checked`);
-    state.checked = Array.from(checkedInputs).map(input => input.value);
+    state.checked = Array.from(checkedInputs).map((input) => input.value);
 
     const numberInput = document.querySelector(`input[name="q${i}_correct_number"]`);
-    if(numberInput){
+    if (numberInput) {
         state.numberValue = numberInput.value;
     }
 
     return state;
 }
 
-function restoreAnswerState(i, state){
-    for(let j = 0; j < 4; j++){
+function restoreAnswerState(i, state) {
+    for (let j = 0; j < 4; j += 1) {
         const textInput = document.querySelector(`input[name="q${i}_ans${j}"]`);
-        if(textInput && state.texts[j] !== undefined){
+        if (textInput && state.texts[j] !== undefined) {
             textInput.value = state.texts[j];
         }
     }
 
-    state.checked.forEach(value => {
+    state.checked.forEach((value) => {
         const input = document.querySelector(`input[name="q${i}_correct"][value="${value}"]`);
-        if(input){
+        if (input) {
             input.checked = true;
         }
     });
 
     const numberInput = document.querySelector(`input[name="q${i}_correct_number"]`);
-    if(numberInput && state.numberValue !== undefined){
+    if (numberInput && state.numberValue !== undefined) {
         numberInput.value = state.numberValue;
     }
 }
 
-function makeQuestion(i){
+function makeQuestion(i) {
     const questionsContainer = document.getElementById('questions-container');
     if (!questionsContainer) {
         return;
     }
 
-    const html=`<div class="q-block" id="qblock${i}">
+        const html = `<div class="q-block" id="qblock${i}">
         <div class="q-block-header">
             <span class="q-block-title">Вопрос ${i}</span>
             <button type="button" class="q-remove-btn" onclick="removeQuestion(${i})">✕ Удалить</button>
@@ -416,7 +460,21 @@ function makeQuestion(i){
         </div>
         <div class="q-row">
             <label>Текст вопроса</label>
-            <input type="text" class="q-input" name="q${i}_text" placeholder="Введите текст вопроса..." required>
+            <input type="text"
+                   class="q-input"
+                   name="q${i}_text"
+                   placeholder="Введите текст вопроса..."
+                   required>
+        </div>
+        <div class="q-row">
+            <label>Коэффициент</label>
+            <input type="number"
+                   class="q-input"
+                   name="q${i}_coefficient"
+                   min="1"
+                   step="1"
+                   value="1"
+                   required>
         </div>
         <div id="q${i}_answers">${makeAnswersSingle(i)}</div>
         <div class="q-row" style="margin-top:1rem">
@@ -424,10 +482,82 @@ function makeQuestion(i){
             <div class="time-opts">${makeTimeOpts(i)}</div>
         </div>
     </div>`;
-    questionsContainer.insertAdjacentHTML('beforeend',html);
+
+    questionsContainer.insertAdjacentHTML('beforeend', html);
 }
 
-function renumberQuestions(){
+function setQuestionData(i, questionData) {
+    const typeSelect = document.getElementById(`q${i}_type`);
+    const questionInput = document.querySelector(`input[name="q${i}_text"]`);
+    const coefficientInput = document.querySelector(`input[name="q${i}_coefficient"]`);
+
+    if (typeSelect && questionData.type) {
+        typeSelect.value = questionData.type;
+        updateAnswers(i);
+    }
+
+    if (questionInput) {
+        questionInput.value = questionData.text || '';
+    }
+    if (coefficientInput) {
+        coefficientInput.value = questionData.coefficient || 1;
+    }
+
+    if (questionData.type === 'single' || questionData.type === 'multiple') {
+        const answers = Array.isArray(questionData.answers) ? questionData.answers : [];
+        answers.forEach((answer, index) => {
+            const answerInput = document.querySelector(`input[name="q${i}_ans${index}"]`);
+            const correctInput = document.querySelector(`input[name="q${i}_correct"][value="${index}"]`);
+
+            if (answerInput) {
+                answerInput.value = answer.text || '';
+            }
+            if (correctInput && answer.is_correct) {
+                correctInput.checked = true;
+            }
+        });
+    } else if (questionData.type === 'number') {
+        const numberInput = document.querySelector(`input[name="q${i}_correct_number"]`);
+        if (
+            numberInput
+            && questionData.correct_number !== null
+            && questionData.correct_number !== undefined
+        ) {
+            numberInput.value = questionData.correct_number;
+        }
+    }
+
+    if (questionData.time) {
+        const timeInput = document.querySelector(
+            `input[name="q${i}_time"][value="${questionData.time}"]`,
+        );
+        if (timeInput) {
+            timeInput.checked = true;
+        }
+    }
+}
+
+function initQuizForm() {
+    const initialData = window.quizFormInitialData;
+
+    if (
+        initialData
+        && Array.isArray(initialData.questions)
+        && initialData.questions.length > 0
+    ) {
+        initialData.questions.forEach((questionData) => {
+            count += 1;
+            makeQuestion(count);
+            setQuestionData(count, questionData);
+        });
+        return;
+    }
+
+    count += 1;
+    makeQuestion(count);
+}
+
+function renumberQuestions() {
     const blocks = document.querySelectorAll('#questions-container .q-block');
 
     blocks.forEach((block, index) => {
@@ -457,6 +587,11 @@ function renumberQuestions(){
             questionInput.name = `q${i}_text`;
         }
 
+        const coefficientInput = block.querySelector('.q-row input.q-input[name$="_coefficient"]');
+        if (coefficientInput) {
+            coefficientInput.name = `q${i}_coefficient`;
+        }
+
         const answersContainer = block.querySelector('[id$="_answers"]');
         if (answersContainer) {
             answersContainer.id = `q${i}_answers`;
@@ -484,12 +619,12 @@ function renumberQuestions(){
         const timeInputs = block.querySelectorAll('.time-opt');
         const timeLabels = block.querySelectorAll('.time-opts label');
 
-        timeInputs.forEach((input, idx) => {
+        timeInputs.forEach((input, labelIndex) => {
             input.name = `q${i}_time`;
             input.id = `qt${i}_${input.value}`;
 
-            if (timeLabels[idx]) {
-                timeLabels[idx].setAttribute('for', input.id);
+            if (timeLabels[labelIndex]) {
+                timeLabels[labelIndex].setAttribute('for', input.id);
             }
         });
     });
@@ -497,34 +632,42 @@ function renumberQuestions(){
     count = blocks.length;
 }
 
-function removeQuestion(i){
-    const el = document.getElementById(`qblock${i}`);
-    if (el) {
-        el.remove();
+function removeQuestion(i) {
+    const element = document.getElementById(`qblock${i}`);
+    if (element) {
+        element.remove();
         renumberQuestions();
     }
 }
 
-function updateAnswers(i){
+function updateAnswers(i) {
     const type = document.getElementById(`q${i}_type`).value;
-    const c = document.getElementById(`q${i}_answers`);
+    const answersContainer = document.getElementById(`q${i}_answers`);
     const state = collectAnswerState(i);
 
-    if(type === 'single') c.innerHTML = makeAnswersSingle(i);
-    else if(type === 'multiple') c.innerHTML = makeAnswersMultiple(i);
-    else if(type === 'number') c.innerHTML = makeAnswersNumber(i);
-    else c.innerHTML = makeAnswersText();
+    if (type === 'single') {
+        answersContainer.innerHTML = makeAnswersSingle(i);
+    } else if (type === 'multiple') {
+        answersContainer.innerHTML = makeAnswersMultiple(i);
+    } else if (type === 'number') {
+        answersContainer.innerHTML = makeAnswersNumber(i);
+    } else {
+        answersContainer.innerHTML = makeAnswersText();
+    }
 
     restoreAnswerState(i, state);
 }
 
 const addQuestionBtn = document.getElementById('add-question-btn');
 if (addQuestionBtn) {
-    addQuestionBtn.addEventListener('click',()=>{count++;makeQuestion(count);});
+    addQuestionBtn.addEventListener('click', () => {
+        count += 1;
+        makeQuestion(count);
+    });
 
-    count++;
-    makeQuestion(count);
+    initQuizForm();
 }
+
 
 // Lobby polling is declared in lobby.html, where Django can render the URL.
 const lobbyApiUrlFromStatic = null;

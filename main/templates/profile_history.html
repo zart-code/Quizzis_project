@@ -37,7 +37,13 @@
                         <td>{{ result.quiz.title }}</td>
                         <td>{{ result.quiz.creator.username }}</td>
                         <td class="hs-td-date">{{ result.completed_at|date:"d.m.Y H:i" }}</td>
-                        <td>{{ result.quiz.total_questions }}</td>
+                        <td>
+                            {% if result.revision %}
+                                {{ result.revision.question_count }}
+                            {% else %}
+                                {{ result.quiz.total_questions }}
+                            {% endif %}
+                        </td>
                         <td>
                             <span class="hs-badge hs-badge-done">{{ result.score_percent|floatformat:0 }}%</span>
                         </td>

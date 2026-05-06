@@ -5,8 +5,9 @@
 import logging
 from django.contrib.auth import login, logout
 from django.shortcuts import render, redirect
-from django.db.models import Count, Avg, Q
-
+from django.db.models import Count, Avg, Q, F, IntegerField
+from django.db.models.functions import Coalesce
+from .forms import CustomUserCreationForm, StyledAuthenticationForm
 from main.models import Quiz
 from .forms import CustomUserCreationForm, StyledAuthenticationForm
 
@@ -29,7 +30,7 @@ def _handle_form(
 
     if request.method == "POST":
         if needs_request:
-            form = form_class(data=request.POST, request=request)
+            form = form_class(request, data=request.POST)
         else:
             form = form_class(request.POST)
 
@@ -60,6 +61,7 @@ def _handle_form(
                 request.META.get('REMOTE_ADDR')
             )
     else:
+        # GET-запрос: создаём пустую (несвязанную) форму
         form = form_class(**extra_form_kwargs)
 
     return render(request, template_name, {"form": form})
@@ -80,8 +82,8 @@ def register_page(request):
     return _handle_form(
         request,
         form_class=CustomUserCreationForm,
-        template_name="register.html",
-        success_url="main_page",
+        template_name='register.html',
+        success_url='main_page'
     )
 
 
@@ -90,10 +92,10 @@ def login_page(request):
     return _handle_form(
         request,
         form_class=StyledAuthenticationForm,
-        template_name="login_page.html",
-        success_url="main_page",
-        extra_form_kwargs={"request": request},
-        needs_request=True,
+        template_name='login_page.html',
+        success_url='main_page',
+        extra_form_kwargs={'request': request},
+        needs_request=True
     )
 
 
@@ -106,33 +108,39 @@ def logout_view(request):
             request.META.get('REMOTE_ADDR')
         )
     logout(request)
-    return redirect("main_page")
+    return redirect('main_page')
 
 
 def quizzes_view(request):
-    """Страница квизов"""
-    sort_type = request.GET.get("sort", "new")
+    """Страница квизов."""
+    sort_type = request.GET.get('sort', 'new')
+
+    current_revision_filter = Q(
+        results__completed=True,
+        results__revision=F('current_revision'),
+    )
+
     quizzes = (
-        Quiz.objects.filter(status=Quiz.ACTIVE)
-        .select_related("creator")
+        Quiz.objects
+        .filter(status=Quiz.ACTIVE)
+        .select_related('creator', 'current_revision')
         .annotate(
-            total_questions=Count("questions", distinct=True),
             passed_count=Count(
-                "results",
-                filter=Q(results__completed=True),
+                'results',
+                filter=current_revision_filter,
                 distinct=True,
             ),
             avg_score_percent=Avg(
-                "results__score_percent",
-                filter=Q(results__completed=True),
+                'results__score_percent',
+                filter=current_revision_filter,
             ),
             avg_score_points=Avg(
-                "results__score",
-                filter=Q(results__completed=True),
+                'results__score',
+                filter=current_revision_filter,
             ),
             avg_max_points=Avg(
-                "results__max_score",
-                filter=Q(results__completed=True),
+                'results__max_score',
+                filter=current_revision_filter,
             ),
         )
         .order_by("-created_at")
@@ -147,10 +155,10 @@ def quizzes_view(request):
     )
 
     context = {
-        "current_sort": sort_type,
-        "quizzes": quizzes,
+        'current_sort': sort_type,
+        'quizzes': quizzes,
     }
-    return render(request, "quizzes_view.html", context)
+    return render(request, 'quizzes_view.html', context)
 
 
 def my_quizzes(request):
