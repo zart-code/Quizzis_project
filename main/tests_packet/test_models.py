@@ -1,7 +1,11 @@
 """Тесты для файла models.py"""
 
+# pylint: disable=no-member
+
 from django.db import IntegrityError
 from django.contrib.auth.models import User
+from django.test import TestCase
+
 from main.models import (
     Answer,
     Category,
@@ -13,21 +17,19 @@ from main.models import (
     QuizResult,
     generate_pin,
 )
-from django.test import TestCase
-from django.urls import reverse
 
 
 class GeneratePinTest(TestCase):
     """Тесты генератора PIN-кода."""
 
     def test_pin_length_and_digits(self):
-        """Тестирование длины"""
+        """Тестирование длины и цифрового формата."""
         pin = generate_pin()
         self.assertEqual(len(pin), 6)
         self.assertTrue(pin.isdigit())
 
     def test_pin_uniqueness_probabilistic(self):
-        """Тестирование на уникальность"""
+        """Вероятностная проверка уникальности PIN-кодов."""
         pins = [generate_pin() for _ in range(1000)]
         self.assertGreaterEqual(len(set(pins)), 990)
 
@@ -35,24 +37,22 @@ class GeneratePinTest(TestCase):
 class CategoryModelTest(TestCase):
     """Тесты модели Category (используем данные из фикстуры)."""
 
-    """Тесты модели Category."""
-
     fixtures = ["db.json"]
 
     def test_str_method(self):
-        """Тестирование магического метода"""
+        """Проверка строкового представления категории."""
         category = Category.objects.get(name="Science")  # из фикстуры
         self.assertEqual(str(category), "Science")
 
     def test_unique_name_constraint(self):
-        """Тестирование на уникальность имени"""
-        # Попытка создать дубликат существующего имени
+        """Проверка ограничения уникальности имени."""
         with self.assertRaises(IntegrityError):
             Category.objects.create(name="Math")
 
     def test_ordering(self):
+        """Проверка сортировки категорий по имени."""
         categories = list(Category.objects.all())
-        # Проверяем, что сортировка по имени работает (ожидаемый порядок из фикстуры)
+        # Ожидаемый порядок из фикстуры: Alpha, Math, Science, Zoo
         self.assertEqual(
             [c.name for c in categories], ["Alpha", "Math", "Science", "Zoo"]
         )
@@ -64,32 +64,32 @@ class QuizModelTest(TestCase):
     fixtures = ["db.json"]
 
     def setUp(self):
-        """Первичная настройка тестов"""
+        """Первичная настройка тестов."""
         self.quiz = Quiz.objects.get(pk=1)
         self.user = User.objects.get(pk=2)
 
     def test_str_method(self):
-        """Тестирование магического метода"""
+        """Проверка строкового представления квиза."""
         self.assertEqual(str(self.quiz), "dsadda")
 
     def test_total_questions(self):
-        """Тестирование работы функции total_questions"""
+        """Проверка подсчёта количества вопросов."""
         self.assertEqual(self.quiz.total_questions(), 1)
         Question.objects.create(quiz=self.quiz, text="New question")
         self.assertEqual(self.quiz.total_questions(), 2)
 
     def test_time_limit_nullable(self):
-        """Тестирование возможности обнуления времени"""
+        """Проверка возможности отсутствия лимита времени."""
         self.assertIsNone(self.quiz.time_limit)
 
     def test_cascade_delete_creator(self):
-        """Тестирование возможности удаления пользователя"""
+        """Проверка каскадного удаления квизов при удалении создателя."""
         creator_id = self.user.id
         self.user.delete()
         self.assertEqual(Quiz.objects.filter(creator_id=creator_id).count(), 0)
 
     def test_category_on_delete_set_null(self):
-        """Тестирование последствий удаления категорий"""
+        """Проверка установки NULL в category при удалении категории."""
         category = Category.objects.create(name="Temp")
         self.quiz.category = category
         self.quiz.save()
@@ -104,32 +104,32 @@ class QuestionModelTest(TestCase):
     fixtures = ["db.json"]
 
     def setUp(self):
-        """Первичная настройка тестирования"""
+        """Первичная настройка тестов."""
         self.question = Question.objects.get(pk=1)
         self.quiz = self.question.quiz
 
     def test_str_method(self):
-        """Тестирование магического метода"""
+        """Проверка строкового представления вопроса."""
         self.assertEqual(str(self.question), "dasda")
 
     def test_question_type_from_fixture(self):
-        """Тестирование фиксатуры"""
+        """Проверка типа вопроса, загруженного из фикстуры."""
         self.assertEqual(self.question.question_type, Question.MULTIPLE)
 
     def test_default_time_limit(self):
-        """Тестирование ограничения времени"""
+        """Проверка значения времени по умолчанию."""
         q = Question.objects.create(quiz=self.quiz, text="No time")
         self.assertEqual(q.time_limit, 30)
 
     def test_ordering(self):
-        """Тестирование поля order"""
+        """Проверка сортировки вопросов по полю order."""
         Question.objects.create(quiz=self.quiz, text="Order 1", order=10)
         Question.objects.create(quiz=self.quiz, text="Order 2", order=5)
         questions = list(Question.objects.filter(quiz=self.quiz))
         self.assertEqual([q.order for q in questions], [1, 5, 10])
 
     def test_correct_number_for_numeric_question(self):
-        """Корректность ответа на вопрос"""
+        """Проверка сохранения правильного числового ответа."""
         numeric_q = Question.objects.create(
             quiz=self.quiz,
             text="Enter number",
@@ -139,7 +139,7 @@ class QuestionModelTest(TestCase):
         self.assertEqual(numeric_q.correct_number, 42.0)
 
     def test_cascade_delete_quiz(self):
-        """Тестирование удаления квиза"""
+        """Проверка каскадного удаления вопросов при удалении квиза."""
         quiz_id = self.quiz.id
         self.quiz.delete()
         self.assertEqual(Question.objects.filter(quiz_id=quiz_id).count(), 0)
@@ -151,7 +151,7 @@ class GameAnswerModelTest(TestCase):
     fixtures = ["db.json"]
 
     def setUp(self):
-        """Настройка данных для проведения тестировавния"""
+        """Настройка данных для тестирования."""
         self.session = GameSession.objects.get(pk=1)
         self.user = User.objects.get(pk=1)
         self.participant = GameParticipant.objects.get(
@@ -164,7 +164,7 @@ class GameAnswerModelTest(TestCase):
         ).delete()
 
     def test_unique_together_participant_question(self):
-        """Тестирование уникальности вопроса участника"""
+        """Проверка уникальности пары (участник, вопрос)."""
         GameAnswer.objects.create(
             session=self.session,
             participant=self.participant,
@@ -181,7 +181,7 @@ class GameAnswerModelTest(TestCase):
             )
 
     def test_is_correct_default(self):
-        """Стандартная проверка корректности"""
+        """Проверка значения is_correct по умолчанию."""
         ans = GameAnswer.objects.create(
             session=self.session,
             participant=self.participant,
@@ -191,7 +191,7 @@ class GameAnswerModelTest(TestCase):
         self.assertFalse(ans.is_correct)
 
     def test_answered_at_nullable(self):
-        """Возможность обнуления ответа на тест"""
+        """Проверка возможности null для поля answered_at."""
         ans = GameAnswer.objects.create(
             session=self.session,
             participant=self.participant,
@@ -202,12 +202,13 @@ class GameAnswerModelTest(TestCase):
         self.assertIsNone(ans.answered_at)
 
     def test_cascade_delete_question(self):
+        """Проверка каскадного удаления ответов при удалении вопроса."""
         question_id = self.question.id
         self.question.delete()
         self.assertEqual(Answer.objects.filter(question_id=question_id).count(), 0)
 
     def test_str_method(self):
-        """Тест метода"""
+        """Проверка строкового представления игрового ответа."""
         ans = GameAnswer.objects.create(
             session=self.session,
             participant=self.participant,
@@ -224,14 +225,13 @@ class QuizResultModelTest(TestCase):
     fixtures = ["db.json"]
 
     def setUp(self):
-        """Первичная настройка тестов"""
+        """Первичная настройка тестов."""
         self.user = User.objects.get(pk=1)
         self.quiz = Quiz.objects.get(pk=1)
-        # Удаляем все результаты, чтобы не мешали
         QuizResult.objects.all().delete()
 
     def test_str_method(self):
-        """Тестирование магического метода (зачем?)"""
+        """Проверка строкового представления результата."""
         result = QuizResult.objects.create(
             user=self.user,
             quiz=self.quiz,
@@ -244,13 +244,13 @@ class QuizResultModelTest(TestCase):
         self.assertEqual(str(result), "5")
 
     def test_auto_fields(self):
-        """Тестирование полей"""
+        """Проверка автоматического заполнения полей started_at и completed_at."""
         result = QuizResult.objects.create(user=self.user, quiz=self.quiz)
         self.assertIsNotNone(result.started_at)
         self.assertIsNone(result.completed_at)
 
     def test_ordering(self):
-        """Тестирование order"""
+        """Проверка сортировки результатов по полю order."""
         QuizResult.objects.create(user=self.user, quiz=self.quiz, order=2)
         QuizResult.objects.create(user=self.user, quiz=self.quiz, order=1)
         results = list(QuizResult.objects.all())
@@ -263,41 +263,41 @@ class GameSessionModelTest(TestCase):
     fixtures = ["db.json"]
 
     def setUp(self):
-        """Первичная настройка тестов"""
+        """Первичная настройка тестов."""
         self.session = GameSession.objects.get(pk=1)
         self.quiz = self.session.quiz
         self.host = self.session.host
 
     def test_str_method(self):
-        """Тестирование магического метода"""
+        """Проверка строкового представления игровой сессии."""
         self.assertEqual(str(self.session), f"{self.quiz} [933327]")
 
     def test_pin_generation(self):
-        """Тестирование генератора pin"""
+        """Проверка генерации PIN-кода."""
         new_session = GameSession.objects.create(quiz=self.quiz, host=self.host)
         self.assertEqual(len(new_session.pin), 6)
         self.assertTrue(new_session.pin.isdigit())
 
     def test_pin_unique(self):
-        """Тестирование уникальности пинов"""
+        """Проверка уникальности PIN-кода."""
         with self.assertRaises(IntegrityError):
             GameSession.objects.create(
                 quiz=self.quiz, host=self.host, pin=self.session.pin
             )
 
     def test_default_status_and_locked(self):
-        """Тестирование открытия и закрытия ишровой сессии"""
+        """Проверка значений по умолчанию для статуса, блокировки и текущего вопроса."""
         new_session = GameSession.objects.create(quiz=self.quiz, host=self.host)
         self.assertEqual(new_session.status, GameSession.WAITING)
         self.assertFalse(new_session.is_locked)
         self.assertEqual(new_session.current_question, 0)
 
     def test_ordering(self):
-        """Тестирование order"""
+        """Проверка сортировки сессий по дате создания (новые сверху)."""
         s1 = GameSession.objects.create(quiz=self.quiz, host=self.host)
         s2 = GameSession.objects.create(quiz=self.quiz, host=self.host)
         sessions = list(GameSession.objects.all())
-        # ordering = ['-created_at'] — новые первыми
+        # ordering = ['-created_at']
         self.assertEqual(sessions[0], s2)
         self.assertEqual(sessions[1], s1)
         self.assertEqual(sessions[2], self.session)
@@ -309,28 +309,27 @@ class GameParticipantModelTest(TestCase):
     fixtures = ["db.json"]
 
     def setUp(self):
-        """Первичная настройка"""
+        """Первичная настройка тестов."""
         self.session = GameSession.objects.get(pk=1)
         self.user = User.objects.get(pk=1)
-        # Получаем существующего участника из фикстуры
         self.existing_participant = GameParticipant.objects.get(
             session=self.session, user=self.user
         )
 
     def test_unique_together_session_user(self):
-        """Уникальность игровых сессий и юзеров"""
+        """Проверка уникальности пары (сессия, пользователь)."""
         with self.assertRaises(IntegrityError):
             GameParticipant.objects.create(session=self.session, user=self.user)
 
     def test_default_score_and_is_answered(self):
-        """Тестирование набирает балл по умолчанию и получает ответ"""
+        """Проверка значений score и is_answered по умолчанию."""
         user2 = User.objects.get(pk=2)
         part = GameParticipant.objects.create(session=self.session, user=user2)
         self.assertEqual(part.score, 0)
         self.assertFalse(part.is_answered)
 
     def test_ordering_by_score_desc(self):
-        """Тестирование моих нервов"""
+        """Проверка сортировки участников по убыванию счёта."""
         user2 = User.objects.get(pk=2)
         p1 = GameParticipant.objects.create(session=self.session, user=user2, score=10)
         user3 = User.objects.create(username="user3", password="test")
@@ -340,5 +339,5 @@ class GameParticipantModelTest(TestCase):
         self.assertEqual(participants, [p2, p1, self.existing_participant])
 
     def test_str_method(self):
-        """Тестирование магического метода"""
+        """Проверка строкового представления участника."""
         self.assertIn("присоединился", str(self.existing_participant))
