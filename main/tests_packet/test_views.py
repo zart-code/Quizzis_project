@@ -1,5 +1,7 @@
 """Тесты для файла views.py"""
 
+# pylint: disable=no-member
+
 import time
 from django.contrib.auth.models import User
 from django.test import TestCase
@@ -197,13 +199,11 @@ class MyQuizzesViewTest(TestCase):
         self.user = User.objects.create_superuser(
             username="testuser_my", password="testpass123", email="test@example.com"
         )
-        # Получаем профиль и настраиваем его
         profile = self.user.profile
-        profile.role = "teacher"  # попробуем teacher вместо admin
+        profile.role = "teacher"
         profile.is_admin = True
         profile.save()
 
-        # Создаём квиз
         self.quiz = Quiz.objects.create(
             title="Test Quiz", creator=self.user, status=Quiz.ACTIVE, description="Test"
         )
