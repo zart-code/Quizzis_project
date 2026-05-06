@@ -2,12 +2,16 @@
 
 # pylint: disable=no-member
 
+import logging
 from django.contrib.auth import login, logout
 from django.shortcuts import render, redirect
 from django.db.models import Count, Avg, Q
 
 from main.models import Quiz
 from .forms import CustomUserCreationForm, StyledAuthenticationForm
+
+# Настройка логгера
+logger = logging.getLogger(__name__)
 
 
 # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -33,10 +37,28 @@ def _handle_form(
             if form_class == CustomUserCreationForm:
                 user = form.save()
                 login(request, user)
+                logger.info(
+                    "Успешная регистрация пользователя: %s (IP: %s)",
+                    user.username,
+                    request.META.get('REMOTE_ADDR')
+                )
             elif form_class == StyledAuthenticationForm:
                 user = form.get_user()
                 login(request, user)
+                logger.info(
+                    "Успешный вход пользователя: %s (IP: %s)",
+                    user.username,
+                    request.META.get('REMOTE_ADDR')
+                )
             return redirect(success_url)
+        else:
+            # Логируем ошибки валидации формы
+            logger.warning(
+                "Ошибка валидации формы %s: %s (IP: %s)",
+                form_class.__name__,
+                form.errors,
+                request.META.get('REMOTE_ADDR')
+            )
     else:
         form = form_class(**extra_form_kwargs)
 
@@ -45,6 +67,11 @@ def _handle_form(
 
 def main_page(request):
     """Главная страница (меню)."""
+    logger.info(
+        "Пользователь %s посетил главную страницу (IP: %s)",
+        request.user.username if request.user.is_authenticated else "Anonymous",
+        request.META.get('REMOTE_ADDR')
+    )
     return render(request, "main_page.html")
 
 
@@ -72,6 +99,12 @@ def login_page(request):
 
 def logout_view(request):
     """Выход из системы."""
+    if request.user.is_authenticated:
+        logger.info(
+            "Пользователь %s вышел из системы (IP: %s)",
+            request.user.username,
+            request.META.get('REMOTE_ADDR')
+        )
     logout(request)
     return redirect("main_page")
 
@@ -105,6 +138,14 @@ def quizzes_view(request):
         .order_by("-created_at")
     )
 
+    logger.info(
+        "Просмотр квизов: пользователь %s, сортировка=%s, найдено квизов=%d (IP: %s)",
+        request.user.username if request.user.is_authenticated else "Anonymous",
+        sort_type,
+        quizzes.count(),
+        request.META.get('REMOTE_ADDR')
+    )
+
     context = {
         "current_sort": sort_type,
         "quizzes": quizzes,
@@ -114,4 +155,9 @@ def quizzes_view(request):
 
 def my_quizzes(request):
     """Страница квиза (учителя)"""
+    logger.info(
+        "Пользователь %s перешёл на 'Мои квизы' (IP: %s)",
+        request.user.username if request.user.is_authenticated else "Anonymous",
+        request.META.get('REMOTE_ADDR')
+    )
     return render(request, "my_quizzes.html")
