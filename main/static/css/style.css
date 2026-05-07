@@ -2063,3 +2063,86 @@ body {
     }
 }
 
+
+/* ===== Виджет входа по коду ===== */
+.join-code-block {
+    margin-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    animation: fadeInUp 0.6s ease both;
+    animation-delay: 0.2s;
+}
+
+.join-code-label {
+    color: var(--text-secondary, rgba(255,255,255,0.7));
+    font-size: 1rem;
+    margin: 0;
+    letter-spacing: 0.02em;
+}
+
+.join-code-form {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1.5px solid rgba(255, 255, 255, 0.15);
+    border-radius: 50px;
+    padding: 0.35rem 0.35rem 0.35rem 1.2rem;
+    backdrop-filter: blur(8px);
+    transition: border-color 0.25s, box-shadow 0.25s;
+}
+
+.join-code-form:focus-within {
+    border-color: var(--primary, #6C63FF);
+    box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.2);
+}
+
+.join-code-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    width: 160px;
+}
+
+.join-code-input::placeholder {
+    color: rgba(255, 255, 255, 0.35);
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    text-transform: none;
+}
+
+.join-code-btn {
+    border-radius: 50px !important;
+    padding: 0.55rem 1.4rem !important;
+    font-size: 0.95rem !important;
+    white-space: nowrap;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 480px) {
+    .join-code-form {
+        flex-direction: column;
+        border-radius: 16px;
+        padding: 0.75rem 1rem;
+        width: 100%;
+        max-width: 300px;
+    }
+    .join-code-input {
+        width: 100%;
+        text-align: center;
+    }
+    .join-code-btn {
+        width: 100%;
+    }
+}

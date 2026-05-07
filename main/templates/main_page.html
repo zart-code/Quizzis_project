@@ -17,6 +17,23 @@
                     <a href="{% url 'create_quiz' %}" class="btn btn-large btn-primary">Создать квиз</a>
                 </div>
             {% endif %}
+
+            <div class="join-code-block">
+                <p class="join-code-label">Есть код от лобби? Войди прямо сейчас!</p>
+                <form method="post" action="{% url 'join_by_code' %}" class="join-code-form">
+                    {% csrf_token %}
+                    <input
+                        type="text"
+                        name="pin"
+                        class="join-code-input"
+                        placeholder="Введите код..."
+                        maxlength="10"
+                        autocomplete="off"
+                        autofocus
+                    >
+                    <button type="submit" class="btn btn-primary join-code-btn">Войти</button>
+                </form>
+            </div>
         {% endif %}
     </div>
 </div>

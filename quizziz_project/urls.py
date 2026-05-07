@@ -44,7 +44,7 @@
 from django.contrib import admin
 from django.urls import path
 
-from main.views import main_page, login_page, register_page, logout_view, quizzes_view
+from main.views import main_page, login_page, register_page, logout_view, quizzes_view, join_by_code
 from main.views_features.views_profile import (
     profile_view,
     profile_history_view,
@@ -103,6 +103,7 @@ urlpatterns = [
     path("lobby/<str:pin>/lock/", toggle_lock_view, name="toggle_lock"),
     path("lobby/<str:pin>/delete/", delete_session_view, name="delete_session"),
     path("lobby/<str:pin>/api/players/", api_players_view, name="api_players"),
+    path("join/", join_by_code, name="join_by_code"),
     path("join/<str:pin>/", join_lobby_view, name="join_lobby"),
     path("lobby/<str:pin>/start/", start_game_view, name="start_game"),
     path("session/<str:pin>/api/state/", api_state_view, name="api_state"),

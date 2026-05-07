@@ -89,14 +89,32 @@ def register_page(request):
 
 def login_page(request):
     """Страница логина (вход в систему)"""
-    return _handle_form(
-        request,
-        form_class=StyledAuthenticationForm,
-        template_name="login_page.html",
-        success_url="main_page",
-        extra_form_kwargs={"request": request},
-        needs_request=True,
-    )
+    next_url = request.GET.get("next") or request.POST.get("next", "")
+
+    if request.method == "POST":
+        form = StyledAuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user)
+            logger.info(
+                "Успешный вход пользователя: %s (IP: %s)",
+                user.username,
+                request.META.get("REMOTE_ADDR"),
+            )
+            # Редиректим на next, если он есть и безопасен (начинается с /)
+            if next_url and next_url.startswith("/"):
+                return redirect(next_url)
+            return redirect("main_page")
+        else:
+            logger.warning(
+                "Ошибка валидации формы StyledAuthenticationForm: %s (IP: %s)",
+                form.errors,
+                request.META.get("REMOTE_ADDR"),
+            )
+    else:
+        form = StyledAuthenticationForm(request)
+
+    return render(request, "login_page.html", {"form": form, "next": next_url})
 
 
 def logout_view(request):
@@ -158,6 +176,15 @@ def quizzes_view(request):
         "quizzes": quizzes,
     }
     return render(request, "quizzes_view.html", context)
+
+
+def join_by_code(request):
+    """Вход в лобби по коду с главной страницы."""
+    if request.method == "POST":
+        pin = request.POST.get("pin", "").strip().upper()
+        if pin:
+            return redirect("join_lobby", pin=pin)
+    return redirect("main_page")
 
 
 def my_quizzes(request):
