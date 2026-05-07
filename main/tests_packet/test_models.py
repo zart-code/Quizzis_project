@@ -105,6 +105,7 @@ class TestAnswer(TestCase):
 class TestQuizRevision(TestCase):
     fixtures = ['db.json']
 
+
     def test_creation_and_ordering(self):
         quiz = Quiz.objects.get(pk=1)
         rev1 = QuizRevision.objects.create(quiz=quiz, version=1, title='v1')
