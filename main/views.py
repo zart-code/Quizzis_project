@@ -180,10 +180,19 @@ def quizzes_view(request):
 
 def join_by_code(request):
     """Вход в лобби по коду с главной страницы."""
+    from django.contrib import messages
+    from main.models import GameSession
+
     if request.method == "POST":
         pin = request.POST.get("pin", "").strip().upper()
         if pin:
-            return redirect("join_lobby", pin=pin)
+            if GameSession.objects.filter(pin=pin).exists():
+                return redirect("join_lobby", pin=pin)
+            else:
+                messages.error(
+                    request,
+                    f"Лобби с кодом «{pin}» не найдено. Проверьте код и попробуйте снова."
+                )
     return redirect("main_page")
 
 
