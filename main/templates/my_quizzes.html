@@ -30,124 +30,124 @@
             </div>
         </form>
 
-        {% if quizzes %}
-
-        <div class="mq-stats-bar">
-            <div class="mq-stat">
-                <span class="mq-stat-num">{{ quizzes|length }}</span>
-                <span class="mq-stat-label">квизов</span>
-            </div>
-            <div class="mq-stat-divider"></div>
-            <div class="mq-stat">
-                <span class="mq-stat-num">{{ total_questions }}</span>
-                <span class="mq-stat-label">вопросов всего</span>
-            </div>
-        </div>
-
-        <div class="mq-grid">
-            {% for quiz in quizzes %}
-            <div class="mq-card" style="--accent-hue: {{ forloop.counter0|add:200 }}">
-                <div class="mq-card-glow"></div>
-
-                <div class="mq-card-top">
-                    <div class="mq-card-num">{{ forloop.counter|stringformat:"02d" }}</div>
-                    <div class="mq-card-badges">
-                        {% if quiz.status == 'active' %}
-                        <span class="mq-badge mq-badge-pub">● Активен</span>
-                        {% else %}
-                        <span class="mq-badge mq-badge-draft">◌ Черновик</span>
-                        {% endif %}
+        <!-- Обёртка, содержимое которой будет подменяться через AJAX -->
+        <div id="quizzes-results">
+            {% if quizzes %}
+                <div class="mq-stats-bar">
+                    <div class="mq-stat">
+                        <span class="mq-stat-num">{{ quizzes|length }}</span>
+                        <span class="mq-stat-label">квизов</span>
+                    </div>
+                    <div class="mq-stat-divider"></div>
+                    <div class="mq-stat">
+                        <span class="mq-stat-num">{{ total_questions }}</span>
+                        <span class="mq-stat-label">вопросов всего</span>
                     </div>
                 </div>
 
-                <div class="mq-title-row">
-                    <h3 class="mq-card-title">{{ quiz.title }}</h3>
-                    <a href="{% url 'edit_quiz' quiz.id %}"
-                       class="mq-edit-btn"
-                       title="Редактировать квиз"
-                       aria-label="Редактировать квиз">
-                        ✎
-                    </a>
-                </div>
+                <div class="mq-grid">
+                    {% for quiz in quizzes %}
+                    <div class="mq-card" style="--accent-hue: {{ forloop.counter0|add:200 }}">
+                        <div class="mq-card-glow"></div>
 
-                {% if quiz.description %}
-                <p class="mq-card-desc">{{ quiz.description|truncatechars:80 }}</p>
-                {% endif %}
+                        <div class="mq-card-top">
+                            <div class="mq-card-num">{{ forloop.counter|stringformat:"02d" }}</div>
+                            <div class="mq-card-badges">
+                                {% if quiz.status == 'active' %}
+                                <span class="mq-badge mq-badge-pub">● Активен</span>
+                                {% else %}
+                                <span class="mq-badge mq-badge-draft">◌ Черновик</span>
+                                {% endif %}
+                            </div>
+                        </div>
 
-                <div class="mq-card-meta">
-                    <span class="mq-meta-item">
-                        <span class="mq-meta-icon">❓</span>
-                        {{ quiz.total_questions }} вопр.
-                    </span>
-                    {% if quiz.time_limit %}
-                    <span class="mq-meta-item">
-                        <span class="mq-meta-icon">⏱</span>
-                        {{ quiz.time_limit }} мин
-                    </span>
-                    {% endif %}
-                    <span class="mq-meta-item">
-                        <span class="mq-meta-icon">📅</span>
-                        {{ quiz.created_at|date:"d.m.Y" }}
-                    </span>
-                </div>
+                        <div class="mq-title-row">
+                            <h3 class="mq-card-title">{{ quiz.title }}</h3>
+                            <a href="{% url 'edit_quiz' quiz.id %}"
+                               class="mq-edit-btn"
+                               title="Редактировать квиз"
+                               aria-label="Редактировать квиз">
+                                ✎
+                            </a>
+                        </div>
 
-                <div class="mq-card-actions">
-                    <form method="post" action="{% url 'toggle_quiz_status' quiz.id %}" style="display:inline;">
-                        {% csrf_token %}
-                        <button type="submit" class="mq-btn mq-btn-play">
-                            {% if quiz.status == 'draft' %}
-                                <span>✔</span> Активировать
-                            {% else %}
-                                <span>↩</span> В черновик
+                        {% if quiz.description %}
+                        <p class="mq-card-desc">{{ quiz.description|truncatechars:80 }}</p>
+                        {% endif %}
+
+                        <div class="mq-card-meta">
+                            <span class="mq-meta-item">
+                                <span class="mq-meta-icon">❓</span>
+                                {{ quiz.total_questions }} вопр.
+                            </span>
+                            {% if quiz.time_limit %}
+                            <span class="mq-meta-item">
+                                <span class="mq-meta-icon">⏱</span>
+                                {{ quiz.time_limit }} мин
+                            </span>
                             {% endif %}
-                        </button>
-                    </form>
+                            <span class="mq-meta-item">
+                                <span class="mq-meta-icon">📅</span>
+                                {{ quiz.created_at|date:"d.m.Y" }}
+                            </span>
+                        </div>
 
-                    <a href="{% url 'play_quiz' quiz.id %}" class="mq-btn mq-btn-play">
-                        <span>▶</span> Пройти
-                    </a>
+                        <div class="mq-card-actions">
+                            <form method="post" action="{% url 'toggle_quiz_status' quiz.id %}" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="mq-btn mq-btn-play">
+                                    {% if quiz.status == 'draft' %}
+                                        <span>✔</span> Активировать
+                                    {% else %}
+                                        <span>↩</span> В черновик
+                                    {% endif %}
+                                </button>
+                            </form>
 
-                    {% if quiz.status == 'active' %}
-                    <a href="{% url 'create_lobby' quiz.id %}" class="mq-btn mq-btn-lobby">
-                        <span>🎮</span> Лобби
-                    </a>
-                    {% endif %}
+                            <a href="{% url 'play_quiz' quiz.id %}" class="mq-btn mq-btn-play">
+                                <span>▶</span> Пройти
+                            </a>
 
-                    <a href="{% url 'quiz_sessions_list' quiz.id %}" class="mq-btn mq-btn-history">
-                        <span>📋</span> История
-                    </a>
+                            {% if quiz.status == 'active' %}
+                            <a href="{% url 'create_lobby' quiz.id %}" class="mq-btn mq-btn-lobby">
+                                <span>🎮</span> Лобби
+                            </a>
+                            {% endif %}
+
+                            <a href="{% url 'quiz_sessions_list' quiz.id %}" class="mq-btn mq-btn-history">
+                                <span>📋</span> История
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
                 </div>
-            </div>
-            {% endfor %}
-        </div>
-
-        {% else %}
-
-        <div class="mq-empty">
-            <div class="mq-empty-visual">
-                <div class="mq-empty-ring mq-ring-1"></div>
-                <div class="mq-empty-ring mq-ring-2"></div>
-                <div class="mq-empty-ring mq-ring-3"></div>
-                <div class="mq-empty-icon">{% if search_query %}🔍{% else %}📝{% endif %}</div>
-            </div>
-            {% if search_query %}
-                <h2 class="mq-empty-title">Ничего не найдено</h2>
-                <p class="mq-empty-sub">По запросу «{{ search_query }}» квизы не найдены</p>
-                <a href="{% url 'my_quizzes' %}" class="btn btn-primary btn-large">Сбросить поиск</a>
             {% else %}
-                <h2 class="mq-empty-title">Квизов пока нет</h2>
-                <p class="mq-empty-sub">Создайте первый квиз и поделитесь им с другими!</p>
-                <a href="{% url 'create_quiz' %}" class="btn btn-primary btn-large">✦ Создать первый квиз</a>
+                <div class="mq-empty">
+                    <div class="mq-empty-visual">
+                        <div class="mq-empty-ring mq-ring-1"></div>
+                        <div class="mq-empty-ring mq-ring-2"></div>
+                        <div class="mq-empty-ring mq-ring-3"></div>
+                        <div class="mq-empty-icon">{% if search_query %}🔍{% else %}📝{% endif %}</div>
+                    </div>
+                    {% if search_query %}
+                        <h2 class="mq-empty-title">Ничего не найдено</h2>
+                        <p class="mq-empty-sub">По запросу «{{ search_query }}» квизы не найдены</p>
+                        <a href="{% url 'my_quizzes' %}" class="btn btn-primary btn-large">Сбросить поиск</a>
+                    {% else %}
+                        <h2 class="mq-empty-title">Квизов пока нет</h2>
+                        <p class="mq-empty-sub">Создайте первый квиз и поделитесь им с другими!</p>
+                        <a href="{% url 'create_quiz' %}" class="btn btn-primary btn-large">✦ Создать первый квиз</a>
+                    {% endif %}
+                </div>
             {% endif %}
         </div>
+        <!-- конец #quizzes-results -->
 
-        {% endif %}
     </div>
 </div>
 
 <script>
 (function () {
-    // Исправлено: теперь ищем по правильному id
     var input = document.getElementById('myQuizzesSearchInput');
     var form = document.getElementById('myQuizzesSearchForm');
     if (!input || !form) return;
@@ -155,7 +155,6 @@
     var debounceTimer = null;
     var currentSort = '{{ current_sort|default:"" }}';
 
-    // Функция для отправки AJAX-запроса и обновления списка
     function fetchQuizzes(search, sort) {
         var url = new URL(window.location.href);
         url.searchParams.set('search', search);
@@ -164,8 +163,6 @@
         } else {
             url.searchParams.delete('sort');
         }
-
-        // Обновляем адресную строку без перезагрузки
         history.replaceState(null, '', url.toString());
 
         fetch(url.toString(), {
@@ -179,8 +176,6 @@
             var currentResults = document.getElementById('quizzes-results');
             if (newResults && currentResults) {
                 currentResults.innerHTML = newResults.innerHTML;
-                // Если есть какая-то функция инициализации, её можно вызвать здесь
-                // Например: if (typeof initInfoToggles === 'function') initInfoToggles();
             }
         })
         .catch(function (err) {
@@ -188,7 +183,6 @@
         });
     }
 
-    // Живой поиск с задержкой 350 мс
     input.addEventListener('input', function () {
         clearTimeout(debounceTimer);
         var val = input.value;
@@ -197,7 +191,6 @@
         }, 100);
     });
 
-    // Перехват отправки формы – делаем AJAX вместо перезагрузки
     form.addEventListener('submit', function (e) {
         e.preventDefault();
         clearTimeout(debounceTimer);
@@ -207,32 +200,39 @@
 </script>
 
 <style>
-.mq-btn-history{background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);color:var(--primary-light)}
-.mq-btn-history:hover{background:rgba(139,92,246,.25);border-color:var(--primary)}
-    .mq-title-row{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:.6rem
-}
-.mq-edit-btn{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    width:28px;
-    height:28px;
-    border-radius:8px;
-    background:rgba(255,255,255,.08);
-    border:1px solid rgba(255,255,255,.18);
-    color:#fff;
-    text-decoration:none;
-    font-size:.95rem;
-    transition:all .2s ease
-}
-.mq-edit-btn:hover{
-    background:rgba(56,189,248,.2);
-    border-color:rgba(56,189,248,.55);
-    transform:translateY(-1px)
-}
+    .mq-btn-history {
+        background: rgba(139, 92, 246, 0.12);
+        border: 1px solid rgba(139, 92, 246, 0.3);
+        color: var(--primary-light);
+    }
+    .mq-btn-history:hover {
+        background: rgba(139, 92, 246, 0.25);
+        border-color: var(--primary);
+    }
+    .mq-title-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.6rem;
+    }
+    .mq-edit-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        color: #fff;
+        text-decoration: none;
+        font-size: 0.95rem;
+        transition: all 0.2s ease;
+    }
+    .mq-edit-btn:hover {
+        background: rgba(56, 189, 248, 0.2);
+        border-color: rgba(56, 189, 248, 0.55);
+        transform: translateY(-1px);
+    }
 </style>
 {% endblock %}
