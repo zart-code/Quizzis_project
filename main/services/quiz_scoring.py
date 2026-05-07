@@ -4,6 +4,7 @@ from dataclasses import dataclass
 @dataclass(frozen=True, slots=True)
 class ScoreResult:
     """Результат проверки одного вопроса."""
+
     points: int
     max_points: int
     is_correct: bool | None
@@ -14,7 +15,7 @@ class BaseScoringStrategy:
 
     @staticmethod
     def get_max_points(question) -> int:
-        if question.question_type == 'text':
+        if question.question_type == "text":
             return 0
         return 4 * question.coefficient
 
@@ -109,30 +110,30 @@ class QuestionScoringFactory:
     """Фабрика стратегий подсчета баллов."""
 
     _strategies = {
-        'single': SingleChoiceScoringStrategy(),
-        'multiple': MultipleChoiceScoringStrategy(),
-        'number': NumberScoringStrategy(),
-        'text': TextScoringStrategy(),
+        "single": SingleChoiceScoringStrategy(),
+        "multiple": MultipleChoiceScoringStrategy(),
+        "number": NumberScoringStrategy(),
+        "text": TextScoringStrategy(),
     }
 
     @classmethod
     def get_strategy(cls, question_type):
-        return cls._strategies.get(question_type, cls._strategies['text'])
+        return cls._strategies.get(question_type, cls._strategies["text"])
 
 
 def build_submission_value(request, question):
     """Достает из request пользовательский ответ в удобном виде."""
-    if question.question_type == 'single':
-        return request.POST.get('answer')
+    if question.question_type == "single":
+        return request.POST.get("answer")
 
-    if question.question_type == 'multiple':
-        return set(request.POST.getlist('answer'))
+    if question.question_type == "multiple":
+        return set(request.POST.getlist("answer"))
 
-    if question.question_type == 'number':
-        return request.POST.get('answer_number', '')
+    if question.question_type == "number":
+        return request.POST.get("answer_number", "")
 
-    if question.question_type == 'text':
-        return request.POST.get('answer_text', '')
+    if question.question_type == "text":
+        return request.POST.get("answer_text", "")
 
     return None
 
@@ -143,7 +144,7 @@ def score_question(question, request, timed_out=False) -> ScoreResult:
     max_points = strategy.get_max_points(question)
 
     if timed_out:
-        is_correct = None if question.question_type == 'text' else False
+        is_correct = None if question.question_type == "text" else False
         return ScoreResult(
             points=0,
             max_points=max_points,

@@ -94,51 +94,48 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Возможно понадобиться когда будем развёртывать приложение
 BASE_DIR = Path(__file__).resolve().parent.parent
-LOG_DIR = BASE_DIR / 'logs'
+LOG_DIR = BASE_DIR / "logs"
 LOG_DIR.mkdir(exist_ok=True)
 
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
-            'style': '{',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+            "style": "{",
         },
-        'simple': {
-            'format': '{levelname} {asctime} {message}',
-            'style': '{',
-        },
-    },
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'simple',
-        },
-        'file': {
-            'class': 'logging.FileHandler',
-            'filename':  str(LOG_DIR / 'django.log'),
-            'formatter': 'verbose',
-            'encoding': 'utf-8',
+        "simple": {
+            "format": "{levelname} {asctime} {message}",
+            "style": "{",
         },
     },
-    'root': {
-        'handlers': ['console', 'file'],
-        'level': 'INFO',
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+        },
+        "file": {
+            "class": "logging.FileHandler",
+            "filename": str(LOG_DIR / "django.log"),
+            "formatter": "verbose",
+            "encoding": "utf-8",
+        },
     },
-    'loggers': {
-
-        'main.views': {
-            'handlers': ['console', 'file'],
-            'level': 'INFO',
-            'propagate': False,
+    "root": {
+        "handlers": ["console", "file"],
+        "level": "INFO",
+    },
+    "loggers": {
+        "main.views": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
         },
-
-        'main.views_features.views_quiz': {
-            'handlers': ['console', 'file'],
-            'level': 'INFO',
-            'propagate': False,
+        "main.views_features.views_quiz": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
         },
-
     },
 }

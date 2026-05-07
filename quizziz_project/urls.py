@@ -41,17 +41,10 @@
         → используется polling'ом на 5.1 и 6.1
 """
 
-
 from django.contrib import admin
 from django.urls import path
 
-from main.views import (
-    main_page,
-    login_page,
-    register_page,
-    logout_view,
-    quizzes_view
-)
+from main.views import main_page, login_page, register_page, logout_view, quizzes_view
 from main.views_features.views_profile import (
     profile_view,
     profile_history_view,
@@ -62,7 +55,7 @@ from main.views_features.views_quiz import (
     my_quizzes_view,
     toggle_quiz_status_view,
     play_quiz_view,
-    edit_quiz_view
+    edit_quiz_view,
 )
 from main.views_features.views_lobby import (
     create_lobby_view,
@@ -75,7 +68,7 @@ from main.views_features.views_lobby import (
     api_state_view,
     session_play_view,
     session_results_teacher_view,
-    quiz_sessions_list_view
+    quiz_sessions_list_view,
 )
 from main.views_features.views_admin import (
     admin_panel_view,
@@ -88,43 +81,67 @@ from main.views_features.views_admin import (
 )
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('', main_page, name='main_page'),
-    path('login/', login_page, name='login_page'),
-    path('register/', register_page, name='register_page'),
-    path('logout/', logout_view, name='logout'),
-    path('profile/', profile_view, name='profile'),
-    path('profile/history/', profile_history_view, name='profile_history'),
-    path('profile/edit/', edit_profile_view, name='edit_profile'),
-    path('quiz/create/', create_quiz_view, name='create_quiz'),
-    path('quiz/<int:quiz_id>/edit/', edit_quiz_view, name='edit_quiz'),
-    path('my-quizzes/', my_quizzes_view, name='my_quizzes'),
-    path('quiz/<int:quiz_id>/toggle-status/', toggle_quiz_status_view, name='toggle_quiz_status'),
-    path('quiz/<int:quiz_id>/play/', play_quiz_view, name='play_quiz'),
-    path('quiz/<int:quiz_id>/lobby/create/', create_lobby_view, name='create_lobby'),
-    path('lobby/<str:pin>/', lobby_view, name='lobby'),
-    path('lobby/<str:pin>/lock/', toggle_lock_view, name='toggle_lock'),
-    path('lobby/<str:pin>/delete/', delete_session_view, name='delete_session'),
-    path('lobby/<str:pin>/api/players/', api_players_view, name='api_players'),
-    path('join/<str:pin>/', join_lobby_view, name='join_lobby'),
-    path('lobby/<str:pin>/start/', start_game_view, name='start_game'),
-    path('session/<str:pin>/api/state/', api_state_view, name='api_state'),
-    path('session/<str:pin>/play/', session_play_view, name='session_play'),
-    path('quiz/<int:quiz_id>/sessions/', quiz_sessions_list_view, name='quiz_sessions_list'),
-    path('session/<str:pin>/results/teacher/', session_results_teacher_view, name='session_results_teacher'),
-    path('quizzises/', quizzes_view, name='quizzes_view'),
-    path('admin-panel/', admin_panel_view, name='admin_panel'),
-    path('admin-panel/ban/<int:user_id>/', admin_ban_user_view, name='admin_ban_user'),
-    path('admin-panel/unpublish-quiz/<int:quiz_id>/',
-         admin_unpublish_quiz_view,
-         name='admin_unpublish_quiz'),
-    path('admin-panel/delete-quiz/<int:quiz_id>/',
-         admin_delete_quiz_view,
-         name='admin_delete_quiz'),
-    path('admin-panel/user/<int:user_id>/', profile_view, name='admin_user_profile'),
-    path('admin-panel/user/<int:user_id>/history/', profile_history_view, name='admin_user_history'),
-    path('admin-panel/user/<int:user_id>/edit/', edit_profile_view, name='admin_edit_user'),
-    path('admin-panel/api/stats/', api_admin_stats_view, name='api_admin_stats'),
-    path('admin-panel/api/users/', api_admin_users_view, name='api_admin_users'),
-    path('admin-panel/api/quizzes/', api_admin_quizzes_view, name='api_admin_quizzes'),
+    path("admin/", admin.site.urls),
+    path("", main_page, name="main_page"),
+    path("login/", login_page, name="login_page"),
+    path("register/", register_page, name="register_page"),
+    path("logout/", logout_view, name="logout"),
+    path("profile/", profile_view, name="profile"),
+    path("profile/history/", profile_history_view, name="profile_history"),
+    path("profile/edit/", edit_profile_view, name="edit_profile"),
+    path("quiz/create/", create_quiz_view, name="create_quiz"),
+    path("quiz/<int:quiz_id>/edit/", edit_quiz_view, name="edit_quiz"),
+    path("my-quizzes/", my_quizzes_view, name="my_quizzes"),
+    path(
+        "quiz/<int:quiz_id>/toggle-status/",
+        toggle_quiz_status_view,
+        name="toggle_quiz_status",
+    ),
+    path("quiz/<int:quiz_id>/play/", play_quiz_view, name="play_quiz"),
+    path("quiz/<int:quiz_id>/lobby/create/", create_lobby_view, name="create_lobby"),
+    path("lobby/<str:pin>/", lobby_view, name="lobby"),
+    path("lobby/<str:pin>/lock/", toggle_lock_view, name="toggle_lock"),
+    path("lobby/<str:pin>/delete/", delete_session_view, name="delete_session"),
+    path("lobby/<str:pin>/api/players/", api_players_view, name="api_players"),
+    path("join/<str:pin>/", join_lobby_view, name="join_lobby"),
+    path("lobby/<str:pin>/start/", start_game_view, name="start_game"),
+    path("session/<str:pin>/api/state/", api_state_view, name="api_state"),
+    path("session/<str:pin>/play/", session_play_view, name="session_play"),
+    path(
+        "quiz/<int:quiz_id>/sessions/",
+        quiz_sessions_list_view,
+        name="quiz_sessions_list",
+    ),
+    path(
+        "session/<str:pin>/results/teacher/",
+        session_results_teacher_view,
+        name="session_results_teacher",
+    ),
+    path("quizzises/", quizzes_view, name="quizzes_view"),
+    path("admin-panel/", admin_panel_view, name="admin_panel"),
+    path("admin-panel/ban/<int:user_id>/", admin_ban_user_view, name="admin_ban_user"),
+    path(
+        "admin-panel/unpublish-quiz/<int:quiz_id>/",
+        admin_unpublish_quiz_view,
+        name="admin_unpublish_quiz",
+    ),
+    path(
+        "admin-panel/delete-quiz/<int:quiz_id>/",
+        admin_delete_quiz_view,
+        name="admin_delete_quiz",
+    ),
+    path("admin-panel/user/<int:user_id>/", profile_view, name="admin_user_profile"),
+    path(
+        "admin-panel/user/<int:user_id>/history/",
+        profile_history_view,
+        name="admin_user_history",
+    ),
+    path(
+        "admin-panel/user/<int:user_id>/edit/",
+        edit_profile_view,
+        name="admin_edit_user",
+    ),
+    path("admin-panel/api/stats/", api_admin_stats_view, name="api_admin_stats"),
+    path("admin-panel/api/users/", api_admin_users_view, name="api_admin_users"),
+    path("admin-panel/api/quizzes/", api_admin_quizzes_view, name="api_admin_quizzes"),
 ]

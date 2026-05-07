@@ -34,20 +34,20 @@ def create_lobby_view(request, quiz_id):
     quiz = get_object_or_404(Quiz, id=quiz_id, creator=request.user)
 
     if quiz.status == Quiz.DRAFT:
-        return redirect('my_quizzes')
+        return redirect("my_quizzes")
 
     session = GameSession.objects.create(
         quiz=quiz,
         revision=get_current_revision(quiz),
         host=request.user,
     )
-    return redirect('lobby', pin=session.pin)
+    return redirect("lobby", pin=session.pin)
 
 
 @login_required
 def lobby_view(request, pin):
     session = get_object_or_404(GameSession, pin=pin, host=request.user)
-    return render(request, 'lobby.html', {'session': session})
+    return render(request, "lobby.html", {"session": session})
 
 
 @login_required
@@ -57,7 +57,7 @@ def toggle_lock_view(request, pin):
     session = get_object_or_404(GameSession, pin=pin, host=request.user)
     session.is_locked = not session.is_locked
     session.save()
-    return redirect('lobby', pin=pin)
+    return redirect("lobby", pin=pin)
 
 
 @login_required
@@ -66,18 +66,17 @@ def delete_session_view(request, pin):
     """"""
     session = get_object_or_404(GameSession, pin=pin, host=request.user)
     session.delete()
-    return redirect('my_quizzes')
+    return redirect("my_quizzes")
 
 
 @login_required
 def api_players_view(request, pin):
     session = get_object_or_404(GameSession, pin=pin, host=request.user)
-    participants = session.participants.select_related('user').all()
+    participants = session.participants.select_related("user").all()
 
     players = [
         {
-            'username': p.user.username,
-
+            "username": p.user.username,
         }
         for p in participants
     ]
@@ -115,10 +114,9 @@ def join_lobby_view(request, pin):
             {"message": "Лобби заполнено (максимум 25 игроков)."},
         )
 
-
     GameParticipant.objects.get_or_create(session=session, user=request.user)
 
-    return render(request, 'join_lobby.html', {'session': session})
+    return render(request, "join_lobby.html", {"session": session})
 
 
 @login_required
@@ -126,11 +124,11 @@ def join_lobby_view(request, pin):
 def start_game_view(request, pin):
     session = get_object_or_404(GameSession, pin=pin, host=request.user)
     if session.participants.count() == 0:
-        return redirect('lobby', pin=pin)
+        return redirect("lobby", pin=pin)
     session.status = GameSession.IN_PROGRESS
     session.current_question_started_at = timezone.now()
     session.save()
-    return redirect('lobby', pin=pin)
+    return redirect("lobby", pin=pin)
 
 
 @login_required
@@ -157,16 +155,19 @@ def session_play_view(request, pin):
     total_max_score = get_session_max_score(session)
 
     if not questions:
-        return render(request, 'lobby_error.html', {
-            'message': 'В этой сессии нет вопросов.',
-        })
+        return render(
+            request,
+            "lobby_error.html",
+            {
+                "message": "В этой сессии нет вопросов.",
+            },
+        )
 
     if session.status == GameSession.FINISHED or session.current_question >= total:
-        result_session_key = f'lobby_result_{pin}'
+        result_session_key = f"lobby_result_{pin}"
         result_id = request.session.get(result_session_key)
         score_percent = (
-            participant.score / total_max_score * 100
-            if total_max_score else 0
+            participant.score / total_max_score * 100 if total_max_score else 0
         )
 
         if result_id is not None:
@@ -214,22 +215,22 @@ def session_play_view(request, pin):
     remaining_seconds = max(0, question.time_limit - elapsed_seconds)
     server_timed_out = remaining_seconds <= 0
 
-    if request.method == 'POST':
+    if request.method == "POST":
         answer_lookup = {
-            'session': session,
-            'participant': participant,
+            "session": session,
+            "participant": participant,
         }
         if session.revision_id:
-            answer_lookup['revision_question'] = question
+            answer_lookup["revision_question"] = question
         else:
-            answer_lookup['question'] = question
+            answer_lookup["question"] = question
 
         existing_answer = GameAnswer.objects.filter(**answer_lookup).first()
         if existing_answer is not None:
-            return redirect('session_play', pin=pin)
+            return redirect("session_play", pin=pin)
 
         if not participant.is_answered:
-            timed_out = request.POST.get('timed_out') == '1' or server_timed_out
+            timed_out = request.POST.get("timed_out") == "1" or server_timed_out
 
             score_result = score_question(
                 question,
@@ -244,15 +245,15 @@ def session_play_view(request, pin):
             participant.save()
 
             game_answer_data = {
-                'session': session,
-                'participant': participant,
-                'is_correct': is_correct,
-                'points': earned_points,
+                "session": session,
+                "participant": participant,
+                "is_correct": is_correct,
+                "points": earned_points,
             }
             if session.revision_id:
-                game_answer_data['revision_question'] = question
+                game_answer_data["revision_question"] = question
             else:
-                game_answer_data['question'] = question
+                game_answer_data["question"] = question
 
             GameAnswer.objects.create(**game_answer_data)
 
@@ -271,7 +272,7 @@ def session_play_view(request, pin):
 
                 session.save()
 
-        return redirect('session_play', pin=pin)
+        return redirect("session_play", pin=pin)
 
     response = render(
         request,
@@ -315,33 +316,31 @@ def session_results_teacher_view(request, pin):
     questions = get_session_questions(session)
     max_score = get_session_max_score(session)
 
-    participants = list(
-        session.participants.select_related('user').order_by('-score')
-    )
+    participants = list(session.participants.select_related("user").order_by("-score"))
 
     if session.revision_id:
         answers_qs = GameAnswer.objects.filter(session=session).values(
-            'participant_id',
-            'revision_question_id',
-            'is_correct',
-            'points',
+            "participant_id",
+            "revision_question_id",
+            "is_correct",
+            "points",
         )
-        question_key_name = 'revision_question_id'
+        question_key_name = "revision_question_id"
     else:
         answers_qs = GameAnswer.objects.filter(session=session).values(
-            'participant_id',
-            'question_id',
-            'is_correct',
-            'points',
+            "participant_id",
+            "question_id",
+            "is_correct",
+            "points",
         )
-        question_key_name = 'question_id'
+        question_key_name = "question_id"
 
     answers_map = {}
     for game_answer in answers_qs:
-        participant_answers = answers_map.setdefault(game_answer['participant_id'], {})
+        participant_answers = answers_map.setdefault(game_answer["participant_id"], {})
         participant_answers[game_answer[question_key_name]] = {
-            'is_correct': game_answer['is_correct'],
-            'points': game_answer['points'],
+            "is_correct": game_answer["is_correct"],
+            "points": game_answer["points"],
         }
 
     rows = []
@@ -355,19 +354,27 @@ def session_results_teacher_view(request, pin):
                 q_results.append(None)
                 continue
 
-            q_results.append({
-                'points': answer_data['points'],
-                'max_points': 0 if question.question_type == 'text' else 4 * question.coefficient,
-                'is_correct': answer_data['is_correct'],
-            })
+            q_results.append(
+                {
+                    "points": answer_data["points"],
+                    "max_points": (
+                        0
+                        if question.question_type == "text"
+                        else 4 * question.coefficient
+                    ),
+                    "is_correct": answer_data["is_correct"],
+                }
+            )
 
-        rows.append({
-            'rank': rank,
-            'user': participant.user,
-            'score': participant.score,
-            'max_score': max_score,
-            'q_results': q_results,
-        })
+        rows.append(
+            {
+                "rank": rank,
+                "user": participant.user,
+                "score": participant.score,
+                "max_score": max_score,
+                "q_results": q_results,
+            }
+        )
 
     return render(
         request,

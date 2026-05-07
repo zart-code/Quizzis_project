@@ -206,6 +206,7 @@ class GameAnswerModelTest(TestCase):
         question_id = self.question.id
         self.question.delete()
         self.assertEqual(Answer.objects.filter(question_id=question_id).count(), 0)
+
     def test_str_method(self):
         """Тест метода"""
         ans = GameAnswer.objects.create(
@@ -313,8 +314,9 @@ class GameParticipantModelTest(TestCase):
         self.session = GameSession.objects.get(pk=1)
         self.user = User.objects.get(pk=1)
         # Получаем существующего участника из фикстуры
-        self.existing_participant = GameParticipant.objects.get(session=self.session,
-                                                                user=self.user)
+        self.existing_participant = GameParticipant.objects.get(
+            session=self.session, user=self.user
+        )
 
     def test_unique_together_session_user(self):
         """Уникальность игровых сессий и юзеров"""
@@ -324,19 +326,24 @@ class GameParticipantModelTest(TestCase):
     def test_default_score_and_is_answered(self):
         user2 = User.objects.get(pk=2)
         part, created = GameParticipant.objects.get_or_create(
-            session=self.session, user=user2,
-            defaults={'score': 0, 'is_answered': False}
+            session=self.session,
+            user=user2,
+            defaults={"score": 0, "is_answered": False},
         )
         self.assertEqual(part.score, 0)
         self.assertFalse(part.is_answered)
 
         def test_ordering_by_score_desc(self):
             """Тестирование моих нервов"""
-            user2 = User.objects.create(username='testuser2', password='testpass')
-            user3 = User.objects.create(username='testuser3', password='testpass')
+            user2 = User.objects.create(username="testuser2", password="testpass")
+            user3 = User.objects.create(username="testuser3", password="testpass")
 
-            p1 = GameParticipant.objects.create(session=self.session, user=user2, score=10)
-            p2 = GameParticipant.objects.create(session=self.session, user=user3, score=20)
+            p1 = GameParticipant.objects.create(
+                session=self.session, user=user2, score=10
+            )
+            p2 = GameParticipant.objects.create(
+                session=self.session, user=user3, score=20
+            )
 
             participants = list(GameParticipant.objects.all())
             self.assertEqual(participants, [p2, p1, self.existing_participant])

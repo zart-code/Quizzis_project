@@ -41,7 +41,7 @@ def _handle_form(
                 logger.info(
                     "Успешная регистрация пользователя: %s (IP: %s)",
                     user.username,
-                    request.META.get('REMOTE_ADDR')
+                    request.META.get("REMOTE_ADDR"),
                 )
             elif form_class == StyledAuthenticationForm:
                 user = form.get_user()
@@ -49,7 +49,7 @@ def _handle_form(
                 logger.info(
                     "Успешный вход пользователя: %s (IP: %s)",
                     user.username,
-                    request.META.get('REMOTE_ADDR')
+                    request.META.get("REMOTE_ADDR"),
                 )
             return redirect(success_url)
         else:
@@ -58,7 +58,7 @@ def _handle_form(
                 "Ошибка валидации формы %s: %s (IP: %s)",
                 form_class.__name__,
                 form.errors,
-                request.META.get('REMOTE_ADDR')
+                request.META.get("REMOTE_ADDR"),
             )
     else:
         # GET-запрос: создаём пустую (несвязанную) форму
@@ -72,7 +72,7 @@ def main_page(request):
     logger.info(
         "Пользователь %s посетил главную страницу (IP: %s)",
         request.user.username if request.user.is_authenticated else "Anonymous",
-        request.META.get('REMOTE_ADDR')
+        request.META.get("REMOTE_ADDR"),
     )
     return render(request, "main_page.html")
 
@@ -82,8 +82,8 @@ def register_page(request):
     return _handle_form(
         request,
         form_class=CustomUserCreationForm,
-        template_name='register.html',
-        success_url='main_page'
+        template_name="register.html",
+        success_url="main_page",
     )
 
 
@@ -92,10 +92,10 @@ def login_page(request):
     return _handle_form(
         request,
         form_class=StyledAuthenticationForm,
-        template_name='login_page.html',
-        success_url='main_page',
-        extra_form_kwargs={'request': request},
-        needs_request=True
+        template_name="login_page.html",
+        success_url="main_page",
+        extra_form_kwargs={"request": request},
+        needs_request=True,
     )
 
 
@@ -105,41 +105,40 @@ def logout_view(request):
         logger.info(
             "Пользователь %s вышел из системы (IP: %s)",
             request.user.username,
-            request.META.get('REMOTE_ADDR')
+            request.META.get("REMOTE_ADDR"),
         )
     logout(request)
-    return redirect('main_page')
+    return redirect("main_page")
 
 
 def quizzes_view(request):
     """Страница квизов."""
-    sort_type = request.GET.get('sort', 'new')
+    sort_type = request.GET.get("sort", "new")
 
     current_revision_filter = Q(
         results__completed=True,
-        results__revision=F('current_revision'),
+        results__revision=F("current_revision"),
     )
 
     quizzes = (
-        Quiz.objects
-        .filter(status=Quiz.ACTIVE)
-        .select_related('creator', 'current_revision')
+        Quiz.objects.filter(status=Quiz.ACTIVE)
+        .select_related("creator", "current_revision")
         .annotate(
             passed_count=Count(
-                'results',
+                "results",
                 filter=current_revision_filter,
                 distinct=True,
             ),
             avg_score_percent=Avg(
-                'results__score_percent',
+                "results__score_percent",
                 filter=current_revision_filter,
             ),
             avg_score_points=Avg(
-                'results__score',
+                "results__score",
                 filter=current_revision_filter,
             ),
             avg_max_points=Avg(
-                'results__max_score',
+                "results__max_score",
                 filter=current_revision_filter,
             ),
         )
@@ -151,14 +150,14 @@ def quizzes_view(request):
         request.user.username if request.user.is_authenticated else "Anonymous",
         sort_type,
         quizzes.count(),
-        request.META.get('REMOTE_ADDR')
+        request.META.get("REMOTE_ADDR"),
     )
 
     context = {
-        'current_sort': sort_type,
-        'quizzes': quizzes,
+        "current_sort": sort_type,
+        "quizzes": quizzes,
     }
-    return render(request, 'quizzes_view.html', context)
+    return render(request, "quizzes_view.html", context)
 
 
 def my_quizzes(request):
@@ -166,6 +165,6 @@ def my_quizzes(request):
     logger.info(
         "Пользователь %s перешёл на 'Мои квизы' (IP: %s)",
         request.user.username if request.user.is_authenticated else "Anonymous",
-        request.META.get('REMOTE_ADDR')
+        request.META.get("REMOTE_ADDR"),
     )
     return render(request, "my_quizzes.html")

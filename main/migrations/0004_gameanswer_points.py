@@ -7,6 +7,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     """Слишком важная информация"""
+
     dependencies = [
         ("main", "0003_gamesession_current_question_started_at"),
     ]
