@@ -46,10 +46,7 @@ class CustomUserCreationForm(UserCreationForm):
 
 
 class StyledAuthenticationForm(AuthenticationForm):
-    """Стилизованная форма аутентификации."""
-
-    def __init__(self, *args, **kwargs):
-        request = kwargs.pop('request', None)
-        super().__init__(request=request, *args, **kwargs)
+    def __init__(self, request=None, *args, **kwargs):
+        super().__init__(request, *args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs.update(FIELD_ATTRS)
