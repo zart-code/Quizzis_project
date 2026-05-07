@@ -147,14 +147,48 @@
 
 <script>
 (function () {
-    var input = document.getElementById('myQuizzesSearchInput');
-    var form  = document.getElementById('myQuizzesSearchForm');
-    if (!input || !form) return;
+    var input = document.getElementById('searchInput');
+    if (!input) return;
 
     var debounceTimer = null;
+    var currentSort = '{{ current_sort }}';
 
+    // ---------- AJAX-обновление списка квизов ----------
+    function fetchQuizzes(search, sort) {
+        var url = new URL(window.location.href);
+        url.searchParams.set('search', search);
+        url.searchParams.set('sort', sort);
 
-})();
+        // Обновляем адресную строку без перезагрузки страницы
+        history.replaceState(null, '', url.toString());
+
+        fetch(url.toString(), {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(function (r) { return r.text(); })
+        .then(function (html) {
+            var parser = new DOMParser();
+            var doc = parser.parseFromString(html, 'text/html');
+            var newResults  = doc.getElementById('quizzes-results');
+            var currentResults = document.getElementById('quizzes-results');
+            if (newResults && currentResults) {
+                currentResults.innerHTML = newResults.innerHTML;
+                initInfoToggles(); // заново вешаем обработчики на новые карточки
+            }
+        })
+        .catch(function (err) {
+            console.error('Ошибка поиска:', err);
+        });
+    }
+
+    // ---------- Живой поиск при вводе (дебаунс 350 мс) ----------
+    input.addEventListener('input', function () {
+        clearTimeout(debounceTimer);
+        var val = input.value;
+        debounceTimer = setTimeout(function () {
+            fetchQuizzes(val, currentSort);
+        }, 100);
+    });
 </script>
 
 <style>

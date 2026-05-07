@@ -48,6 +48,7 @@
         </div>
 
         <!-- Список квизов -->
+        <div id="quizzes-results">
         {% if quizzes %}
             <div class="mq-grid">
                 {% for quiz in quizzes %}
@@ -157,6 +158,8 @@
                 {% endif %}
             </div>
 
+        </div>{# /quizzes-results #}
+
     </div>
 
     <div class="quiz-info-modal-backdrop" id="quizInfoBackdrop">
@@ -170,16 +173,126 @@
 <script>
 (function () {
     var input = document.getElementById('searchInput');
-    var form  = document.getElementById('searchForm');
-    if (!input || !form) return;
+    if (!input) return;
 
     var debounceTimer = null;
+    var currentSort = '{{ current_sort }}';
 
+    // ---------- AJAX-обновление списка квизов ----------
+    function fetchQuizzes(search, sort) {
+        var url = new URL(window.location.href);
+        url.searchParams.set('search', search);
+        url.searchParams.set('sort', sort);
+
+        // Обновляем адресную строку без перезагрузки страницы
+        history.replaceState(null, '', url.toString());
+
+        fetch(url.toString(), {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(function (r) { return r.text(); })
+        .then(function (html) {
+            var parser = new DOMParser();
+            var doc = parser.parseFromString(html, 'text/html');
+            var newResults  = doc.getElementById('quizzes-results');
+            var currentResults = document.getElementById('quizzes-results');
+            if (newResults && currentResults) {
+                currentResults.innerHTML = newResults.innerHTML;
+                initInfoToggles(); // заново вешаем обработчики на новые карточки
+            }
+        })
+        .catch(function (err) {
+            console.error('Ошибка поиска:', err);
+        });
+    }
+
+    // ---------- Живой поиск при вводе (дебаунс 350 мс) ----------
     input.addEventListener('input', function () {
         clearTimeout(debounceTimer);
+        var val = input.value;
         debounceTimer = setTimeout(function () {
-            form.submit();
-        }, 400); // 400 мс после последнего нажатия
+            fetchQuizzes(val, currentSort);
+        }, 100);
+    });
+
+    // ---------- Enter — мгновенный поиск без ожидания ----------
+    input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            clearTimeout(debounceTimer);
+            fetchQuizzes(input.value, currentSort);
+        }
+    });
+
+    // ---------- Сортировка — тоже через AJAX ----------
+    window.setSort = function (sortType) {
+        currentSort = sortType;
+
+        // Визуально переключаем активную кнопку сортировки
+        document.querySelectorAll('.sort-btn').forEach(function (btn) {
+            btn.classList.remove('active');
+        });
+        var sortButtons = document.querySelectorAll('.sort-btn');
+        sortButtons.forEach(function (btn) {
+            if (btn.getAttribute('onclick') === "setSort('" + sortType + "')") {
+                btn.classList.add('active');
+            }
+        });
+
+        // Обновляем скрытое поле формы
+        var sortInput = document.getElementById('sortInput');
+        if (sortInput) sortInput.value = sortType;
+
+        fetchQuizzes(input.value, sortType);
+    };
+
+    // ---------- Модальные окна «Информация» ----------
+    function initInfoToggles() {
+        var backdrop  = document.getElementById('quizInfoBackdrop');
+        var modalBody = document.getElementById('quizInfoModalBody');
+        var closeBtn  = document.getElementById('quizInfoCloseBtn');
+        if (!backdrop || !modalBody) return;
+
+        function closeModal() {
+            backdrop.classList.remove('is-open');
+            document.body.style.overflow = '';
+        }
+
+        document.querySelectorAll('.js-info-toggle').forEach(function (toggle) {
+            // Клонируем, чтобы не дублировать листенеры при повторном вызове
+            var fresh = toggle.cloneNode(true);
+            toggle.parentNode.replaceChild(fresh, toggle);
+            fresh.addEventListener('click', function (e) {
+                e.preventDefault();
+                var template = document.getElementById(fresh.dataset.quizId);
+                if (!template) return;
+                modalBody.innerHTML = template.innerHTML;
+                backdrop.classList.add('is-open');
+                document.body.style.overflow = 'hidden';
+            });
+        });
+
+        if (closeBtn) {
+            var newClose = closeBtn.cloneNode(true);
+            closeBtn.parentNode.replaceChild(newClose, closeBtn);
+            newClose.addEventListener('click', closeModal);
+        }
+
+        backdrop.onclick = function (e) { if (e.target === backdrop) closeModal(); };
+    }
+
+    // Инициализация при первой загрузке
+    initInfoToggles();
+
+    // Закрытие модалки по Escape
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            var backdrop = document.getElementById('quizInfoBackdrop');
+            if (backdrop) {
+                backdrop.classList.remove('is-open');
+                document.body.style.overflow = '';
+            }
+        }
     });
 })();
 </script>
