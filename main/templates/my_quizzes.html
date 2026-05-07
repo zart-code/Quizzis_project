@@ -147,19 +147,25 @@
 
 <script>
 (function () {
-    var input = document.getElementById('searchInput');
-    if (!input) return;
+    // Исправлено: теперь ищем по правильному id
+    var input = document.getElementById('myQuizzesSearchInput');
+    var form = document.getElementById('myQuizzesSearchForm');
+    if (!input || !form) return;
 
     var debounceTimer = null;
-    var currentSort = '{{ current_sort }}';
+    var currentSort = '{{ current_sort|default:"" }}';
 
-    // ---------- AJAX-обновление списка квизов ----------
+    // Функция для отправки AJAX-запроса и обновления списка
     function fetchQuizzes(search, sort) {
         var url = new URL(window.location.href);
         url.searchParams.set('search', search);
-        url.searchParams.set('sort', sort);
+        if (sort) {
+            url.searchParams.set('sort', sort);
+        } else {
+            url.searchParams.delete('sort');
+        }
 
-        // Обновляем адресную строку без перезагрузки страницы
+        // Обновляем адресную строку без перезагрузки
         history.replaceState(null, '', url.toString());
 
         fetch(url.toString(), {
@@ -169,11 +175,12 @@
         .then(function (html) {
             var parser = new DOMParser();
             var doc = parser.parseFromString(html, 'text/html');
-            var newResults  = doc.getElementById('quizzes-results');
+            var newResults = doc.getElementById('quizzes-results');
             var currentResults = document.getElementById('quizzes-results');
             if (newResults && currentResults) {
                 currentResults.innerHTML = newResults.innerHTML;
-                initInfoToggles(); // заново вешаем обработчики на новые карточки
+                // Если есть какая-то функция инициализации, её можно вызвать здесь
+                // Например: if (typeof initInfoToggles === 'function') initInfoToggles();
             }
         })
         .catch(function (err) {
@@ -181,7 +188,7 @@
         });
     }
 
-    // ---------- Живой поиск при вводе (дебаунс 350 мс) ----------
+    // Живой поиск с задержкой 350 мс
     input.addEventListener('input', function () {
         clearTimeout(debounceTimer);
         var val = input.value;
@@ -189,6 +196,14 @@
             fetchQuizzes(val, currentSort);
         }, 100);
     });
+
+    // Перехват отправки формы – делаем AJAX вместо перезагрузки
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        clearTimeout(debounceTimer);
+        fetchQuizzes(input.value, currentSort);
+    });
+})();
 </script>
 
 <style>
