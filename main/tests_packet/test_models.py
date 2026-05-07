@@ -330,15 +330,16 @@ class GameParticipantModelTest(TestCase):
         self.assertEqual(part.score, 0)
         self.assertFalse(part.is_answered)
 
-    def test_ordering_by_score_desc(self):
-        """Тестирование моих нервов"""
-        user2 = User.objects.get(pk=2)
-        p1 = GameParticipant.objects.create(session=self.session, user=user2, score=10)
-        user3 = User.objects.create(username='user3', password='test')
-        p2 = GameParticipant.objects.create(session=self.session, user=user3, score=20)
-        participants = list(GameParticipant.objects.all())
-        # Ожидаемый порядок: p2 (20), p1 (10), existing (0)
-        self.assertEqual(participants, [p2, p1, self.existing_participant])
+        def test_ordering_by_score_desc(self):
+            """Тестирование моих нервов"""
+            user2 = User.objects.create(username='testuser2', password='testpass')
+            user3 = User.objects.create(username='testuser3', password='testpass')
+
+            p1 = GameParticipant.objects.create(session=self.session, user=user2, score=10)
+            p2 = GameParticipant.objects.create(session=self.session, user=user3, score=20)
+
+            participants = list(GameParticipant.objects.all())
+            self.assertEqual(participants, [p2, p1, self.existing_participant])
 
     def test_str_method(self):
         """Тестирование магического метода"""
