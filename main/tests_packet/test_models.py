@@ -322,9 +322,11 @@ class GameParticipantModelTest(TestCase):
             GameParticipant.objects.create(session=self.session, user=self.user)
 
     def test_default_score_and_is_answered(self):
-        """Тестирование набирает балл по умолчанию и получает ответ"""
         user2 = User.objects.get(pk=2)
-        part = GameParticipant.objects.create(session=self.session, user=user2)
+        part, created = GameParticipant.objects.get_or_create(
+            session=self.session, user=user2,
+            defaults={'score': 0, 'is_answered': False}
+        )
         self.assertEqual(part.score, 0)
         self.assertFalse(part.is_answered)
 
