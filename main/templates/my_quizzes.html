@@ -16,6 +16,20 @@
             </a>
         </div>
 
+        <!-- Поиск по своим квизам -->
+        <form method="GET" class="search-form" id="myQuizzesSearchForm" style="margin-bottom: 1.5rem;">
+            <div class="search-container">
+                <input type="text"
+                       name="search"
+                       class="search-input"
+                       placeholder="🔍 Поиск по названию..."
+                       value="{{ search_query }}"
+                       id="myQuizzesSearchInput"
+                       autocomplete="off">
+                <button type="submit" class="search-btn">Найти</button>
+            </div>
+        </form>
+
         {% if quizzes %}
 
         <div class="mq-stats-bar">
@@ -114,16 +128,34 @@
                 <div class="mq-empty-ring mq-ring-1"></div>
                 <div class="mq-empty-ring mq-ring-2"></div>
                 <div class="mq-empty-ring mq-ring-3"></div>
-                <div class="mq-empty-icon">📝</div>
+                <div class="mq-empty-icon">{% if search_query %}🔍{% else %}📝{% endif %}</div>
             </div>
-            <h2 class="mq-empty-title">Квизов пока нет</h2>
-            <p class="mq-empty-sub">Создайте первый квиз и поделитесь им с другими!</p>
-            <a href="{% url 'create_quiz' %}" class="btn btn-primary btn-large">✦ Создать первый квиз</a>
+            {% if search_query %}
+                <h2 class="mq-empty-title">Ничего не найдено</h2>
+                <p class="mq-empty-sub">По запросу «{{ search_query }}» квизы не найдены</p>
+                <a href="{% url 'my_quizzes' %}" class="btn btn-primary btn-large">Сбросить поиск</a>
+            {% else %}
+                <h2 class="mq-empty-title">Квизов пока нет</h2>
+                <p class="mq-empty-sub">Создайте первый квиз и поделитесь им с другими!</p>
+                <a href="{% url 'create_quiz' %}" class="btn btn-primary btn-large">✦ Создать первый квиз</a>
+            {% endif %}
         </div>
 
         {% endif %}
     </div>
 </div>
+
+<script>
+(function () {
+    var input = document.getElementById('myQuizzesSearchInput');
+    var form  = document.getElementById('myQuizzesSearchForm');
+    if (!input || !form) return;
+
+    var debounceTimer = null;
+
+
+})();
+</script>
 
 <style>
 .mq-btn-history{background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);color:var(--primary-light)}

@@ -22,11 +22,9 @@
                            class="search-input"
                            placeholder="🔍 Поиск по названию..."
                            value="{{ search_query }}"
-                           id="searchInput">
+                           id="searchInput"
+                           autocomplete="off">
                     <button type="submit" class="search-btn">Найти</button>
-                    {% if search_query %}
-                        <a href="{% url 'quizzes' %}" class="search-clear">✕</a>
-                    {% endif %}
                 </div>
                 <input type="hidden" name="sort" value="{{ current_sort }}" id="sortInput">
             </form>
@@ -168,4 +166,21 @@
         </div>
     </div>
 </div>
+
+<script>
+(function () {
+    var input = document.getElementById('searchInput');
+    var form  = document.getElementById('searchForm');
+    if (!input || !form) return;
+
+    var debounceTimer = null;
+
+    input.addEventListener('input', function () {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(function () {
+            form.submit();
+        }, 400); // 400 мс после последнего нажатия
+    });
+})();
+</script>
 {% endblock %}

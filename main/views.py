@@ -132,6 +132,7 @@ def logout_view(request):
 def quizzes_view(request):
     """Страница квизов."""
     sort_type = request.GET.get("sort", "new")
+    search_query = request.GET.get("search", "").strip()
 
     current_revision_filter = Q(
         results__completed=True,
@@ -160,19 +161,34 @@ def quizzes_view(request):
                 filter=current_revision_filter,
             ),
         )
-        .order_by("-created_at")
     )
 
+    # Фильтрация по поисковому запросу (нечёткий поиск — содержит подстроку)
+    if search_query:
+        quizzes = quizzes.filter(title__icontains=search_query)
+
+    # Сортировка
+    if sort_type == "popular":
+        quizzes = quizzes.order_by("-passed_count", "-created_at")
+    elif sort_type == "best":
+        quizzes = quizzes.order_by(
+            F("avg_score_percent").desc(nulls_last=True), "-created_at"
+        )
+    else:
+        quizzes = quizzes.order_by("-created_at")
+
     logger.info(
-        "Просмотр квизов: пользователь %s, сортировка=%s, найдено квизов=%d (IP: %s)",
+        "Просмотр квизов: пользователь %s, сортировка=%s, поиск='%s', найдено квизов=%d (IP: %s)",
         request.user.username if request.user.is_authenticated else "Anonymous",
         sort_type,
+        search_query,
         quizzes.count(),
         request.META.get("REMOTE_ADDR"),
     )
 
     context = {
         "current_sort": sort_type,
+        "search_query": search_query,
         "quizzes": quizzes,
     }
     return render(request, "quizzes_view.html", context)
