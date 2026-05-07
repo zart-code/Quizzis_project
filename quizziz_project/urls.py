@@ -62,6 +62,7 @@ from main.views_features.views_quiz import (
     my_quizzes_view,
     toggle_quiz_status_view,
     play_quiz_view,
+    edit_quiz_view
 )
 from main.views_features.views_lobby import (
     create_lobby_view,
