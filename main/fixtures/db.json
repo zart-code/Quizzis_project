@@ -3,14 +3,8 @@
     "model": "auth.user",
     "pk": 1,
     "fields": {
-      "password": "",
-      "last_login": null,
-      "is_superuser": false,
       "username": "user1",
-      "first_name": "",
-      "last_name": "",
       "email": "user1@example.com",
-      "is_staff": false,
       "is_active": true,
       "date_joined": "2023-01-01T00:00:00Z"
     }
@@ -19,14 +13,18 @@
     "model": "auth.user",
     "pk": 2,
     "fields": {
-      "password": "",
-      "last_login": null,
-      "is_superuser": false,
       "username": "user2",
-      "first_name": "",
-      "last_name": "",
       "email": "user2@example.com",
-      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2023-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "auth.user",
+    "pk": 3,
+    "fields": {
+      "username": "admin",
+      "email": "admin@example.com",
       "is_active": true,
       "date_joined": "2023-01-01T00:00:00Z"
     }
@@ -37,7 +35,8 @@
     "fields": {
       "user": 1,
       "role": "student",
-      "is_admin": false
+      "is_admin": false,
+      "is_banned": false
     }
   },
   {
@@ -46,170 +45,18 @@
     "fields": {
       "user": 2,
       "role": "teacher",
-      "is_admin": true
+      "is_admin": false,
+      "is_banned": false
     }
   },
   {
-    "model": "main.category",
-    "pk": 1,
-    "fields": {
-      "name": "Alpha"
-    }
-  },
-  {
-    "model": "main.category",
-    "pk": 2,
-    "fields": {
-      "name": "Math"
-    }
-  },
-  {
-    "model": "main.category",
+    "model": "main.profile",
     "pk": 3,
     "fields": {
-      "name": "Science"
-    }
-  },
-  {
-    "model": "main.category",
-    "pk": 4,
-    "fields": {
-      "name": "Zoo"
-    }
-  },
-  {
-    "model": "main.quiz",
-    "pk": 1,
-    "fields": {
-      "title": "dsadda",
-      "creator": 2,
-      "category": null,
-      "description": "",
-      "additional_info": "",
-      "created_at": "2023-01-01T00:00:00Z",
-      "time_limit": null
-    }
-  },
-  {
-    "model": "main.question",
-    "pk": 1,
-    "fields": {
-      "quiz": 1,
-      "text": "dasda",
-      "question_type": "multiple",
-      "correct_number": null,
-      "time_limit": 30,
-      "order": 1
-    }
-  },
-  {
-    "model": "main.answer",
-    "pk": 1,
-    "fields": {
-      "question": 1,
-      "text": "sdasda",
-      "is_correct": true
-    }
-  },
-  {
-    "model": "main.answer",
-    "pk": 2,
-    "fields": {
-      "question": 1,
-      "text": "zxczc",
-      "is_correct": false
-    }
-  },
-  {
-    "model": "main.gamesession",
-    "pk": 1,
-    "fields": {
-      "quiz": 1,
-      "host": 1,
-      "pin": "933327",
-      "status": "waiting",
-      "is_locked": false,
-      "current_question": 0,
-      "created_at": "2023-01-01T00:00:00Z"
-    }
-  },
-  {
-    "model": "main.gameparticipant",
-    "pk": 1,
-    "fields": {
-      "session": 1,
-      "user": 1,
-      "score": 0,
-      "is_answered": false,
-      "joined_at": "2023-01-01T00:00:00Z"
-    }
-  },
-  {
-    "model": "main.gameparticipant",
-    "pk": 2,
-    "fields": {
-      "session": 1,
-      "user": 2,
-      "score": 0,
-      "is_answered": false,
-      "joined_at": "2023-01-01T00:00:00Z"
-    }
-  },
-  {
-    "model": "main.achievement",
-    "pk": 1,
-    "fields": {
-      "name": "First step",
-      "description": "Complete your first quiz",
-      "icon": "🏆"
-    }
-  },
-  {
-    "model": "main.achievement",
-    "pk": 2,
-    "fields": {
-      "name": "Perfect score",
-      "description": "Get 100% on a quiz",
-      "icon": "⭐"
-    }
-  },
-  {
-    "model": "main.userachievement",
-    "pk": 1,
-    "fields": {
-      "user": 1,
-      "achievement": 1,
-      "unlocked_at": "2023-01-01T00:00:00Z"
-    }
-  },
-  {
-    "model": "main.quizresult",
-    "pk": 1,
-    "fields": {
-      "user": 1,
-      "quiz": 1,
-      "score": 8,
-      "max_score": 10,
-      "score_percent": 80.0,
-      "completed": true,
-      "started_at": "2023-01-01T00:00:00Z",
-      "completed_at": "2023-01-01T00:10:00Z",
-      "order": 1
-    }
-  },
-  {
-    "model": "main.quizresult",
-    "pk": 2,
-    "fields": {
-      "user": 2,
-      "quiz": 1,
-      "score": 10,
-      "max_score": 10,
-      "score_percent": 100.0,
-      "completed": true,
-      "started_at": "2023-01-02T00:00:00Z",
-      "completed_at": "2023-01-02T00:05:00Z",
-      "order": 1
+      "user": 3,
+      "role": "admin",
+      "is_admin": true,
+      "is_banned": false
     }
   }
 ]
