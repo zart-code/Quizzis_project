@@ -3,8 +3,14 @@
     "model": "auth.user",
     "pk": 1,
     "fields": {
+      "password": "",
+      "last_login": null,
+      "is_superuser": false,
       "username": "user1",
+      "first_name": "",
+      "last_name": "",
       "email": "user1@example.com",
+      "is_staff": false,
       "is_active": true,
       "date_joined": "2023-01-01T00:00:00Z"
     }
@@ -13,8 +19,14 @@
     "model": "auth.user",
     "pk": 2,
     "fields": {
+      "password": "",
+      "last_login": null,
+      "is_superuser": false,
       "username": "user2",
+      "first_name": "",
+      "last_name": "",
       "email": "user2@example.com",
+      "is_staff": false,
       "is_active": true,
       "date_joined": "2023-01-01T00:00:00Z"
     }
@@ -23,8 +35,14 @@
     "model": "auth.user",
     "pk": 3,
     "fields": {
-      "username": "admin",
-      "email": "admin@example.com",
+      "password": "",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "banned_user",
+      "first_name": "",
+      "last_name": "",
+      "email": "banned@example.com",
+      "is_staff": false,
       "is_active": true,
       "date_joined": "2023-01-01T00:00:00Z"
     }
@@ -54,9 +72,234 @@
     "pk": 3,
     "fields": {
       "user": 3,
-      "role": "admin",
-      "is_admin": true,
-      "is_banned": false
+      "role": "teacher",
+      "is_admin": false,
+      "is_banned": true
+    }
+  },
+  {
+    "model": "main.category",
+    "pk": 1,
+    "fields": { "name": "Alpha" }
+  },
+  {
+    "model": "main.category",
+    "pk": 2,
+    "fields": { "name": "Math" }
+  },
+  {
+    "model": "main.category",
+    "pk": 3,
+    "fields": { "name": "Science" }
+  },
+  {
+    "model": "main.category",
+    "pk": 4,
+    "fields": { "name": "Zoo" }
+  },
+  {
+    "model": "main.quiz",
+    "pk": 1,
+    "fields": {
+      "title": "dsadda",
+      "creator": 2,
+      "category": null,
+      "description": "",
+      "additional_info": "",
+      "created_at": "2023-01-01T00:00:00Z",
+      "time_limit": null,
+      "status": "active"
+    }
+  },
+  {
+    "model": "main.quiz",
+    "pk": 2,
+    "fields": {
+      "title": "Draft Quiz",
+      "creator": 2,
+      "category": null,
+      "description": "",
+      "additional_info": "",
+      "created_at": "2023-01-02T00:00:00Z",
+      "time_limit": null,
+      "status": "draft"
+    }
+  },
+  {
+    "model": "main.quiz",
+    "pk": 3,
+    "fields": {
+      "title": "Single Choice Quiz",
+      "creator": 2,
+      "category": 2,
+      "description": "Test single choice questions",
+      "additional_info": "",
+      "created_at": "2023-01-03T00:00:00Z",
+      "time_limit": 60,
+      "status": "active"
+    }
+  },
+  {
+    "model": "main.quiz",
+    "pk": 4,
+    "fields": {
+      "title": "Number Input Quiz",
+      "creator": 2,
+      "category": 3,
+      "description": "Quiz with numeric answers",
+      "additional_info": "",
+      "created_at": "2023-01-04T00:00:00Z",
+      "time_limit": 45,
+      "status": "active"
+    }
+  },
+  {
+    "model": "main.quiz",
+    "pk": 5,
+    "fields": {
+      "title": "Text Quiz",
+      "creator": 2,
+      "category": null,
+      "description": "Text input questions",
+      "additional_info": "",
+      "created_at": "2023-01-05T00:00:00Z",
+      "time_limit": null,
+      "status": "active"
+    }
+  },
+  {
+    "model": "main.question",
+    "pk": 1,
+    "fields": {
+      "quiz": 1,
+      "text": "dasda",
+      "question_type": "multiple",
+      "correct_number": null,
+      "time_limit": 30,
+      "order": 1
+    }
+  },
+  {
+    "model": "main.answer",
+    "pk": 1,
+    "fields": { "question": 1, "text": "sdasda", "is_correct": true }
+  },
+  {
+    "model": "main.answer",
+    "pk": 2,
+    "fields": { "question": 1, "text": "zxczc", "is_correct": false }
+  },
+  {
+    "model": "main.gamesession",
+    "pk": 1,
+    "fields": {
+      "quiz": 1,
+      "host": 1,
+      "pin": "933327",
+      "status": "waiting",
+      "is_locked": false,
+      "current_question": 0,
+      "created_at": "2023-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "main.gameparticipant",
+    "pk": 1,
+    "fields": {
+      "session": 1,
+      "user": 1,
+      "score": 0,
+      "is_answered": false,
+      "joined_at": "2023-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "main.gameparticipant",
+    "pk": 2,
+    "fields": {
+      "session": 1,
+      "user": 2,
+      "score": 0,
+      "is_answered": false,
+      "joined_at": "2023-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "main.question",
+    "pk": 2,
+    "fields": {
+      "quiz": 2,
+      "text": "Draft question",
+      "question_type": "single",
+      "correct_number": null,
+      "time_limit": 30,
+      "order": 1
+    }
+  },
+  {
+    "model": "main.answer",
+    "pk": 3,
+    "fields": { "question": 2, "text": "Correct answer", "is_correct": true }
+  },
+  {
+    "model": "main.answer",
+    "pk": 4,
+    "fields": { "question": 2, "text": "Wrong answer", "is_correct": false }
+  },
+  {
+    "model": "main.question",
+    "pk": 3,
+    "fields": {
+      "quiz": 3,
+      "text": "What is 2+2?",
+      "question_type": "single",
+      "correct_number": null,
+      "time_limit": 30,
+      "order": 1
+    }
+  },
+  {
+    "model": "main.answer",
+    "pk": 5,
+    "fields": { "question": 3, "text": "3", "is_correct": false }
+  },
+  {
+    "model": "main.answer",
+    "pk": 6,
+    "fields": { "question": 3, "text": "4", "is_correct": true }
+  },
+  {
+    "model": "main.answer",
+    "pk": 7,
+    "fields": { "question": 3, "text": "5", "is_correct": false }
+  },
+  {
+    "model": "main.answer",
+    "pk": 8,
+    "fields": { "question": 3, "text": "6", "is_correct": false }
+  },
+  {
+    "model": "main.question",
+    "pk": 4,
+    "fields": {
+      "quiz": 4,
+      "text": "Enter PI",
+      "question_type": "number",
+      "correct_number": 3.14159,
+      "time_limit": 20,
+      "order": 1
+    }
+  },
+  {
+    "model": "main.question",
+    "pk": 5,
+    "fields": {
+      "quiz": 5,
+      "text": "What is Django?",
+      "question_type": "text",
+      "correct_number": null,
+      "time_limit": 60,
+      "order": 1
     }
   }
 ]
