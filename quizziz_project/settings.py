@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     "main",
 ]
 
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -36,7 +37,9 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+
 ROOT_URLCONF = "quizziz_project.urls"
+
 
 TEMPLATES = [
     {
@@ -53,6 +56,7 @@ TEMPLATES = [
         },
     },
 ]
+
 
 WSGI_APPLICATION = "quizziz_project.wsgi.application"
 
@@ -90,12 +94,15 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "static"
 
+MEDIA_URL = "media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+
 # Возможно понадобиться когда будем развёртывать приложение
-BASE_DIR = Path(__file__).resolve().parent.parent
 LOG_DIR = BASE_DIR / "logs"
 LOG_DIR.mkdir(exist_ok=True)
 
