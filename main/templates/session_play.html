@@ -71,23 +71,29 @@
 
         <script>
         document.addEventListener('DOMContentLoaded',function(){
+            const totalTime={{ question.time_limit }};
             const timeLimit={{ remaining_seconds }};
             const timerEl=document.getElementById('timer');
             const bar=document.getElementById('timer-bar');
             const form=document.getElementById('answer-form');
             const timedOut=document.getElementById('timed-out-field');
             let remaining=timeLimit;
-            if(bar) bar.style.width='100%';
+            if(bar) bar.style.width=(remaining/totalTime*100)+'%';
 
             const interval=setInterval(function(){
                 remaining--;
                 if(timerEl) timerEl.textContent=remaining;
-                if(bar) bar.style.width=(remaining/timeLimit*100)+'%';
+                if(bar) bar.style.width=(remaining/totalTime*100)+'%';
                 if(remaining<=5 && bar) bar.style.background='linear-gradient(90deg,#EF4444,#F59E0B)';
                 if(remaining<=0){clearInterval(interval);timedOut.value='1';form.submit();}
             },1000);
 
             form.addEventListener('submit',function(){clearInterval(interval);});
+
+            // Handle back/forward cache restoration (bfcache)
+            window.addEventListener('pageshow',function(e){
+                if(e.persisted){window.location.reload();}
+            });
         });
         </script>
         {% endif %}
