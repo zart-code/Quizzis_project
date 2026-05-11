@@ -2063,3 +2063,114 @@ body {
     }
 }
 
+
+
+/* ===== Виджет входа по коду ===== */
+.join-code-block {
+    margin-top: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    animation: fadeInUp 0.6s ease both;
+    animation-delay: 0.2s;
+}
+
+.join-code-label {
+    color: #fff;
+    font-size: 1.45rem;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: 0.01em;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+
+.join-code-form {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: rgba(255, 255, 255, 0.08);
+    border: 2px solid rgba(255, 255, 255, 0.18);
+    border-radius: 60px;
+    padding: 0.5rem 0.5rem 0.5rem 1.6rem;
+    backdrop-filter: blur(10px);
+    transition: border-color 0.25s, box-shadow 0.25s;
+}
+
+.join-code-form:focus-within {
+    border-color: var(--primary, #6C63FF);
+    box-shadow: 0 0 0 4px rgba(108, 99, 255, 0.22);
+}
+
+.join-code-input-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.join-code-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #fff;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    width: 210px;
+    line-height: 1.2;
+}
+
+.join-code-input::placeholder {
+    color: rgba(255, 255, 255, 0.28);
+    font-weight: 400;
+    letter-spacing: 0.18em;
+}
+
+.join-code-hint {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 0.78rem;
+    letter-spacing: 0.03em;
+    line-height: 1;
+    padding-left: 2px;
+}
+
+.join-code-btn {
+    border-radius: 50px !important;
+    padding: 0.75rem 1.8rem !important;
+    font-size: 1.05rem !important;
+    font-weight: 600 !important;
+    white-space: nowrap;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 560px) {
+    .join-code-label {
+        font-size: 1.15rem;
+    }
+    .join-code-form {
+        flex-direction: column;
+        border-radius: 20px;
+        padding: 1rem 1.2rem;
+        width: 100%;
+        max-width: 320px;
+    }
+    .join-code-input-wrap {
+        width: 100%;
+    }
+    .join-code-input {
+        width: 100%;
+        text-align: center;
+        font-size: 1.3rem;
+    }
+    .join-code-hint {
+        text-align: center;
+    }
+    .join-code-btn {
+        width: 100%;
+    }
+}

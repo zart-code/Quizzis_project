@@ -212,21 +212,7 @@ function setSort(sortType) {
     window.location.href = currentUrl.toString();
 }
 
-// Быстрый поиск при нажатии Enter
-document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) {
-        searchInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                const form = document.getElementById('searchForm');
-                if (form) {
-                    form.submit();
-                }
-            }
-        });
-    }
-});
+// Enter на странице квизов обрабатывается в quizzes_view.html через AJAX
 
 // Автоматическая отправка формы при изменении поиска (опционально)
 // Раскомментируйте если хотите live search
@@ -687,53 +673,8 @@ function fetchPlayers(){
     });
 }
 
-document.addEventListener('DOMContentLoaded', function () {
-    const toggles = document.querySelectorAll('.js-info-toggle');
-    const backdrop = document.getElementById('quizInfoBackdrop');
-    const modalBody = document.getElementById('quizInfoModalBody');
-    const closeBtn = document.getElementById('quizInfoCloseBtn');
-
-    if (!toggles.length || !backdrop || !modalBody) {
-        return;
-    }
-
-    function closeModal() {
-        backdrop.classList.remove('is-open');
-        document.body.style.overflow = '';
-    }
-
-    toggles.forEach(function (toggle) {
-        toggle.addEventListener('click', function (event) {
-            event.preventDefault();
-            const popupId = toggle.dataset.quizId;
-            const template = document.getElementById(popupId);
-
-            if (!template) {
-                return;
-            }
-
-            modalBody.innerHTML = template.innerHTML;
-            backdrop.classList.add('is-open');
-            document.body.style.overflow = 'hidden';
-        });
-    });
-
-    if (closeBtn) {
-        closeBtn.addEventListener('click', closeModal);
-    }
-
-    document.addEventListener('click', function (event) {
-        if (event.target === backdrop) {
-            closeModal();
-        }
-    });
-
-    document.addEventListener('keydown', function (event) {
-        if (event.key === 'Escape') {
-            closeModal();
-        }
-    });
-});
+// Инициализация модальных окон карточек квизов перенесена в quizzes_view.html
+// чтобы корректно работать после AJAX-обновления списка
 
 
 // Экспортируем функции для использования в других файлах

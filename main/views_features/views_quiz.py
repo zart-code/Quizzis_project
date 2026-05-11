@@ -94,13 +94,20 @@ def my_quizzes_view(request):
         )
         return redirect("main_page")
 
+    search_query = request.GET.get("search", "").strip()
+
     quizzes = Quiz.objects.filter(creator=request.user).order_by("-created_at")
+
+    if search_query:
+        quizzes = quizzes.filter(title__icontains=search_query)
+
     total_questions = 0
     for quiz in quizzes:
         total_questions += quiz.total_questions()
     context = {
         "quizzes": quizzes,
         "total_questions": total_questions,
+        "search_query": search_query,
     }
     return render(request, "my_quizzes.html", context)
 
