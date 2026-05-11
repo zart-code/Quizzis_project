@@ -44,7 +44,14 @@
 from django.contrib import admin
 from django.urls import path
 
-from main.views import main_page, login_page, register_page, logout_view, quizzes_view, join_by_code
+from main.views import (
+    main_page,
+    login_page,
+    register_page,
+    logout_view,
+    quizzes_view,
+    join_by_code,
+)
 from main.views_features.views_profile import (
     profile_view,
     profile_history_view,

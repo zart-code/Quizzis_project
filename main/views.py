@@ -207,7 +207,7 @@ def join_by_code(request):
             else:
                 messages.error(
                     request,
-                    f"Лобби с кодом «{pin}» не найдено. Проверьте код и попробуйте снова."
+                    f"Лобби с кодом «{pin}» не найдено. Проверьте код и попробуйте снова.",
                 )
     return redirect("main_page")
 

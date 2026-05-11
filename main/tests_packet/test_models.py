@@ -1,27 +1,42 @@
 from django.test import TestCase
 from django.contrib.auth.models import User
 from main.models import (
-    Profile, Quiz, Question, Answer, GameSession, GameParticipant,
-    Category, QuizRevision, RevisionQuestion, RevisionAnswer,
-    QuizResult, Achievement, UserAchievement, generate_pin
+    Profile,
+    Quiz,
+    Question,
+    Answer,
+    GameSession,
+    GameParticipant,
+    Category,
+    QuizRevision,
+    RevisionQuestion,
+    RevisionAnswer,
+    QuizResult,
+    Achievement,
+    UserAchievement,
+    generate_pin,
 )
 
 
 class TestProfile(TestCase):
-    fixtures = ['db.json']
+    fixtures = ["db.json"]
 
     def test_profile_creation_signal_for_new_user(self):
-        user = User.objects.create(username='newuser')
-        self.assertTrue(hasattr(user, 'profile'))
+        user = User.objects.create(username="newuser")
+        self.assertTrue(hasattr(user, "profile"))
         self.assertEqual(user.profile.role, Profile.STUDENT)
 
     def test_admin_profile_auto_created_as_admin(self):
-        admin = User.objects.create(username='admin')
+        admin = User.objects.create(username="admin")
         self.assertEqual(admin.profile.role, Profile.ADMIN)
         self.assertTrue(admin.profile.is_admin)
 
     def test_save_signal_corrects_role_for_admin_username(self):
-        admin_user = User.objects.get(username='admin') if User.objects.filter(username='admin').exists() else User.objects.create(username='admin')
+        admin_user = (
+            User.objects.get(username="admin")
+            if User.objects.filter(username="admin").exists()
+            else User.objects.create(username="admin")
+        )
         admin_user.profile.role = Profile.STUDENT
         admin_user.profile.is_admin = False
         admin_user.profile.save()
@@ -32,7 +47,7 @@ class TestProfile(TestCase):
 
 
 class TestQuiz(TestCase):
-    fixtures = ['db.json']
+    fixtures = ["db.json"]
 
     def test_total_questions_no_revision(self):
         quiz = Quiz.objects.get(pk=1)
@@ -40,8 +55,9 @@ class TestQuiz(TestCase):
 
     def test_total_questions_with_revision(self):
         quiz = Quiz.objects.get(pk=1)
-        rev = QuizRevision.objects.create(quiz=quiz, version=1, title='v1',
-                                           question_count=3, max_score=12)
+        rev = QuizRevision.objects.create(
+            quiz=quiz, version=1, title="v1", question_count=3, max_score=12
+        )
         quiz.current_revision = rev
         quiz.save()
         self.assertEqual(quiz.total_questions(), 3)
@@ -53,7 +69,9 @@ class TestQuiz(TestCase):
 
     def test_total_max_score_with_revision(self):
         quiz = Quiz.objects.get(pk=1)
-        rev = QuizRevision.objects.create(quiz=quiz, version=1, title='v1', max_score=20)
+        rev = QuizRevision.objects.create(
+            quiz=quiz, version=1, title="v1", max_score=20
+        )
         quiz.current_revision = rev
         quiz.save()
         self.assertEqual(quiz.total_max_score(), 20)
@@ -64,7 +82,7 @@ class TestQuiz(TestCase):
 
 
 class TestGameSession(TestCase):
-    fixtures = ['db.json']
+    fixtures = ["db.json"]
 
     def test_pin_generated_on_creation(self):
         session = GameSession.objects.create(quiz_id=1, host_id=1)
@@ -82,7 +100,7 @@ class TestGameSession(TestCase):
 
 
 class TestGameParticipant(TestCase):
-    fixtures = ['db.json']
+    fixtures = ["db.json"]
 
     def test_default_values(self):
         session = GameSession.objects.get(pk=1)
@@ -93,7 +111,7 @@ class TestGameParticipant(TestCase):
 
 
 class TestAnswer(TestCase):
-    fixtures = ['db.json']
+    fixtures = ["db.json"]
 
     def test_answer_correctness_flag(self):
         correct = Answer.objects.get(pk=1)
@@ -103,18 +121,17 @@ class TestAnswer(TestCase):
 
 
 class TestQuizRevision(TestCase):
-    fixtures = ['db.json']
-
+    fixtures = ["db.json"]
 
     def test_creation_and_ordering(self):
         quiz = Quiz.objects.get(pk=1)
-        rev1 = QuizRevision.objects.create(quiz=quiz, version=1, title='v1')
-        rev2 = QuizRevision.objects.create(quiz=quiz, version=2, title='v2')
-        revisions = quiz.revisions.order_by('-version')
+        rev1 = QuizRevision.objects.create(quiz=quiz, version=1, title="v1")
+        rev2 = QuizRevision.objects.create(quiz=quiz, version=2, title="v2")
+        revisions = quiz.revisions.order_by("-version")
         self.assertEqual(list(revisions), [rev2, rev1])
 
 
 class TestQuizResult(TestCase):
     def test_str_method_returns_score(self):
         result = QuizResult(user_id=1, quiz_id=1, score=10)
-        self.assertEqual(str(result), '10')
+        self.assertEqual(str(result), "10")
