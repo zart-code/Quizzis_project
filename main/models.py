@@ -8,6 +8,7 @@ import random
 import string
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -210,6 +211,106 @@ class QuizRevision(models.Model):
 
     def __str__(self):
         return f"{self.quiz.title} v{self.version}"
+
+
+class QuizReport(models.Model):
+    """Жалоба пользователя на конкретную версию квиза."""
+
+    WRONG_ANSWERS = "wrong_answers"
+    INAPPROPRIATE = "inappropriate"
+    OFFTOPIC = "offtopic"
+    TECHNICAL_PROBLEM = "technical_problem"
+    OTHER = "other"
+    REASON_CHOICES = [
+        (WRONG_ANSWERS, "Ошибка в вопросе или ответе"),
+        (INAPPROPRIATE, "Некорректный контент"),
+        (OFFTOPIC, "Не относится к теме"),
+        (TECHNICAL_PROBLEM, "Техническая проблема"),
+        (OTHER, "Другое"),
+    ]
+
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+    STATUS_CHOICES = [
+        (PENDING, "Новая"),
+        (ACCEPTED, "Подтверждена"),
+        (REJECTED, "Отклонена"),
+    ]
+
+    quiz = models.ForeignKey(
+        Quiz,
+        on_delete=models.CASCADE,
+        related_name="reports",
+        verbose_name="Квиз",
+    )
+    revision = models.ForeignKey(
+        QuizRevision,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reports",
+        verbose_name="Версия квиза",
+    )
+    reporter = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="quiz_reports",
+        verbose_name="Автор жалобы",
+    )
+    reason = models.CharField(
+        max_length=32,
+        choices=REASON_CHOICES,
+        verbose_name="Причина",
+    )
+    comment = models.TextField(blank=True, verbose_name="Комментарий")
+    status = models.CharField(
+        max_length=16,
+        choices=STATUS_CHOICES,
+        default=PENDING,
+        verbose_name="Статус",
+    )
+    admin_comment = models.TextField(
+        blank=True,
+        verbose_name="Комментарий администратора",
+    )
+    reviewed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reviewed_quiz_reports",
+        verbose_name="Проверил",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        """Метаданные жалоб."""
+
+        ordering = ["-created_at"]
+        verbose_name = "Жалоба на квиз"
+        verbose_name_plural = "Жалобы на квизы"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["quiz", "reporter"],
+                condition=models.Q(status="pending"),
+                name="unique_pending_quiz_report_per_user",
+            ),
+        ]
+
+    def clean(self):
+        """Проверяет обязательный комментарий для причины 'Другое'."""
+        super().clean()
+        if self.reason == self.OTHER and not self.comment.strip():
+            raise ValidationError(
+                {"comment": "Для причины «Другое» нужно описать проблему."}
+            )
+
+    def __str__(self):
+        return f"Жалоба на {self.quiz} от {self.reporter}"
 
 
 class Question(models.Model):
