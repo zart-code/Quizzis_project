@@ -1,10 +1,13 @@
 """Views для панели администратора"""
 
+# pylint: disable=no-member,unused-argument
+
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
+from django.db import transaction
 from django.db.models import Count
 from main.models import Quiz, Profile
 
@@ -77,7 +80,11 @@ def admin_delete_quiz_view(request, quiz_id):
     if request.method == "POST":
         quiz = get_object_or_404(Quiz, id=quiz_id)
         title = quiz.title
-        quiz.delete()
+        with transaction.atomic():
+            quiz.sessions.all().delete()
+            quiz.results.all().delete()
+            quiz.delete()
+
         messages.success(request, f"Квиз «{title}» удалён.")
     return redirect("admin_panel")
 
@@ -90,9 +97,15 @@ def admin_unpublish_quiz_view(request, quiz_id):
         if quiz.status != Quiz.DRAFT:
             quiz.status = Quiz.DRAFT
             quiz.save(update_fields=["status"])
-            messages.success(request, f"Квиз «{quiz.title}» возвращён в черновик.")
+            messages.success(
+                request,
+                f"Квиз «{quiz.title}» возвращён в черновик.",
+            )
         else:
-            messages.info(request, f"Квиз «{quiz.title}» уже находится в черновиках.")
+            messages.info(
+                request,
+                f"Квиз «{quiz.title}» уже находится в черновиках.",
+            )
     return redirect("admin_panel")
 
 
@@ -125,7 +138,10 @@ def api_admin_users_view(request):
             "profile__is_banned",
         )
     )
-    return JsonResponse({"users": list(users)}, json_dumps_params={"default": str})
+    return JsonResponse(
+        {"users": list(users)},
+        json_dumps_params={"default": str},
+    )
 
 
 @admin_required
@@ -145,4 +161,7 @@ def api_admin_quizzes_view(request):
             "creator__username",
         )
     )
-    return JsonResponse({"quizzes": list(quizzes)}, json_dumps_params={"default": str})
+    return JsonResponse(
+        {"quizzes": list(quizzes)},
+        json_dumps_params={"default": str},
+    )
