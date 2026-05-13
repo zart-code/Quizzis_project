@@ -5,7 +5,8 @@ import re
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from main.models import Quiz, Profile, QuizResult
+from main.forms_features.forms_reports import QuizReportForm
+from main.models import Quiz, Profile, QuizReport, QuizResult
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from main.services.quiz_revisions import (
@@ -96,14 +97,33 @@ def my_quizzes_view(request):
 
     search_query = request.GET.get("search", "").strip()
 
-    quizzes = Quiz.objects.filter(creator=request.user).order_by("-created_at")
+    quizzes = Quiz.objects.filter(creator=request.user).select_related(
+        "current_revision"
+    )
+    quizzes = quizzes.order_by("-created_at")
 
     if search_query:
         quizzes = quizzes.filter(title__icontains=search_query)
 
+    quizzes = list(quizzes)
     total_questions = 0
     for quiz in quizzes:
         total_questions += quiz.total_questions()
+        report_filter = {
+            "quiz": quiz,
+            "status": QuizReport.ACCEPTED,
+        }
+        if quiz.current_revision_id:
+            report_filter["revision"] = quiz.current_revision
+        else:
+            report_filter["revision__isnull"] = True
+
+        quiz.accepted_reports = list(
+            QuizReport.objects.filter(**report_filter)
+            .select_related("reporter", "reviewed_by")
+            .order_by("-reviewed_at", "-created_at")
+        )
+
     context = {
         "quizzes": quizzes,
         "total_questions": total_questions,
@@ -124,6 +144,64 @@ def toggle_quiz_status_view(request, quiz_id):
 
     quiz.save()
     return redirect("my_quizzes")
+
+
+@login_required
+def report_quiz_view(request, quiz_id):
+    """Создание жалобы на квиз."""
+    quiz = get_object_or_404(Quiz, id=quiz_id)
+    next_url = request.POST.get("next") or request.GET.get("next") or ""
+
+    if quiz.creator == request.user:
+        messages.error(request, "Нельзя пожаловаться на собственный квиз.")
+        return redirect("my_quizzes")
+
+    pending_report_exists = QuizReport.objects.filter(
+        quiz=quiz,
+        reporter=request.user,
+        status=QuizReport.PENDING,
+    ).exists()
+
+    if request.method == "POST":
+        form = QuizReportForm(request.POST)
+
+        if pending_report_exists:
+            messages.info(
+                request,
+                "Ваша жалоба на этот квиз уже ожидает проверки.",
+            )
+            return redirect("quizzes_view")
+
+        if form.is_valid():
+            report = form.save(commit=False)
+            report.quiz = quiz
+            report.revision = quiz.current_revision
+            report.reporter = request.user
+            report.save()
+            messages.success(request, "Жалоба отправлена администратору.")
+
+            if next_url.startswith("/"):
+                return redirect(next_url)
+            return redirect("quizzes_view")
+    else:
+        form = QuizReportForm()
+
+        if pending_report_exists:
+            messages.info(
+                request,
+                "Ваша жалоба на этот квиз уже ожидает проверки.",
+            )
+
+    return render(
+        request,
+        "report_quiz.html",
+        {
+            "form": form,
+            "quiz": quiz,
+            "next_url": next_url,
+            "pending_report_exists": pending_report_exists,
+        },
+    )
 
 
 @login_required

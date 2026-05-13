@@ -75,6 +75,28 @@
                         <p class="mq-card-desc">{{ quiz.description|truncatechars:80 }}</p>
                         {% endif %}
 
+                        {% if quiz.accepted_reports %}
+                        <div class="mq-report-alert">
+                            <div class="mq-report-title">
+                                ⚠ Нарушение подтверждено администратором
+                            </div>
+                            {% for report in quiz.accepted_reports %}
+                            <div class="mq-report-item">
+                                <div><strong>Причина:</strong> {{ report.get_reason_display }}</div>
+                                {% if report.comment %}
+                                <div><strong>Жалоба:</strong> {{ report.comment }}</div>
+                                {% endif %}
+                                {% if report.admin_comment %}
+                                <div><strong>Комментарий администратора:</strong> {{ report.admin_comment }}</div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                            <div class="mq-report-footnote">
+                                Исправьте квиз и сохраните новую версию.
+                            </div>
+                        </div>
+                        {% endif %}
+
                         <div class="mq-card-meta">
                             <span class="mq-meta-item">
                                 <span class="mq-meta-icon">❓</span>
@@ -233,6 +255,31 @@
         background: rgba(56, 189, 248, 0.2);
         border-color: rgba(56, 189, 248, 0.55);
         transform: translateY(-1px);
+    }
+    .mq-report-alert {
+        background: rgba(245, 158, 11, 0.1);
+        border: 1px solid rgba(245, 158, 11, 0.28);
+        border-radius: 12px;
+        color: var(--text-primary);
+        font-size: 0.84rem;
+        line-height: 1.45;
+        margin: 0.8rem 0;
+        padding: 0.8rem;
+    }
+    .mq-report-title {
+        color: #FCD34D;
+        font-weight: 700;
+        margin-bottom: 0.45rem;
+    }
+    .mq-report-item + .mq-report-item {
+        border-top: 1px solid rgba(245, 158, 11, 0.18);
+        margin-top: 0.55rem;
+        padding-top: 0.55rem;
+    }
+    .mq-report-footnote {
+        color: var(--text-muted);
+        font-size: 0.78rem;
+        margin-top: 0.55rem;
     }
 </style>
 {% endblock %}

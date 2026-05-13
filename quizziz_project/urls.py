@@ -63,6 +63,7 @@ from main.views_features.views_quiz import (
     toggle_quiz_status_view,
     play_quiz_view,
     edit_quiz_view,
+    report_quiz_view,
 )
 from main.views_features.views_lobby import (
     create_lobby_view,
@@ -82,6 +83,8 @@ from main.views_features.views_admin import (
     admin_ban_user_view,
     admin_unpublish_quiz_view,
     admin_delete_quiz_view,
+    admin_accept_report_view,
+    admin_reject_report_view,
     api_admin_stats_view,
     api_admin_users_view,
     api_admin_quizzes_view,
@@ -105,6 +108,7 @@ urlpatterns = [
         name="toggle_quiz_status",
     ),
     path("quiz/<int:quiz_id>/play/", play_quiz_view, name="play_quiz"),
+    path("quiz/<int:quiz_id>/report/", report_quiz_view, name="report_quiz"),
     path("quiz/<int:quiz_id>/lobby/create/", create_lobby_view, name="create_lobby"),
     path("lobby/<str:pin>/", lobby_view, name="lobby"),
     path("lobby/<str:pin>/lock/", toggle_lock_view, name="toggle_lock"),
@@ -137,6 +141,16 @@ urlpatterns = [
         "admin-panel/delete-quiz/<int:quiz_id>/",
         admin_delete_quiz_view,
         name="admin_delete_quiz",
+    ),
+    path(
+        "admin-panel/report/<int:report_id>/accept/",
+        admin_accept_report_view,
+        name="admin_accept_report",
+    ),
+    path(
+        "admin-panel/report/<int:report_id>/reject/",
+        admin_reject_report_view,
+        name="admin_reject_report",
     ),
     path("admin-panel/user/<int:user_id>/", profile_view, name="admin_user_profile"),
     path(

@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Жалоба на квиз — Quizziz{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="report-wrapper">
+        <div class="report-card">
+            <div class="report-kicker">Жалоба на квиз</div>
+            <h1 class="report-title">{{ quiz.title }}</h1>
+            <p class="report-subtitle">
+                Администратор проверит жалобу. Если нарушение подтвердится,
+                квиз будет возвращён автору на исправление.
+            </p>
+
+            <form method="post" class="report-form">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ next_url }}">
+
+                <div class="form-group">
+                    <label for="{{ form.reason.id_for_label }}">Причина</label>
+                    {{ form.reason }}
+                    {% if form.reason.errors %}
+                        <div class="form-error">{{ form.reason.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.comment.id_for_label }}">Комментарий</label>
+                    {{ form.comment }}
+                    {% if form.comment.errors %}
+                        <div class="form-error">{{ form.comment.errors.0 }}</div>
+                    {% endif %}
+                    <p class="report-hint">
+                        Комментарий обязателен только для причины «Другое».
+                    </p>
+                </div>
+
+                <div class="report-actions">
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                        {% if pending_report_exists %}disabled{% endif %}
+                    >
+                        Отправить жалобу
+                    </button>
+                    <a href="{% url 'quizzes_view' %}" class="btn btn-secondary">
+                        Отмена
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.report-wrapper {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 2.5rem 0 4rem;
+}
+.report-card {
+    background: rgba(26, 26, 46, .82);
+    border: 1px solid rgba(139, 92, 246, .22);
+    border-radius: 18px;
+    padding: 2rem;
+}
+.report-kicker {
+    color: var(--primary-light);
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    margin-bottom: .45rem;
+}
+.report-title {
+    color: var(--text-primary);
+    font-size: 1.8rem;
+    line-height: 1.2;
+    margin-bottom: .7rem;
+}
+.report-subtitle,
+.report-hint {
+    color: var(--text-muted);
+    font-size: .9rem;
+}
+.report-form {
+    margin-top: 1.5rem;
+}
+.form-group {
+    margin-bottom: 1.15rem;
+}
+.form-group label {
+    display: block;
+    color: var(--text-primary);
+    font-weight: 600;
+    margin-bottom: .45rem;
+}
+.form-error {
+    color: #FCA5A5;
+    font-size: .85rem;
+    margin-top: .4rem;
+}
+.report-actions {
+    display: flex;
+    gap: .75rem;
+    flex-wrap: wrap;
+    margin-top: 1.4rem;
+}
+textarea.form-control {
+    resize: vertical;
+}
+</style>
+{% endblock %}
