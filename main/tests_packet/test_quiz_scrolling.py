@@ -14,9 +14,12 @@ from main.services.quiz_scoring import (
 
 
 class ScoringStrategiesTest(TestCase):
+    """Набор тестов для стратегий подсчёта баллов и фабрики."""
+
     fixtures = ["db.json"]
 
     def setUp(self):
+        """Создание тестовых вопросов и вариантов ответов для всех типов."""
         self.q_single = Question.objects.create(
             quiz_id=1, text="Single?", question_type="single", coefficient=1, order=1
         )
@@ -57,6 +60,7 @@ class ScoringStrategiesTest(TestCase):
         )
 
     def test_single_choice_correct(self):
+        """Проверка: выбор правильного ответа в single-вопросе даёт максимальные баллы."""
         strategy = SingleChoiceScoringStrategy()
         result = strategy.score(self.q_single, str(self.ans_correct.id))
         self.assertTrue(result.is_correct)
@@ -64,12 +68,14 @@ class ScoringStrategiesTest(TestCase):
         self.assertEqual(result.max_points, 4)
 
     def test_single_choice_wrong(self):
+        """Проверка: выбор неправильного ответа в single-вопросе даёт 0 баллов."""
         strategy = SingleChoiceScoringStrategy()
         result = strategy.score(self.q_single, str(self.ans_wrong.id))
         self.assertFalse(result.is_correct)
         self.assertEqual(result.points, 0)
 
     def test_multiple_choice_all_correct(self):
+        """Проверка: выбор всех правильных вариантов в multiple-вопросе даёт полный балл."""
         strategy = MultipleChoiceScoringStrategy()
         chosen = {str(self.m1.id), str(self.m2.id)}
         result = strategy.score(self.q_multiple, chosen)
@@ -77,6 +83,7 @@ class ScoringStrategiesTest(TestCase):
         self.assertEqual(result.points, 8)  # 4 * coefficient
 
     def test_multiple_choice_one_mistake(self):
+        """Проверка: выбор одного правильного и одного неправильного ответа даёт частичный балл (2)."""
         strategy = MultipleChoiceScoringStrategy()
         chosen = {str(self.m1.id), str(self.m3.id)}
         result = strategy.score(self.q_multiple, chosen)
@@ -84,6 +91,7 @@ class ScoringStrategiesTest(TestCase):
         self.assertEqual(result.points, 2)  # реальное значение из реализации
 
     def test_multiple_choice_two_mistakes(self):
+        """Проверка: выбор только неправильного ответа даёт 0 баллов."""
         strategy = MultipleChoiceScoringStrategy()
         chosen = {str(self.m3.id)}
         result = strategy.score(self.q_multiple, chosen)
@@ -91,18 +99,21 @@ class ScoringStrategiesTest(TestCase):
         self.assertEqual(result.points, 0)  # реальное значение
 
     def test_number_correct(self):
+        """Проверка: точное совпадение с правильным числом даёт максимальные баллы."""
         strategy = NumberScoringStrategy()
         result = strategy.score(self.q_number, "42.0")
         self.assertTrue(result.is_correct)
         self.assertEqual(result.points, 4)
 
     def test_number_wrong(self):
+        """Проверка: неверное число даёт 0 баллов."""
         strategy = NumberScoringStrategy()
         result = strategy.score(self.q_number, "43")
         self.assertFalse(result.is_correct)
         self.assertEqual(result.points, 0)
 
     def test_text_always_zero(self):
+        """Проверка: текстовые вопросы всегда дают 0 баллов (is_correct = None)."""
         strategy = TextScoringStrategy()
         result = strategy.score(self.q_text, "anything")
         self.assertIsNone(result.is_correct)
@@ -110,6 +121,7 @@ class ScoringStrategiesTest(TestCase):
         self.assertEqual(result.max_points, 0)
 
     def test_factory_get_strategy(self):
+        """Проверка: фабрика возвращает правильную стратегию для каждого типа вопроса."""
         self.assertIsInstance(
             QuestionScoringFactory.get_strategy("single"), SingleChoiceScoringStrategy
         )
@@ -128,6 +140,7 @@ class ScoringStrategiesTest(TestCase):
         )
 
     def test_build_submission_single(self):
+        """Проверка: для single вопроса из POST-данных извлекается одно значение."""
         from django.http import QueryDict
 
         q = Question(question_type="single")
@@ -135,6 +148,7 @@ class ScoringStrategiesTest(TestCase):
         self.assertEqual(build_submission_value(request, q), "123")
 
     def test_build_submission_multiple(self):
+        """Проверка: для multiple вопроса из POST-данных формируется множество ответов."""
         from django.http import QueryDict
 
         q = Question(question_type="multiple")
@@ -142,6 +156,7 @@ class ScoringStrategiesTest(TestCase):
         self.assertEqual(build_submission_value(request, q), {"1", "2"})
 
     def test_score_question_timeout(self):
+        """Проверка: при тайм-ауте ответ считается неверным с 0 баллов."""
         from django.http import QueryDict
 
         request = type("Req", (), {"POST": QueryDict("")})()

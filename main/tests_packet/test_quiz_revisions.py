@@ -1,3 +1,7 @@
+"""
+Тесты для сервиса управления ревизиями квизов (quiz_revisions.py).
+"""
+
 from django.test import TestCase
 from django.http import QueryDict
 from main.models import Quiz, QuizRevision
@@ -18,6 +22,12 @@ class MockRequest:
     """Заглушка для request, с атрибутом .POST как QueryDict."""
 
     def __init__(self, post_dict=None):
+        """
+        Инициализация заглушки запроса.
+
+        Args:
+            post_dict: Словарь с POST-данными. Если None, создаётся пустой QueryDict.
+        """
         if post_dict is None:
             self.POST = QueryDict(mutable=True)
         else:
@@ -32,25 +42,32 @@ class MockRequest:
 
 
 class TestRevisions(TestCase):
+    """Набор тестов для функций управления ревизиями квизов."""
+
     fixtures = ["db.json"]
 
     def setUp(self):
+        """Подготовка тестового окружения: получаем квиз из фикстур."""
         self.quiz = Quiz.objects.get(pk=1)
 
     def test_get_current_revision_none(self):
+        """Проверка: у квиза без текущей ревизии возвращается None."""
         self.assertIsNone(get_current_revision(self.quiz))
 
     def test_get_current_revision_exists(self):
+        """Проверка: при наличии текущей ревизии возвращается она."""
         rev = QuizRevision.objects.create(quiz=self.quiz, version=1, title="v1")
         self.quiz.current_revision = rev
         self.quiz.save()
         self.assertEqual(get_current_revision(self.quiz), rev)
 
     def test_get_quiz_questions_no_revision(self):
+        """Если у квиза нет текущей ревизии, вопросы берутся напрямую из модели Question."""
         questions = get_quiz_questions(self.quiz)
         self.assertEqual(len(questions), 1)
 
     def test_get_quiz_questions_with_revision(self):
+        """Если есть текущая ревизия, вопросы извлекаются из неё (RevisionQuestion)."""
         question_payload = {
             "text": "dasda",
             "question_type": "multiple",
@@ -71,6 +88,7 @@ class TestRevisions(TestCase):
         self.assertEqual(questions[0].text, "dasda")
 
     def test_build_revision_payload(self):
+        """Преобразование ревизии в словарь-payload для передачи в формы/API."""
         question_payload = {
             "text": "Revision question?",
             "question_type": "single",
@@ -92,6 +110,7 @@ class TestRevisions(TestCase):
         self.assertTrue(q["answers"][0]["is_correct"])
 
     def test_collect_question_payloads_single(self):
+        """Сбор payload'ов вопросов из POST-данных для single-вопроса."""
         post_data = {
             "q0_text": "Q?",
             "q0_type": "single",
@@ -108,6 +127,7 @@ class TestRevisions(TestCase):
         self.assertEqual(payloads[0]["answers"][0]["is_correct"], False)
 
     def test_collect_question_payloads_multiple_correct(self):
+        """Сбор payload'ов вопросов из POST-данных для multiple-вопроса с несколькими правильными ответами."""
         post_data = {
             "q0_text": "Q?",
             "q0_type": "multiple",
@@ -125,6 +145,7 @@ class TestRevisions(TestCase):
         self.assertFalse(payloads[0]["answers"][1]["is_correct"])
 
     def test_calculate_revision_totals(self):
+        """Расчёт общего количества вопросов и максимального балла для ревизии."""
         payloads = [
             {"question_type": "single", "coefficient": 1},
             {"question_type": "text", "coefficient": 1},
@@ -134,6 +155,7 @@ class TestRevisions(TestCase):
         self.assertEqual(totals["max_score"], 4)  # text ignored
 
     def test_create_revision_from_payloads(self):
+        """Создание новой ревизии из списка payload'ов вопросов."""
         payloads = [
             {
                 "text": "Q",
@@ -156,6 +178,7 @@ class TestRevisions(TestCase):
         self.assertEqual(rev.title, "New Rev")
 
     def test_build_quiz_form_payload(self):
+        """Построение полного payload'а для формы создания/редактирования квиза."""
         question_payloads = [
             {
                 "text": "Q",
@@ -171,6 +194,7 @@ class TestRevisions(TestCase):
         self.assertEqual(len(payload["questions"]), 1)
 
     def test_build_quiz_payload_for_edit_no_revision(self):
+        """Построение payload'а для редактирования квиза, у которого нет ревизии."""
         payload = build_quiz_payload_for_edit(self.quiz)
         self.assertEqual(payload["title"], "dsadda")
         self.assertEqual(len(payload["questions"]), 1)
