@@ -1,22 +1,17 @@
 """Тесты для моделей приложения main."""
 
+# pylint: disable=no-member
+
 from django.test import TestCase
 from django.contrib.auth.models import User
 from main.models import (
     Profile,
     Quiz,
-    Question,
     Answer,
     GameSession,
     GameParticipant,
-    Category,
     QuizRevision,
-    RevisionQuestion,
-    RevisionAnswer,
     QuizResult,
-    Achievement,
-    UserAchievement,
-    generate_pin,
 )
 
 

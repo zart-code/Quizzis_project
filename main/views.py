@@ -110,7 +110,9 @@ class Quiz(models.Model):
         verbose_name="Категория",
     )
     description = models.TextField(blank=True, verbose_name="Описание")
-    additional_info = models.TextField(blank=True, verbose_name="Дополнительная информация")
+    additional_info = models.TextField(
+        blank=True, verbose_name="Дополнительная информация"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     time_limit = models.IntegerField(
         blank=True,
@@ -168,7 +170,9 @@ class QuizRevision(models.Model):
     )
     version = models.PositiveIntegerField(verbose_name="Версия")
     title = models.CharField(max_length=200, verbose_name="Название ревизии")
-    question_count = models.PositiveIntegerField(default=0, verbose_name="Количество вопросов")
+    question_count = models.PositiveIntegerField(
+        default=0, verbose_name="Количество вопросов"
+    )
     max_score = models.PositiveIntegerField(default=0, verbose_name="Максимальный балл")
     created_at = models.DateTimeField(auto_now_add=True)
     published_at = models.DateTimeField(null=True, blank=True)
@@ -438,7 +442,9 @@ class GameParticipant(models.Model):
         verbose_name="Игрок",
     )
     score = models.IntegerField(default=0, verbose_name="Счёт")
-    is_answered = models.BooleanField(default=False, verbose_name="Ответил на текущий вопрос")
+    is_answered = models.BooleanField(
+        default=False, verbose_name="Ответил на текущий вопрос"
+    )
     joined_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -506,7 +512,9 @@ class GameAnswer(models.Model):
         ]
 
     def __str__(self):
-        return f"Ответ {self.answer} на вопрос {self.question or self.revision_question}"
+        return (
+            f"Ответ {self.answer} на вопрос {self.question or self.revision_question}"
+        )
 
 
 # pylint: enable=too-few-public-methods

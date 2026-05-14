@@ -4,7 +4,8 @@ from django.test import TestCase, Client
 from django.contrib.auth.models import User
 from django.urls import reverse
 from django.utils import timezone
-from main.models import Quiz, GameSession, GameParticipant, GameAnswer, QuizResult
+from main.models import Quiz, GameSession, GameParticipant, GameAnswer
+# pylint: disable=no-member
 
 
 class LobbyViewsTest(TestCase):
@@ -13,7 +14,8 @@ class LobbyViewsTest(TestCase):
     fixtures = ["db.json"]
 
     def setUp(self):
-        """Настройка тестового окружения: создание клиента, пользователей, квиза и игровой сессии."""
+        """Настройка тестового окружения: создание клиента,
+        пользователей, квиза и игровой сессии."""
         self.client = Client()
         self.teacher = User.objects.get(pk=2)
         self.student = User.objects.get(pk=1)
@@ -28,18 +30,22 @@ class LobbyViewsTest(TestCase):
 
     # --- create_lobby_view ---
     def test_create_lobby_view(self):
-        """Проверка: учитель может создать лобби для активного квиза, после чего перенаправляется на список своих квизов."""
+        """Проверка: учитель может создать лобби для активного квиза,
+        после чего перенаправляется на список своих квизов."""
         self.client.force_login(self.teacher)
         response = self.client.get(reverse("create_lobby", args=[self.quiz.id]))
         self.assertRedirects(
             response, reverse("my_quizzes"), fetch_redirect_response=False
         )
-        session = GameSession.objects.filter(quiz=self.quiz, host=self.teacher).last()
+        session = GameSession.objects.filter(
+            quiz=self.quiz, host=self.teacher
+        ).last()
         self.assertIsNotNone(session)
         self.assertEqual(session.status, GameSession.WAITING)
 
     def test_create_lobby_for_draft_quiz(self):
-        """Проверка: попытка создать лобби для черновика квиза также перенаправляет на список квизов (без создания сессии?)."""
+        """Проверка: попытка создать лобби для черновика квиза
+        также перенаправляет на список квизов (без создания сессии?)."""
         draft_quiz = Quiz.objects.create(
             title="Draft", creator=self.teacher, status=Quiz.DRAFT
         )
@@ -51,21 +57,24 @@ class LobbyViewsTest(TestCase):
 
     # --- lobby_view (для хоста) ---
     def test_lobby_view_get(self):
-        """GET-запрос к странице лобби от хоста возвращает страницу с данными сессии."""
+        """GET-запрос к странице лобби от хоста
+        возвращает страницу с данными сессии."""
         self.client.force_login(self.teacher)
         response = self.client.get(reverse("lobby", args=[self.session.pin]))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context["session"], self.session)
 
     def test_lobby_view_non_host(self):
-        """Проверка: не-хост (обычный студент) не может просматривать лобби, получает 404."""
+        """Проверка: не-хост (обычный студент)
+        не может просматривать лобби, получает 404."""
         self.client.force_login(self.student)
         response = self.client.get(reverse("lobby", args=[self.session.pin]))
         self.assertEqual(response.status_code, 404)
 
     # --- toggle_lock_view ---
     def test_toggle_lock_view(self):
-        """Проверка: хост может переключить блокировку лобби (запрет на вход новых игроков)."""
+        """Проверка: хост может переключить блокировку лобби
+        (запрет на вход новых игроков)."""
         self.client.force_login(self.teacher)
         self.assertFalse(self.session.is_locked)
         response = self.client.post(reverse("toggle_lock", args=[self.session.pin]))
@@ -75,7 +84,8 @@ class LobbyViewsTest(TestCase):
 
     # --- delete_session_view ---
     def test_delete_session_view(self):
-        """Проверка: хост может удалить игровую сессию, после чего она исчезает из БД."""
+        """Проверка: хост может удалить игровую сессию,
+        после чего она исчезает из БД."""
         self.client.force_login(self.teacher)
         response = self.client.post(reverse("delete_session", args=[self.session.pin]))
         self.assertRedirects(
@@ -86,9 +96,9 @@ class LobbyViewsTest(TestCase):
 
     # --- api_players_view (для хоста) ---
     def test_api_players_view(self):
-        """API-эндпоинт возвращает JSON со списком игроков в лобби и статусом блокировки."""
+        """API-эндпоинт возвращает JSON со списком игроков
+        в лобби и статусом блокировки."""
         self.client.force_login(self.teacher)
-        # Добавляем участника
         GameParticipant.objects.create(session=self.session, user=self.student)
         response = self.client.get(reverse("api_players", args=[self.session.pin]))
         self.assertEqual(response.status_code, 200)
@@ -112,7 +122,8 @@ class LobbyViewsTest(TestCase):
         )
 
     def test_join_lobby_view_when_already_joined(self):
-        """Если студент уже присоединился, повторное присоединение не создаёт дубликата."""
+        """Если студент уже присоединился,
+        повторное присоединение не создаёт дубликата."""
         GameParticipant.objects.create(session=self.session, user=self.student)
         self.client.force_login(self.student)
         response = self.client.get(reverse("join_lobby", args=[self.session.pin]))
@@ -125,7 +136,8 @@ class LobbyViewsTest(TestCase):
         )
 
     def test_join_lobby_view_host_redirect(self):
-        """Хост, пытающийся присоединиться к своему же лобби, перенаправляется на страницу управления лобби."""
+        """Хост, пытающийся присоединиться к своему же лобби,
+        перенаправляется на страницу управления лобби."""
         self.client.force_login(self.teacher)
         response = self.client.get(reverse("join_lobby", args=[self.session.pin]))
         self.assertRedirects(response, reverse("lobby", args=[self.session.pin]))
@@ -133,7 +145,6 @@ class LobbyViewsTest(TestCase):
     # --- api_state_view (требует авторизации?) ---
     def test_api_state_view(self):
         """API состояния сессии возвращает текущий статус игры в JSON."""
-        # В проекте, вероятно, глобальная авторизация – залогиним пользователя
         self.client.force_login(self.student)
         response = self.client.get(reverse("api_state", args=[self.session.pin]))
         self.assertEqual(response.status_code, 200)
@@ -151,7 +162,8 @@ class LobbyViewsTest(TestCase):
         self.assertEqual(self.session.status, "in_progress")
 
     def test_start_game_view_no_participants(self):
-        """Если в лобби нет участников, игра не начинается (статус не меняется)."""
+        """Если в лобби нет участников,
+        игра не начинается (статус не меняется)."""
         self.client.force_login(self.teacher)
         response = self.client.post(reverse("start_game", args=[self.session.pin]))
         self.assertRedirects(response, reverse("lobby", args=[self.session.pin]))
@@ -167,22 +179,22 @@ class LobbyViewsTest(TestCase):
         response = self.client.post(reverse("start_game", args=[self.session.pin]))
         self.assertRedirects(response, reverse("lobby", args=[self.session.pin]))
         self.session.refresh_from_db()
-        self.assertEqual(self.session.status, "in_progress")  # статус не изменился
+        self.assertEqual(self.session.status, "in_progress")
 
     # --- session_play_view (игровой процесс) ---
     def test_session_play_view_redirect_if_not_started(self):
-        """Если игра ещё не началась, студент не может зайти на страницу прохождения, его перенаправляет в лобби."""
+        """Если игра ещё не началась, студент не может зайти
+        на страницу прохождения, его перенаправляет в лобби."""
         self.client.force_login(self.student)
         GameParticipant.objects.create(session=self.session, user=self.student)
         response = self.client.get(reverse("session_play", args=[self.session.pin]))
         self.assertRedirects(response, reverse("join_lobby", args=[self.session.pin]))
 
     def test_session_play_view_get_in_progress(self):
-        """GET-запрос на страницу игры во время активной сессии отображает текущий вопрос."""
+        """GET-запрос на страницу игры во время активной сессии
+        отображает текущий вопрос."""
         self.client.force_login(self.student)
-        participant = GameParticipant.objects.create(
-            session=self.session, user=self.student
-        )
+        GameParticipant.objects.create(session=self.session, user=self.student)
         self.session.status = "in_progress"
         self.session.current_question = 0
         self.session.current_question_started_at = timezone.now()
@@ -193,7 +205,8 @@ class LobbyViewsTest(TestCase):
         self.assertEqual(response.context["question"].id, 1)  # из фикстуры
 
     def test_session_play_view_post_answer_correct(self):
-        """POST с правильным ответом на вопрос создаёт запись GameAnswer и начисляет баллы."""
+        """POST с правильным ответом на вопрос создаёт запись GameAnswer
+        и начисляет баллы."""
         self.client.force_login(self.student)
         participant = GameParticipant.objects.create(
             session=self.session, user=self.student
@@ -202,14 +215,11 @@ class LobbyViewsTest(TestCase):
         self.session.current_question = 0
         self.session.current_question_started_at = timezone.now()
         self.session.save()
-        # Правильный ответ для вопроса pk=1 из фикстуры – answer pk=1
         data = {"answer": "1", "timed_out": "0"}
         response = self.client.post(
             reverse("session_play", args=[self.session.pin]), data
         )
         self.assertRedirects(response, reverse("session_play", args=[self.session.pin]))
-        # После ответа у единственного участника флаг сбрасывается (новый раунд),
-        # но GameAnswer должна создаться и начислить баллы
         game_answer = GameAnswer.objects.filter(participant=participant).first()
         self.assertIsNotNone(game_answer)
         self.assertTrue(game_answer.is_correct)
@@ -228,13 +238,13 @@ class LobbyViewsTest(TestCase):
     def test_session_results_teacher_view(self):
         """Учитель может просмотреть детальные результаты по конкретной сессии."""
         self.client.force_login(self.teacher)
-        participant = GameParticipant.objects.create(
+        GameParticipant.objects.create(
             session=self.session, user=self.student, score=4
         )
         question = self.quiz.questions.first()
         GameAnswer.objects.create(
             session=self.session,
-            participant=participant,
+            participant=GameParticipant.objects.get(session=self.session, user=self.student),
             question=question,
             is_correct=True,
             points=4,
