@@ -1,37 +1,69 @@
-# Проект "Simple votings"
+image: python:3.13.3-alpine3.20
 
-### Цель
-Предоставить пользователю сервис, на котором можно быстро создать голосование и собрать мнения пользователей касательно какого-либо вопроса
+before_script:
+  - python3 -m venv .venv
+  - . .venv/bin/activate
+  - pip install -r requirements.txt
 
-### Технологический стек:
-- Python 3.12
-- Django 5.1+
-- SQLite
+stages:
+  - style
+  - test
+  - docs          # новая стадия для документации
 
-### Инструкция по настройке проекта:
-1. Склонировать проект
-2. Открыть проект в PyCharm с наcтройками по умолчанию
-3. Создать виртуальное окружение (через settings -> project "simple votings" -> project interpreter)
-4. Открыть терминал в PyCharm, проверить, что виртуальное окружение активировано.
-5. Обновить pip:
-   ```bash
-   pip install --upgrade pip
-   ```
-6. Установить в виртуальное окружение необходимые пакеты: 
-   ```bash
-   pip install -r requirements.txt
-   ```
+pylint:
+  stage: style
+  script:
+    - pylint --fail-under=6 --ignore-paths="docs/*" **/*.py
+    - echo "Pylint complete."
+  artifacts:
+    untracked: false
+    when: on_success
+    expire_in: 30 days
 
-7. Создать уникальный ключ приложения.  
-   Генерация делается в консоли Python при помощи команд:
-   ```bash
-   python manage.py shell -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
-   ```
-   Далее полученное значение подставляется в соответствующую переменную.
-   Внимание! Без выполнения этого пункта никакие команды далее не запустятся.
+pycodestyle:
+    stage: style
+    script:
+        - pycodestyle --max-line-length=120 **/*.py
+        - echo "Pycodestyle complete."
+    artifacts:
+        untracked: false
+        when: on_failure
+        expire_in: 30 days
 
-7. Синхронизировать структуру базы данных с моделями: 
-   ```bash
-   python manage.py migrate
-   ```
-   
+python:
+  stage: test
+  script:
+    - .venv/bin/python manage.py test
+    - echo "tests complete."
+  artifacts:
+    untracked: false
+    when: on_failure
+    expire_in: 30 days
+
+# ========== ДОКУМЕНТАЦИЯ SPHINX ==========
+
+build-docs:
+  stage: docs
+  script:
+    # Убедимся, что Sphinx установлен (он должен быть в requirements.txt)
+    - sphinx-build --version
+    # Сборка HTML (замените пути на свои)
+    - sphinx-build -b html docs/source/ docs/build/
+  artifacts:
+    paths:
+      - docs/build/
+    expire_in: 30 days
+  only:
+    - main   # или ваша основная ветка
+
+pages:
+  stage: docs
+  script:
+    # GitLab Pages ожидает файлы в папке public
+    - mkdir -p public
+    - cp -r docs/build/* public/
+  artifacts:
+    paths:
+      - public/
+  only:
+    - main
