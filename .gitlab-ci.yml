@@ -8,7 +8,7 @@ before_script:
 stages:
   - style
   - test
-
+  - docs
 
 pylint:
   stage: style
@@ -22,22 +22,36 @@ pylint:
 
 
 pycodestyle:
-    stage: style
-    script:
-        - pycodestyle --max-line-length=120 **/*.py
-        - echo "Pycodestyle complete."
-    artifacts:
-        untracked: false
-        when: on_failure
-        expire_in: 30 days
+  stage: style
+  script:
+    - pycodestyle --max-line-length=120 **/*.py
+    - echo "Pycodestyle complete."
+  artifacts:
+    untracked: false
+    when: on_failure
+    expire_in: 30 days
 
 
 python:
   stage: test
   script:
     - .venv/bin/python manage.py test
-    - echo "tests complete."
+    - echo "Tests complete."
   artifacts:
     untracked: false
     when: on_failure
     expire_in: 30 days
+
+
+sphinx:
+  stage: docs
+  script:
+    - pip install sphinx sphinx-rtd-theme
+    - cd docs
+    - sphinx-build -b html source build
+    - echo "Sphinx documentation built."
+  artifacts:
+    paths:
+      - docs/build/
+    expire_in: 30 days
+    when: on_success
