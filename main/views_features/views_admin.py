@@ -1,13 +1,17 @@
 """Views для панели администратора"""
 
 import logging
+# pylint: disable=no-member,unused-argument
+
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
+from django.db import transaction
 from django.db.models import Count
-from main.models import Quiz, Profile
+from django.utils import timezone
+from main.models import Quiz, Profile, QuizReport
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +37,9 @@ def admin_panel_view(request):
     total_quizzes = Quiz.objects.count()
     total_banned_users = Profile.objects.filter(is_banned=True).count()
     total_admins = Profile.objects.filter(role=Profile.ADMIN).count()
+    total_pending_reports = QuizReport.objects.filter(
+        status=QuizReport.PENDING,
+    ).count()
 
     users = (
         User.objects.annotate(quiz_count=Count("created_quizzes"))
@@ -45,14 +52,22 @@ def admin_panel_view(request):
         .annotate(question_count=Count("questions"))
         .order_by("-created_at")
     )
+    reports = QuizReport.objects.select_related(
+        "quiz",
+        "quiz__creator",
+        "reporter",
+        "reviewed_by",
+    ).order_by("-created_at")[:20]
 
     context = {
         "total_users": total_users,
         "total_quizzes": total_quizzes,
         "total_banned_users": total_banned_users,
         "total_admins": total_admins,
+        "total_pending_reports": total_pending_reports,
         "users": users,
         "quizzes": quizzes,
+        "reports": reports,
     }
     return render(request, "admin_panel.html", context)
 
@@ -96,6 +111,11 @@ def admin_delete_quiz_view(request, quiz_id):
             quiz_id,
             request.META.get("REMOTE_ADDR"),
         )
+        with transaction.atomic():
+            quiz.sessions.all().delete()
+            quiz.results.all().delete()
+            quiz.delete()
+
         messages.success(request, f"Квиз «{title}» удалён.")
     return redirect("admin_panel")
 
@@ -116,8 +136,71 @@ def admin_unpublish_quiz_view(request, quiz_id):
                 request.META.get("REMOTE_ADDR"),
             )
             messages.success(request, f"Квиз «{quiz.title}» возвращён в черновик.")
+            messages.success(
+                request,
+                f"Квиз «{quiz.title}» возвращён в черновик.",
+            )
         else:
-            messages.info(request, f"Квиз «{quiz.title}» уже находится в черновиках.")
+            messages.info(
+                request,
+                f"Квиз «{quiz.title}» уже находится в черновиках.",
+            )
+    return redirect("admin_panel")
+
+
+@admin_required
+def admin_accept_report_view(request, report_id):
+    """Подтвердить жалобу и вернуть квиз в черновик."""
+    if request.method == "POST":
+        report = get_object_or_404(QuizReport, id=report_id)
+        admin_comment = request.POST.get("admin_comment", "").strip()
+
+        with transaction.atomic():
+            report.status = QuizReport.ACCEPTED
+            report.admin_comment = admin_comment
+            report.reviewed_by = request.user
+            report.reviewed_at = timezone.now()
+            report.save(
+                update_fields=[
+                    "status",
+                    "admin_comment",
+                    "reviewed_by",
+                    "reviewed_at",
+                ]
+            )
+
+            if report.quiz.status != Quiz.DRAFT:
+                report.quiz.status = Quiz.DRAFT
+                report.quiz.save(update_fields=["status"])
+
+        messages.success(
+            request,
+            f"Жалоба на квиз «{report.quiz.title}» подтверждена.",
+        )
+    return redirect("admin_panel")
+
+
+@admin_required
+def admin_reject_report_view(request, report_id):
+    """Отклонить жалобу на квиз."""
+    if request.method == "POST":
+        report = get_object_or_404(QuizReport, id=report_id)
+        report.status = QuizReport.REJECTED
+        report.admin_comment = request.POST.get("admin_comment", "").strip()
+        report.reviewed_by = request.user
+        report.reviewed_at = timezone.now()
+        report.save(
+            update_fields=[
+                "status",
+                "admin_comment",
+                "reviewed_by",
+                "reviewed_at",
+            ]
+        )
+        messages.success(
+            request,
+            f"Жалоба на квиз «{report.quiz.title}» отклонена.",
+        )
     return redirect("admin_panel")
 
 
@@ -129,6 +212,9 @@ def api_admin_stats_view(request):
         "total_quizzes": Quiz.objects.count(),
         "total_admins": Profile.objects.filter(role=Profile.ADMIN).count(),
         "total_banned_users": Profile.objects.filter(is_banned=True).count(),
+        "total_pending_reports": QuizReport.objects.filter(
+            status=QuizReport.PENDING,
+        ).count(),
     }
     return JsonResponse(data)
 
@@ -150,7 +236,10 @@ def api_admin_users_view(request):
             "profile__is_banned",
         )
     )
-    return JsonResponse({"users": list(users)}, json_dumps_params={"default": str})
+    return JsonResponse(
+        {"users": list(users)},
+        json_dumps_params={"default": str},
+    )
 
 
 @admin_required
@@ -170,4 +259,7 @@ def api_admin_quizzes_view(request):
             "creator__username",
         )
     )
-    return JsonResponse({"quizzes": list(quizzes)}, json_dumps_params={"default": str})
+    return JsonResponse(
+        {"quizzes": list(quizzes)},
+        json_dumps_params={"default": str},
+    )

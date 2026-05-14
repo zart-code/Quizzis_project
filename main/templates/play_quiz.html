@@ -10,6 +10,14 @@
         {% if not finished %}
         <div class="sp-header">
             <div class="sp-quiz-title">{{ quiz.title }}</div>
+            {% if user != quiz.creator %}
+            <div class="sp-report-row">
+                <a href="{% url 'report_quiz' quiz.id %}?next={{ request.get_full_path|urlencode }}"
+                   class="sp-report-link">
+                    ⚑ Пожаловаться на квиз
+                </a>
+            </div>
+            {% endif %}
             <div class="sp-progress-row">
                 <span class="sp-progress-text">Вопрос {{ index|add:1 }} из {{ total }}</span>
                 {% if finished %}<span class="sp-score">⭐ {{ score }}</span>{% endif %}
@@ -28,6 +36,11 @@
                 <a href="{% url 'play_quiz' quiz.id %}" class="btn btn-primary btn-large">🔄 Пройти ещё раз</a>
                 <a href="{% url 'main_page' %}" class="btn btn-secondary">← На главную</a>
                 <a href="{% url 'quizzes_view' %}" class="btn btn-secondary">← К квизам</a>
+                {% if user != quiz.creator %}
+                <a href="{% url 'report_quiz' quiz.id %}" class="btn btn-secondary">
+                    ⚑ Пожаловаться
+                </a>
+                {% endif %}
 
             </div>
         </div>
@@ -149,6 +162,9 @@
 .sp-wrapper{max-width:700px;margin:0 auto;padding:2rem 0}
 .sp-header{margin-bottom:1.5rem}
 .sp-quiz-title{font-size:1rem;color:var(--text-muted);text-align:center;margin-bottom:.5rem}
+.sp-report-row{text-align:center;margin-bottom:.8rem}
+.sp-report-link{color:#FCA5A5;font-size:.86rem;text-decoration:none}
+.sp-report-link:hover{text-decoration:underline}
 .sp-progress-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem}
 .sp-progress-text{color:var(--text-secondary);font-size:.9rem;font-weight:500}
 .sp-score{color:var(--accent);font-weight:700;font-size:1rem}

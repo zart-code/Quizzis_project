@@ -50,6 +50,15 @@
     border-color: rgba(139, 92, 246, .5);
     box-shadow: 0 10px 30px rgba(139, 92, 246, .18);
 }
+.ap-stat-card-reports {
+    border: 2px solid #EF4444;
+    background: rgba(26, 26, 46, .8);
+    box-shadow: 0 0 16px rgba(239, 68, 68, .25);
+}
+.ap-stat-card-reports:hover {
+    border-color: #DC2626;
+    box-shadow: 0 0 24px rgba(239, 68, 68, .35), 0 10px 30px rgba(239, 68, 68, .25);
+}
 .ap-stat-icon { font-size: 2rem; filter: drop-shadow(0 0 8px rgba(139, 92, 246, .5)); }
 .ap-stat-num  { font-size: 2rem; font-weight: 800; color: var(--primary-light); line-height: 1; }
 .ap-stat-label { font-size: .75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-top: .2rem; }
@@ -180,6 +189,8 @@
 .ap-btn-del:hover   { background: rgba(239,68,68,.22); border-color: #EF4444; transform: translateY(-1px); }
 .ap-btn-draft { color: #FCD34D; border-color: rgba(245,158,11,.3); background: rgba(245,158,11,.08); }
 .ap-btn-draft:hover { background: rgba(245,158,11,.2); border-color: #F59E0B; transform: translateY(-1px); }
+.ap-btn-ok { color: #6EE7B7; border-color: rgba(16,185,129,.3); background: rgba(16,185,129,.08); }
+.ap-btn-ok:hover { background: rgba(16,185,129,.22); border-color: #10B981; transform: translateY(-1px); }
 
 /* ─── Load more ─── */
 .ap-load-wrap {
@@ -204,6 +215,23 @@
 
 /* ─── Empty ─── */
 .ap-empty td { text-align: center; color: var(--text-muted); font-style: italic; padding: 2rem !important; }
+.ap-report-comment {
+  min-width: 220px;
+  max-width: 320px;
+  white-space: normal;
+}
+.ap-admin-note {
+    width: 180px;
+    min-height: 36px;
+    margin-bottom: .4rem;
+    padding: .35rem .5rem;
+    border-radius: 8px;
+    border: 1px solid rgba(139,92,246,.22);
+    background: rgba(15,15,28,.7);
+    color: var(--text-primary);
+    font-size: .78rem;
+    resize: vertical;
+}
 </style>
 {% endblock %}
 
@@ -223,6 +251,13 @@
 
   <!-- Stat cards -->
   <div class="ap-stats">
+    <div class="ap-stat-card ap-stat-card-reports">
+      <div class="ap-stat-icon">🚩</div>
+      <div>
+        <div class="ap-stat-num" id="stat-reports">{{ total_pending_reports }}</div>
+        <div class="ap-stat-label">Новых жалоб</div>
+      </div>
+    </div>
     <div class="ap-stat-card">
       <div class="ap-stat-icon">👥</div>
       <div>
@@ -363,19 +398,80 @@
   <!-- Reports -->
   <div class="ap-section">
     <div class="ap-section-title">
-      🚩 Жалобы <span class="ap-count">0</span>
+      🚩 Жалобы <span class="ap-count">{{ total_pending_reports }} новых</span>
     </div>
     <div class="ap-table-wrap">
       <table class="ap-table">
         <thead>
           <tr>
-            <th>ID</th><th>От кого</th><th>На кого / квиз</th>
-            <th>Причина</th><th>Дата</th><th>Действия</th>
+            <th>ID</th><th>От кого</th><th>Квиз</th><th>Автор</th>
+            <th>Причина</th><th>Комментарий</th><th>Статус</th>
+            <th>Дата</th><th>Действия</th>
           </tr>
         </thead>
         <tbody>
-          {# TODO: модель Report ещё не реализована #}
-          <tr class="ap-empty"><td colspan="6">Жалоб нет</td></tr>
+          {% for report in reports %}
+          <tr>
+            <td class="ap-muted">{{ report.id }}</td>
+            <td>
+              {% if report.reporter %}
+              <a href="{% url 'admin_user_profile' report.reporter.id %}" class="ap-link">
+                {{ report.reporter.username }}
+              </a>
+              {% else %}
+              <span class="ap-muted">Удалён</span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{% url 'play_quiz' report.quiz.id %}" class="ap-link">
+                {{ report.quiz.title }}
+              </a>
+            </td>
+            <td>
+              <a href="{% url 'admin_user_profile' report.quiz.creator.id %}" class="ap-link">
+                {{ report.quiz.creator.username }}
+              </a>
+            </td>
+            <td>{{ report.get_reason_display }}</td>
+            <td class="ap-report-comment">
+              {{ report.comment|default:"—" }}
+              {% if report.admin_comment %}
+              <div class="ap-muted">Админ: {{ report.admin_comment }}</div>
+              {% endif %}
+            </td>
+            <td>
+              {% if report.status == 'pending' %}
+                <span class="ap-badge ap-badge-draft">Новая</span>
+              {% elif report.status == 'accepted' %}
+                <span class="ap-badge ap-badge-active">Подтверждена</span>
+              {% else %}
+                <span class="ap-badge ap-badge-banned">Отклонена</span>
+              {% endif %}
+            </td>
+            <td class="ap-muted">{{ report.created_at|date:"d.m.Y H:i" }}</td>
+            <td>
+              {% if report.status == 'pending' %}
+              <form method="post" action="{% url 'admin_accept_report' report.id %}">
+                {% csrf_token %}
+                <textarea
+                  name="admin_comment"
+                  class="ap-admin-note"
+                  placeholder="Комментарий автору"
+                ></textarea>
+                <button type="submit" class="ap-btn ap-btn-ok">✓ Подтвердить</button>
+              </form>
+              <form method="post" action="{% url 'admin_reject_report' report.id %}">
+                {% csrf_token %}
+                <button type="submit" class="ap-btn ap-btn-del">✕ Отклонить</button>
+              </form>
+              {% else %}
+              <span class="ap-muted">Проверена</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr class="ap-empty"><td colspan="9">Жалоб нет</td></tr>
+          {% endfor %}
         </tbody>
       </table>
     </div>
@@ -404,6 +500,8 @@ function updateStats(data) {
   document.getElementById('stat-quizzes').textContent = data.total_quizzes;
   document.getElementById('stat-admins').textContent  = data.total_admins;
   document.getElementById('stat-banned').textContent  = data.total_banned_users;
+  const reports = document.getElementById('stat-reports');
+  if (reports) reports.textContent = data.total_pending_reports;
 }
 
 // ── Роль → бейдж ──

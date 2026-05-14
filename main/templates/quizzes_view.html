@@ -94,6 +94,17 @@
                             <a href="{% url 'play_quiz' quiz.id %}" class="mq-btn mq-btn-play">
                                 <span>▶</span> Пройти
                             </a>
+                            {% if user.is_authenticated and user != quiz.creator %}
+                            <a href="{% url 'report_quiz' quiz.id %}?next={{ request.get_full_path|urlencode }}"
+                               class="mq-btn mq-btn-report">
+                                <span>⚑</span> Пожаловаться
+                            </a>
+                            {% elif not user.is_authenticated %}
+                            <a href="{% url 'login_page' %}?next={{ request.get_full_path|urlencode }}"
+                               class="mq-btn mq-btn-report">
+                                <span>⚑</span> Пожаловаться
+                            </a>
+                            {% endif %}
                         </div>
 
                         <div class="quiz-info-content-template" id="quiz-info-{{ quiz.id }}">
@@ -296,4 +307,16 @@
     });
 })();
 </script>
+
+<style>
+.mq-btn-report {
+    background: rgba(239, 68, 68, .1);
+    border: 1px solid rgba(239, 68, 68, .28);
+    color: #FCA5A5;
+}
+.mq-btn-report:hover {
+    background: rgba(239, 68, 68, .22);
+    border-color: rgba(239, 68, 68, .5);
+}
+</style>
 {% endblock %}
