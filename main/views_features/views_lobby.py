@@ -1,5 +1,6 @@
 """Views для лобби"""
 
+import logging
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -13,19 +14,14 @@ from main.models import (
     QuizResult,
 )
 from django.utils import timezone
-from main.models import (
-    GameAnswer,
-    GameParticipant,
-    GameSession,
-    Quiz,
-    QuizResult,
-)
 from main.services.quiz_revisions import (
     get_current_revision,
     get_session_max_score,
     get_session_questions,
 )
 from main.services.quiz_scoring import score_question
+
+logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -40,6 +36,13 @@ def create_lobby_view(request, quiz_id):
         quiz=quiz,
         revision=get_current_revision(quiz),
         host=request.user,
+    )
+    logger.info(
+        "Пользователь %s создал лобби для квиза «%s» (PIN: %s) (IP: %s)",
+        request.user.username,
+        quiz.title,
+        session.pin,
+        request.META.get("REMOTE_ADDR"),
     )
     return redirect("lobby", pin=session.pin)
 
@@ -57,15 +60,30 @@ def toggle_lock_view(request, pin):
     session = get_object_or_404(GameSession, pin=pin, host=request.user)
     session.is_locked = not session.is_locked
     session.save()
+    logger.info(
+        "Пользователь %s %s лобби %s (PIN: %s) (IP: %s)",
+        request.user.username,
+        "закрыл" if session.is_locked else "открыл",
+        session.quiz.title,
+        pin,
+        request.META.get("REMOTE_ADDR"),
+    )
     return redirect("lobby", pin=pin)
 
 
 @login_required
 @require_POST
 def delete_session_view(request, pin):
-    """"""
     session = get_object_or_404(GameSession, pin=pin, host=request.user)
+    quiz_title = session.quiz.title
     session.delete()
+    logger.info(
+        "Пользователь %s удалил лобби с PIN %s (квиз «%s») (IP: %s)",
+        request.user.username,
+        pin,
+        quiz_title,
+        request.META.get("REMOTE_ADDR"),
+    )
     return redirect("my_quizzes")
 
 
@@ -116,6 +134,14 @@ def join_lobby_view(request, pin):
 
     GameParticipant.objects.get_or_create(session=session, user=request.user)
 
+    logger.info(
+        "Игрок %s присоединился к лобби %s (квиз «%s», хост: %s) (IP: %s)",
+        request.user.username,
+        pin,
+        session.quiz.title,
+        session.host.username,
+        request.META.get("REMOTE_ADDR"),
+    )
     return render(request, "join_lobby.html", {"session": session})
 
 
@@ -124,10 +150,24 @@ def join_lobby_view(request, pin):
 def start_game_view(request, pin):
     session = get_object_or_404(GameSession, pin=pin, host=request.user)
     if session.participants.count() == 0:
+        logger.warning(
+            "Пользователь %s попытался начать игру в лобби %s, но нет участников (IP: %s)",
+            request.user.username,
+            pin,
+            request.META.get("REMOTE_ADDR"),
+        )
         return redirect("lobby", pin=pin)
     session.status = GameSession.IN_PROGRESS
     session.current_question_started_at = timezone.now()
     session.save()
+    logger.info(
+        "Пользователь %s начал игру в лобби %s (квиз «%s», участников: %d) (IP: %s)",
+        request.user.username,
+        pin,
+        session.quiz.title,
+        session.participants.count(),
+        request.META.get("REMOTE_ADDR"),
+    )
     return redirect("lobby", pin=pin)
 
 
@@ -256,6 +296,17 @@ def session_play_view(request, pin):
                 game_answer_data["question"] = question
 
             GameAnswer.objects.create(**game_answer_data)
+
+            logger.info(
+                "Игрок %s в лобби %s (квиз «%s») ответил на вопрос %d. Верно: %s, баллов: %d (IP: %s)",
+                request.user.username,
+                pin,
+                session.quiz.title,
+                session.current_question + 1,
+                "да" if is_correct else "нет",
+                earned_points,
+                request.META.get("REMOTE_ADDR"),
+            )
 
             total_participants = session.participants.count()
             answered_count = session.participants.filter(is_answered=True).count()

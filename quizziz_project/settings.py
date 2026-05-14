@@ -8,11 +8,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = "dgdfddthry5675t76m8o-=9090070=+-+*g"
 
-
 DEBUG = False
 
 ALLOWED_HOSTS = ["0.0.0.0", "127.0.0.1", "188.127.251.236"]
-
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -24,7 +22,6 @@ INSTALLED_APPS = [
     "main",
 ]
 
-
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -35,9 +32,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-
 ROOT_URLCONF = "quizziz_project.urls"
-
 
 TEMPLATES = [
     {
@@ -55,9 +50,7 @@ TEMPLATES = [
     },
 ]
 
-
 WSGI_APPLICATION = "quizziz_project.wsgi.application"
-
 
 DATABASES = {
     "default": {
@@ -65,7 +58,6 @@ DATABASES = {
         "NAME": BASE_DIR / "db.sqlite3",
     }
 }
-
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -82,13 +74,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 LANGUAGE_CODE = "en-us"
-
 TIME_ZONE = "Europe/Moscow"
-
 USE_I18N = True
-
 USE_TZ = True
 
 STATIC_URL = "static/"
@@ -98,7 +86,6 @@ MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
 
 # Возможно понадобиться когда будем развёртывать приложение
 LOG_DIR = BASE_DIR / "logs"
@@ -140,6 +127,21 @@ LOGGING = {
             "propagate": False,
         },
         "main.views_features.views_quiz": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "main.views_features.views_admin": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "main.views_features.views_lobby": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "main.views_features.views_profile": {
             "handlers": ["console", "file"],
             "level": "INFO",
             "propagate": False,

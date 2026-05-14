@@ -1,5 +1,6 @@
 """Views для профиля"""
 
+import logging
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.models import User
@@ -7,6 +8,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Avg, Count, Q
 from main.models import Achievement, Quiz, QuizResult, UserAchievement
+
+logger = logging.getLogger(__name__)
 
 
 @login_required(login_url="login_page")
@@ -88,6 +91,20 @@ def profile_view(request, user_id=None):
         "is_student": is_student,
     }
 
+    if is_admin_view:
+        logger.info(
+            "Администратор %s просматривает профиль пользователя %s (ID: %d) (IP: %s)",
+            request.user.username,
+            user.username,
+            user.id,
+            request.META.get("REMOTE_ADDR"),
+        )
+    else:
+        logger.info(
+            "Пользователь %s просматривает свой профиль (IP: %s)",
+            request.user.username,
+            request.META.get("REMOTE_ADDR"),
+        )
     return render(request, "profile.html", context)
 
 
@@ -181,8 +198,21 @@ def edit_profile_view(request, user_id=None):
         user.save()
         messages.success(request, "Профиль успешно обновлён")
         if is_admin_edit:
+            logger.info(
+                "Администратор %s отредактировал профиль пользователя %s (ID: %d) (IP: %s)",
+                request.user.username,
+                target_user.username,
+                target_user.id,
+                request.META.get("REMOTE_ADDR"),
+            )
             return redirect("admin_user_profile", user_id=user_id)
-        return redirect("profile")
+        else:
+            logger.info(
+                "Пользователь %s отредактировал свой профиль (IP: %s)",
+                request.user.username,
+                request.META.get("REMOTE_ADDR"),
+            )
+            return redirect("profile")
 
     context = {
         "edited_user": target_user,

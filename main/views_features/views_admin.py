@@ -1,5 +1,6 @@
 """Views для панели администратора"""
 
+import logging
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -7,6 +8,8 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from django.db.models import Count
 from main.models import Quiz, Profile
+
+logger = logging.getLogger(__name__)
 
 
 def admin_required(view_func):
@@ -67,6 +70,14 @@ def admin_ban_user_view(request, user_id):
         profile.is_banned = not profile.is_banned
         profile.save()
         action = "заблокирован" if profile.is_banned else "разблокирован"
+        logger.info(
+            "Администратор %s %s пользователя %s (ID: %d) (IP: %s)",
+            request.user.username,
+            action,
+            target.username,
+            target.id,
+            request.META.get("REMOTE_ADDR"),
+        )
         messages.success(request, f"Пользователь {target.username} {action}.")
     return redirect("admin_panel")
 
@@ -78,6 +89,13 @@ def admin_delete_quiz_view(request, quiz_id):
         quiz = get_object_or_404(Quiz, id=quiz_id)
         title = quiz.title
         quiz.delete()
+        logger.info(
+            "Администратор %s удалил квиз «%s» (ID: %d) (IP: %s)",
+            request.user.username,
+            title,
+            quiz_id,
+            request.META.get("REMOTE_ADDR"),
+        )
         messages.success(request, f"Квиз «{title}» удалён.")
     return redirect("admin_panel")
 
@@ -90,6 +108,13 @@ def admin_unpublish_quiz_view(request, quiz_id):
         if quiz.status != Quiz.DRAFT:
             quiz.status = Quiz.DRAFT
             quiz.save(update_fields=["status"])
+            logger.info(
+                "Администратор %s вернул в черновики квиз «%s» (ID: %d) (IP: %s)",
+                request.user.username,
+                quiz.title,
+                quiz_id,
+                request.META.get("REMOTE_ADDR"),
+            )
             messages.success(request, f"Квиз «{quiz.title}» возвращён в черновик.")
         else:
             messages.info(request, f"Квиз «{quiz.title}» уже находится в черновиках.")

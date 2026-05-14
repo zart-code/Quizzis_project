@@ -19,6 +19,8 @@ from main.services.quiz_revisions import (
 )
 from main.services.quiz_scoring import score_question
 
+logger = logging.getLogger(__name__)
+
 
 def _render_quiz_form(request, *, quiz=None, quiz_payload=None):
     """Единая отрисовка формы создания/редактирования квиза."""
@@ -80,6 +82,13 @@ def create_quiz_view(request):
             question_payloads=question_payloads,
         )
 
+        logger.info(
+            "Пользователь %s создал новый квиз «%s» (ID: %d) (IP: %s)",
+            request.user.username,
+            title,
+            quiz.id,
+            request.META.get("REMOTE_ADDR"),
+        )
         return redirect("my_quizzes")
 
     return _render_quiz_form(request)
@@ -117,12 +126,21 @@ def my_quizzes_view(request):
 def toggle_quiz_status_view(request, quiz_id):
     quiz = get_object_or_404(Quiz, id=quiz_id, creator=request.user)
 
+    old_status = quiz.status
     if quiz.status == Quiz.DRAFT:
         quiz.status = Quiz.ACTIVE
     else:
         quiz.status = Quiz.DRAFT
 
     quiz.save()
+    logger.info(
+        "Пользователь %s изменил статус квиза «%s» с %s на %s (IP: %s)",
+        request.user.username,
+        quiz.title,
+        "черновик" if old_status == Quiz.DRAFT else "активен",
+        "активен" if quiz.status == Quiz.ACTIVE else "черновик",
+        request.META.get("REMOTE_ADDR"),
+    )
     return redirect("my_quizzes")
 
 
@@ -167,6 +185,16 @@ def play_quiz_view(request, quiz_id):
             request.session.pop(f"quiz_{quiz_id}_result_id", None)
             request.session.pop(f"quiz_{quiz_id}_answered", None)
 
+            logger.info(
+                "Пользователь %s завершил одиночное прохождение квиза «%s» (ID: %d). Баллы: %d / %d (%.1f%%) (IP: %s)",
+                request.user.username,
+                quiz.title,
+                quiz.id,
+                score,
+                total,
+                score_percent,
+                request.META.get("REMOTE_ADDR"),
+            )
             return render(
                 request,
                 "play_quiz.html",
@@ -357,6 +385,13 @@ def edit_quiz_view(request, quiz_id):
             question_payloads=question_payloads,
         )
 
+        logger.info(
+            "Пользователь %s отредактировал квиз «%s» (ID: %d) (IP: %s)",
+            request.user.username,
+            title,
+            quiz.id,
+            request.META.get("REMOTE_ADDR"),
+        )
         messages.success(request, "Квиз успешно обновлён.")
         return redirect("my_quizzes")
 
