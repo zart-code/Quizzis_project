@@ -194,10 +194,12 @@
 
 /* ─── Load more ─── */
 .ap-load-wrap {
-    text-align: center;
+    display: flex;
+    gap: 0.8rem;
     margin-top: 1.1rem;
     padding-top: 1.1rem;
     border-top: 1px solid rgba(139,92,246,.08);
+    justify-content: flex-end;
 }
 .ap-load-btn {
     background: rgba(139,92,246,.1);
@@ -212,6 +214,19 @@
     transition: all .2s;
 }
 .ap-load-btn:hover { background: rgba(139,92,246,.22); border-color: var(--primary); transform: translateY(-2px); }
+.ap-hide-btn {
+    background: rgba(239,68,68,.1);
+    color: #FCA5A5;
+    border: 1px solid rgba(239,68,68,.3);
+    border-radius: 12px;
+    padding: .55rem 1.8rem;
+    font-size: .84rem;
+    font-weight: 600;
+    font-family: 'Poppins', sans-serif;
+    cursor: pointer;
+    transition: all .2s;
+}
+.ap-hide-btn:hover { background: rgba(239,68,68,.22); border-color: #EF4444; transform: translateY(-2px); }
 
 /* ─── Empty ─── */
 .ap-empty td { text-align: center; color: var(--text-muted); font-style: italic; padding: 2rem !important; }
@@ -231,6 +246,93 @@
     color: var(--text-primary);
     font-size: .78rem;
     resize: vertical;
+}
+
+/* ─── Comment modal ─── */
+.ap-comment-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 8, 18, .72);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.2rem;
+    z-index: 2500;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s ease;
+}
+
+.ap-comment-modal-backdrop.is-open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.ap-comment-modal {
+    width: min(600px, 100%);
+    max-height: 80vh;
+    overflow: auto;
+    background: linear-gradient(160deg, rgba(14, 21, 44, .98), rgba(12, 16, 34, .98));
+    border: 1px solid rgba(139, 92, 246, .42);
+    border-radius: 20px;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, .45);
+    padding: 1.8rem;
+    position: relative;
+}
+
+.ap-comment-close-btn {
+    position: absolute;
+    top: .9rem;
+    right: .9rem;
+    border: 1px solid rgba(139, 92, 246, .35);
+    background: rgba(139, 92, 246, .12);
+    color: var(--text-primary);
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-weight: 700;
+    transition: all .2s;
+}
+
+.ap-comment-close-btn:hover {
+    background: rgba(139, 92, 246, .28);
+    transform: translateY(-1px);
+}
+
+.ap-comment-modal-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--primary-light);
+    margin-bottom: 1rem;
+    word-break: break-word;
+}
+
+.ap-comment-modal-text {
+    font-size: .9rem;
+    color: var(--text-primary);
+    line-height: 1.6;
+    word-break: break-word;
+    white-space: pre-wrap;
+}
+
+.ap-read-btn {
+    display: inline-block;
+    padding: .3rem .6rem;
+    border-radius: 8px;
+    font-size: .75rem;
+    font-weight: 600;
+    background: rgba(139, 92, 246, .15);
+    color: var(--primary-light);
+    border: 1px solid rgba(139, 92, 246, .3);
+    cursor: pointer;
+    transition: all .2s;
+}
+
+.ap-read-btn:hover {
+    background: rgba(139, 92, 246, .28);
+    transform: translateY(-1px);
 }
 </style>
 {% endblock %}
@@ -303,6 +405,7 @@
         </thead>
         <tbody id="u-tbody">
           {% for u in users %}
+          <tr class="ap-table-row" style="{% if forloop.counter > 15 %}display:none;{% endif %}">
             <td class="ap-muted">{{ u.id }}</td>
             <td><a href="{% url 'admin_user_profile' u.id %}" class="ap-link">{{ u.username }}</a></td>
             <td class="ap-muted">{{ u.email|default:"—" }}</td>
@@ -343,9 +446,13 @@
         </tbody>
       </table>
     </div>
+    {% if total_users > 15 %}
+    <div class="ap-load-wrap">
+      <button class="ap-load-btn" onclick="loadMoreRows('u-tbody', 15)">Ещё {{ total_users|add:"-15" }} пользователей</button>
+      <button class="ap-hide-btn" id="u-hide-btn" style="display:none;" onclick="hideRows('u-tbody', 15)">← Скрыть</button>
+    </div>
+    {% endif %}
   </div>
-
-  <!-- Quizzes -->
   <div class="ap-section">
     <div class="ap-section-title">
       📋 Все квизы <span class="ap-count">{{ total_quizzes }}</span>
@@ -360,7 +467,7 @@
         </thead>
         <tbody id="q-tbody">
           {% for quiz in quizzes %}
-          <tr {% if forloop.counter > 10 %}style="display:none;"{% endif %}>
+          <tr class="ap-table-row" style="{% if forloop.counter > 15 %}display:none;{% endif %}">
             <td class="ap-muted">{{ quiz.id }}</td>
             <td><a href="{% url 'play_quiz' quiz.id %}" class="ap-link">{{ quiz.title }}</a></td>
             <td><a href="{% url 'admin_user_profile' quiz.creator.id %}" class="ap-link">{{ quiz.creator.username }}</a></td>
@@ -393,6 +500,12 @@
         </tbody>
       </table>
     </div>
+    {% if total_quizzes > 15 %}
+    <div class="ap-load-wrap">
+      <button class="ap-load-btn" onclick="loadMoreRows('q-tbody', 15)">Ещё {{ total_quizzes|add:"-15" }} квизов</button>
+      <button class="ap-hide-btn" id="q-hide-btn" style="display:none;" onclick="hideRows('q-tbody', 15)">← Скрыть</button>
+    </div>
+    {% endif %}
   </div>
 
   <!-- Reports -->
@@ -409,9 +522,9 @@
             <th>Дата</th><th>Действия</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody id="r-tbody">
           {% for report in reports %}
-          <tr>
+          <tr class="ap-table-row" style="{% if forloop.counter > 15 %}display:none;{% endif %}">
             <td class="ap-muted">{{ report.id }}</td>
             <td>
               {% if report.reporter %}
@@ -434,9 +547,22 @@
             </td>
             <td>{{ report.get_reason_display }}</td>
             <td class="ap-report-comment">
-              {{ report.comment|default:"—" }}
+              {% if report.comment %}
+                {% if report.comment|length > 45 %}
+                  <span>{{ report.comment|truncatewords:8 }}</span>
+                  <button class="ap-read-btn js-read-comment" data-report-id="{{ report.id }}" data-full-text="{{ report.comment }}">Читать</button>
+                {% else %}
+                  <span>{{ report.comment }}</span>
+                {% endif %}
+              {% else %}
+                <span>—</span>
+              {% endif %}
               {% if report.admin_comment %}
-              <div class="ap-muted">Админ: {{ report.admin_comment }}</div>
+              <div class="ap-muted">Админ:
+
+                  <button class="ap-read-btn js-read-comment" data-report-id="{{ report.id }}" data-full-text="Админ комментарий: {{ report.admin_comment }}">Читать</button>
+
+              </div>
               {% endif %}
             </td>
             <td>
@@ -475,13 +601,100 @@
         </tbody>
       </table>
     </div>
+    {% if reports|length > 15 %}
+    <div class="ap-load-wrap">
+      <button class="ap-load-btn" onclick="loadMoreRows('r-tbody', 15)">Ещё жалоб</button>
+      <button class="ap-hide-btn" id="r-hide-btn" style="display:none;" onclick="hideRows('r-tbody', 15)">← Скрыть</button>
+    </div>
+    {% endif %}
   </div>
 
 </div>
+
+<!-- Модальное окно для полного комментария -->
+<div class="ap-comment-modal-backdrop" id="apCommentBackdrop">
+    <div class="ap-comment-modal" role="dialog" aria-modal="true">
+        <button type="button" class="ap-comment-close-btn" id="apCommentCloseBtn">✕</button>
+        <div class="ap-comment-modal-title" id="apCommentTitle">Комментарий</div>
+        <div class="ap-comment-modal-text" id="apCommentText"></div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
+
+// ── Показать дополнительные 15 строк ──
+function loadMoreRows(tableBodyId, itemsPerPage) {
+  const tbody = document.getElementById(tableBodyId);
+  if (!tbody) return;
+
+  const allRows = tbody.querySelectorAll('.ap-table-row');
+  const visibleRows = tbody.querySelectorAll('.ap-table-row:not([style*="display:none"])');
+  const currentCount = visibleRows.length;
+  let newCount = 0;
+
+  // Открываем следующие 15 элементов
+  allRows.forEach((row, index) => {
+    if (index >= currentCount && newCount < itemsPerPage) {
+      row.style.display = '';
+      newCount++;
+    }
+  });
+
+  // Проверяем, остались ли скрытые строки
+  const remainingHidden = tbody.querySelectorAll('.ap-table-row[style*="display:none"]').length;
+  const loadWrap = tbody.parentElement.parentElement.querySelector('.ap-load-wrap');
+
+  if (!loadWrap) return;
+
+  // Показываем кнопку "Скрыть" если элементов открыто больше 15
+  const hideBtn = loadWrap.querySelector('.ap-hide-btn');
+  if (hideBtn && currentCount > 0) {
+    hideBtn.style.display = '';
+  }
+
+  // Скрываем кнопку "Ещё" если нет больше скрытых элементов
+  const loadBtn = loadWrap.querySelector('.ap-load-btn');
+  if (loadBtn && remainingHidden === 0) {
+    loadBtn.style.display = 'none';
+  }
+}
+
+// ── Скрыть последние 15 открытых строк ──
+function hideRows(tableBodyId, itemsPerPage) {
+  const tbody = document.getElementById(tableBodyId);
+  if (!tbody) return;
+
+  const allRows = Array.from(tbody.querySelectorAll('.ap-table-row')).filter(
+    row => !row.style.display || row.style.display !== 'none'
+  );
+
+  // Скрываем последние 15 видимых элементов
+  let hideCount = 0;
+  for (let i = allRows.length - 1; i >= 0 && hideCount < itemsPerPage; i--) {
+    allRows[i].style.display = 'none';
+    hideCount++;
+  }
+
+  const loadWrap = tbody.parentElement.parentElement.querySelector('.ap-load-wrap');
+  if (!loadWrap) return;
+
+  // Показываем кнопку "Ещё" обратно
+  const loadBtn = loadWrap.querySelector('.ap-load-btn');
+  if (loadBtn) {
+    loadBtn.style.display = '';
+  }
+
+  // Если осталось открытыми только 15 или меньше, скрываем кнопку "Скрыть"
+  const visibleRows = tbody.querySelectorAll('.ap-table-row:not([style*="display:none"])').length;
+  const hideBtn = loadWrap.querySelector('.ap-hide-btn');
+  if (hideBtn && visibleRows <= 15) {
+    hideBtn.style.display = 'none';
+  }
+}
+
 // ── URL эндпоинтов (Django вставляет при рендере) ──
 const URL_STATS   = "{% url 'api_admin_stats' %}";
 const URL_USERS   = "{% url 'api_admin_users' %}";
@@ -595,5 +808,48 @@ async function poll() {
 // ── Запуск ──
 poll();                          // сразу при загрузке
 setInterval(poll, 3_000);      // затем каждые 5 секунд
+
+// ── Модальное окно для комментариев ──
+function initCommentModals() {
+  const backdrop = document.getElementById('apCommentBackdrop');
+  const closeBtn = document.getElementById('apCommentCloseBtn');
+  const commentTitle = document.getElementById('apCommentTitle');
+  const commentText = document.getElementById('apCommentText');
+
+  if (!backdrop || !closeBtn || !commentTitle || !commentText) return;
+
+  function closeModal() {
+    backdrop.classList.remove('is-open');
+    document.body.style.overflow = '';
+  }
+
+  // Клик на кнопку "Читать"
+  document.addEventListener('click', function(e) {
+    if (e.target && e.target.classList.contains('js-read-comment')) {
+      e.preventDefault();
+      const fullText = e.target.dataset.fullText || '';
+      const reportId = e.target.dataset.reportId || '';
+
+      commentTitle.textContent = `Жалоба #${reportId}`;
+      commentText.textContent = fullText;
+      backdrop.classList.add('is-open');
+      document.body.style.overflow = 'hidden';
+    }
+  });
+
+  closeBtn.addEventListener('click', closeModal);
+  backdrop.addEventListener('click', function(e) {
+    if (e.target === backdrop) closeModal();
+  });
+
+  // Закрытие по Escape
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && backdrop.classList.contains('is-open')) {
+      closeModal();
+    }
+  });
+}
+
+initCommentModals();
 </script>
 {% endblock %}

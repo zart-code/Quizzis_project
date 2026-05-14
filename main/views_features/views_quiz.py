@@ -127,11 +127,13 @@ def my_quizzes_view(request):
         else:
             report_filter["revision__isnull"] = True
 
-        quiz.accepted_reports = list(
+        reports = list(
             QuizReport.objects.filter(**report_filter)
             .select_related("reporter", "reviewed_by")
             .order_by("-reviewed_at", "-created_at")
         )
+        # keep only the most recent accepted report to avoid UI clutter
+        quiz.accepted_reports = reports[:1] if reports else []
 
     context = {
         "quizzes": quizzes,
