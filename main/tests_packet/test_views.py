@@ -1,4 +1,4 @@
-"""Модуль тестов для представлений (views) приложения main."""
+"""Тесты для views.py"""
 
 from django.test import TestCase, Client
 from django.contrib.auth.models import User

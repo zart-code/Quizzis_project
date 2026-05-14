@@ -1,4 +1,4 @@
-"""Тесты жалоб на квизы."""
+"""Тесты жалоб на квизы"""
 
 # pylint: disable=no-member,missing-class-docstring,missing-function-docstring
 

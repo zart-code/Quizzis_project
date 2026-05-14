@@ -87,10 +87,13 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Возможно понадобиться когда будем развёртывать приложение
+# Директория для логов
 LOG_DIR = BASE_DIR / "logs"
 LOG_DIR.mkdir(exist_ok=True)
 
+# ============================================================
+# НАСТРОЙКИ ЛОГИРОВАНИЯ
+# ============================================================
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -108,12 +111,25 @@ LOGGING = {
         "console": {
             "class": "logging.StreamHandler",
             "formatter": "simple",
+            "level": "DEBUG",
         },
         "file": {
-            "class": "logging.FileHandler",
+            "class": "logging.handlers.RotatingFileHandler",
             "filename": str(LOG_DIR / "django.log"),
             "formatter": "verbose",
             "encoding": "utf-8",
+            "maxBytes": 10 * 1024 * 1024,
+            "backupCount": 5,
+            "level": "INFO",
+        },
+        "errors_file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": str(LOG_DIR / "errors.log"),
+            "formatter": "verbose",
+            "encoding": "utf-8",
+            "maxBytes": 5 * 1024 * 1024,
+            "backupCount": 3,
+            "level": "WARNING",
         },
     },
     "root": {
@@ -123,26 +139,41 @@ LOGGING = {
     "loggers": {
         "main.views": {
             "handlers": ["console", "file"],
-            "level": "INFO",
+            "level": "DEBUG",
             "propagate": False,
         },
         "main.views_features.views_quiz": {
             "handlers": ["console", "file"],
-            "level": "INFO",
+            "level": "DEBUG",
             "propagate": False,
         },
         "main.views_features.views_admin": {
-            "handlers": ["console", "file"],
-            "level": "INFO",
+            "handlers": ["console", "file", "errors_file"],
+            "level": "DEBUG",
             "propagate": False,
         },
         "main.views_features.views_lobby": {
             "handlers": ["console", "file"],
-            "level": "INFO",
+            "level": "DEBUG",
             "propagate": False,
         },
         "main.views_features.views_profile": {
             "handlers": ["console", "file"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+        "main.models": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "django.request": {
+            "handlers": ["console", "errors_file"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+        "django.security": {
+            "handlers": ["console", "errors_file"],
             "level": "INFO",
             "propagate": False,
         },
