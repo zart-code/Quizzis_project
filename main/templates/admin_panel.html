@@ -50,6 +50,15 @@
     border-color: rgba(139, 92, 246, .5);
     box-shadow: 0 10px 30px rgba(139, 92, 246, .18);
 }
+.ap-stat-card-reports {
+    border: 2px solid #EF4444;
+    background: rgba(26, 26, 46, .8);
+    box-shadow: 0 0 16px rgba(239, 68, 68, .25);
+}
+.ap-stat-card-reports:hover {
+    border-color: #DC2626;
+    box-shadow: 0 0 24px rgba(239, 68, 68, .35), 0 10px 30px rgba(239, 68, 68, .25);
+}
 .ap-stat-icon { font-size: 2rem; filter: drop-shadow(0 0 8px rgba(139, 92, 246, .5)); }
 .ap-stat-num  { font-size: 2rem; font-weight: 800; color: var(--primary-light); line-height: 1; }
 .ap-stat-label { font-size: .75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-top: .2rem; }
@@ -242,6 +251,13 @@
 
   <!-- Stat cards -->
   <div class="ap-stats">
+    <div class="ap-stat-card ap-stat-card-reports">
+      <div class="ap-stat-icon">🚩</div>
+      <div>
+        <div class="ap-stat-num" id="stat-reports">{{ total_pending_reports }}</div>
+        <div class="ap-stat-label">Новых жалоб</div>
+      </div>
+    </div>
     <div class="ap-stat-card">
       <div class="ap-stat-icon">👥</div>
       <div>
@@ -271,13 +287,6 @@
       </div>
     </div>
   </div>
-  <div class="ap-stat-card">
-      <div class="ap-stat-icon">🚩</div>
-      <div>
-        <div class="ap-stat-num" id="stat-reports">{{ total_pending_reports }}</div>
-        <div class="ap-stat-label">Новых жалоб</div>
-      </div>
-    </div>
 
   <!-- Users -->
   <div class="ap-section">
