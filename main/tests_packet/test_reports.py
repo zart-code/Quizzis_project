@@ -11,6 +11,8 @@ from main.models import Profile, Quiz, QuizReport, QuizRevision
 
 
 class QuizReportTests(TestCase):
+    """Набор тестов для функционала жалоб на квизы: создание, дублирование, обработка администратором."""
+
     def setUp(self):
         self.client = Client()
         self.teacher = User.objects.create_user(
@@ -70,6 +72,7 @@ class QuizReportTests(TestCase):
         self.assertEqual(report.status, QuizReport.PENDING)
 
     def test_duplicate_pending_report_is_not_created(self):
+        """Повторная жалоба в статусе ожидания не создаётся."""
         self.client.force_login(self.student)
         url = reverse("report_quiz", args=[self.quiz.id])
         payload = {

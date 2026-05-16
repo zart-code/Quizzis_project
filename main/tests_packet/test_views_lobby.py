@@ -65,8 +65,7 @@ class LobbyViewsTest(TestCase):
         self.assertEqual(response.context["session"], self.session)
 
     def test_lobby_view_non_host(self):
-        """Проверка: не-хост (обычный студент)
-        не может просматривать лобби, получает 404."""
+        """Проверка: студент (не создатель лобби) не может просматривать лобби, получает 404."""
         self.client.force_login(self.student)
         response = self.client.get(reverse("lobby", args=[self.session.pin]))
         self.assertEqual(response.status_code, 404)
