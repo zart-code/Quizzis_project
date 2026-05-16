@@ -725,6 +725,7 @@ class GameAnswer(models.Model):
 Логирование
 """
 
+
 @receiver(post_save, sender=Quiz)
 def log_quiz_save(sender, instance, created, **kwargs):
     """Логирует создание и обновление квизов"""
