@@ -124,7 +124,7 @@ def my_quizzes_view(request):
             .order_by("-reviewed_at", "-created_at")
         )
         # keep only the most recent accepted report to avoid UI clutter
-        quiz.accepted_reports = reports[:1] if reports else []
+        quiz.accepted_reports = reports
 
     context = {
         "quizzes": quizzes,

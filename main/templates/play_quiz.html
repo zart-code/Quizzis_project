@@ -123,6 +123,7 @@
                 <div class="sp-answers-grid">
                     {% for answer in question.answers.all %}
                     <label class="sp-answer-label">
+                        <span class="sp-answer-letter"></span>
                         <input type="radio" name="answer" value="{{ answer.id }}" required class="sp-radio">
                         <span class="sp-answer-text">{{ answer.text }}</span>
                     </label>
@@ -132,6 +133,7 @@
                 <div class="sp-answers-grid">
                     {% for answer in question.answers.all %}
                     <label class="sp-answer-label">
+                        <span class="sp-answer-letter"></span>
                         <input type="checkbox" name="answer" value="{{ answer.id }}" class="sp-check">
                         <span class="sp-answer-text">{{ answer.text }}</span>
                     </label>
@@ -179,6 +181,7 @@
 .sp-answers-grid{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-bottom:1.5rem}
 @media(max-width:500px){.sp-answers-grid{grid-template-columns:1fr}}
 .sp-answer-label{display:flex;align-items:center;gap:.8rem;background:rgba(139,92,246,.08);border:2px solid rgba(139,92,246,.2);border-radius:14px;padding:1rem 1.2rem;cursor:pointer;transition:all .2s}
+.sp-answer-letter{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:rgba(139,92,246,.2);color:var(--primary-light);font-weight:700;font-size:.85rem;flex-shrink:0}
 .sp-answer-label:hover{background:rgba(139,92,246,.18);border-color:var(--primary)}
 .sp-answer-label:has(.sp-radio:checked),.sp-answer-label:has(.sp-check:checked){background:rgba(139,92,246,.25);border-color:var(--primary-light)}
 .sp-radio,.sp-check{width:18px;height:18px;accent-color:var(--primary);flex-shrink:0}
@@ -215,6 +218,10 @@
 {% if not finished and not show_result %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // Fill ABCD letters
+    var letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    document.querySelectorAll('.sp-answer-letter').forEach(function(el,i){el.textContent=letters[i]||'';});
+
     const timeLimit = {{ question.time_limit }};
     const timerEl = document.getElementById('timer');
     const bar = document.getElementById('timer-bar');
