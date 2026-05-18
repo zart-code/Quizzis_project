@@ -188,12 +188,6 @@ def report_quiz_view(request, quiz_id):
     else:
         form = QuizReportForm()
 
-        if pending_report_exists:
-            messages.info(
-                request,
-                "Ваша жалоба на этот квиз уже ожидает проверки.",
-            )
-
     return render(
         request,
         "report_quiz.html",

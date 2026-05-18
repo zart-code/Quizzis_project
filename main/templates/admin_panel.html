@@ -248,6 +248,93 @@
     resize: vertical;
 }
 
+/* ─── Report detail modal ─── */
+.ap-report-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.6);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s;
+}
+.ap-report-modal-backdrop.is-open {
+    opacity: 1;
+    pointer-events: auto;
+}
+.ap-report-modal {
+    width: min(750px, 92%);
+    max-height: 85vh;
+    overflow-y: auto;
+    background: var(--card-bg, #1a1a2e);
+    border: 1px solid rgba(139, 92, 246, .3);
+    border-radius: 16px;
+    padding: 2.2rem;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,.4);
+}
+.ap-report-close-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.3rem;
+    cursor: pointer;
+    transition: color .2s;
+}
+.ap-report-close-btn:hover { color: var(--text-primary); }
+.ap-report-modal-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 1.2rem;
+}
+.ap-report-modal-section { margin-bottom: 1.2rem; }
+.ap-report-modal-section p {
+    margin: .5rem 0 0;
+    color: var(--text-secondary);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    line-height: 1.6;
+    font-size: .95rem;
+}
+.ap-report-modal-section .ap-admin-note {
+    width: 100%;
+    min-height: 120px;
+    margin-top: .5rem;
+    resize: vertical;
+    font-size: .95rem;
+    line-height: 1.5;
+    maxlength: 1000;
+}
+.ap-report-modal-actions {
+    display: flex;
+    gap: .5rem;
+    margin-top: 1.2rem;
+}
+.ap-report-modal-form { flex: 1; }
+.ap-btn-half { width: 100%; }
+.ap-btn-expand {
+    font-size: .8rem;
+    padding: .3rem .7rem;
+    background: rgba(139, 92, 246, .15);
+    border: 1px solid rgba(139, 92, 246, .3);
+    border-radius: 8px;
+    color: var(--primary-light);
+    cursor: pointer;
+    transition: all .2s;
+}
+.ap-btn-expand:hover {
+    background: rgba(139, 92, 246, .25);
+    border-color: var(--primary);
+}
+
 /* ─── Comment modal ─── */
 .ap-comment-modal-backdrop {
     position: fixed;
@@ -518,8 +605,7 @@
         <thead>
           <tr>
             <th>ID</th><th>От кого</th><th>Квиз</th><th>Автор</th>
-            <th>Причина</th><th>Комментарий</th><th>Статус</th>
-            <th>Дата</th><th>Действия</th>
+            <th>Причина</th><th>Статус</th><th>Дата</th><th></th>
           </tr>
         </thead>
         <tbody id="r-tbody">
@@ -546,25 +632,6 @@
               </a>
             </td>
             <td>{{ report.get_reason_display }}</td>
-            <td class="ap-report-comment">
-              {% if report.comment %}
-                {% if report.comment|length > 45 %}
-                  <span>{{ report.comment|truncatewords:8 }}</span>
-                  <button class="ap-read-btn js-read-comment" data-report-id="{{ report.id }}" data-full-text="{{ report.comment }}">Читать</button>
-                {% else %}
-                  <span>{{ report.comment }}</span>
-                {% endif %}
-              {% else %}
-                <span>—</span>
-              {% endif %}
-              {% if report.admin_comment %}
-              <div class="ap-muted">Админ:
-
-                  <button class="ap-read-btn js-read-comment" data-report-id="{{ report.id }}" data-full-text="Админ комментарий: {{ report.admin_comment }}">Читать</button>
-
-              </div>
-              {% endif %}
-            </td>
             <td>
               {% if report.status == 'pending' %}
                 <span class="ap-badge ap-badge-draft">Новая</span>
@@ -576,27 +643,18 @@
             </td>
             <td class="ap-muted">{{ report.created_at|date:"d.m.Y H:i" }}</td>
             <td>
-              {% if report.status == 'pending' %}
-              <form method="post" action="{% url 'admin_accept_report' report.id %}">
-                {% csrf_token %}
-                <textarea
-                  name="admin_comment"
-                  class="ap-admin-note"
-                  placeholder="Комментарий автору"
-                ></textarea>
-                <button type="submit" class="ap-btn ap-btn-ok">✓ Подтвердить</button>
-              </form>
-              <form method="post" action="{% url 'admin_reject_report' report.id %}">
-                {% csrf_token %}
-                <button type="submit" class="ap-btn ap-btn-del">✕ Отклонить</button>
-              </form>
-              {% else %}
-              <span class="ap-muted">Проверена</span>
-              {% endif %}
+              <button class="ap-btn ap-btn-expand js-report-expand"
+                data-report-id="{{ report.id }}"
+                data-report-comment="{{ report.comment|default:'' }}"
+                data-report-admin-comment="{{ report.admin_comment|default:'' }}"
+                data-report-status="{{ report.status }}"
+                data-report-accept-url="{% url 'admin_accept_report' report.id %}"
+                data-report-reject-url="{% url 'admin_reject_report' report.id %}"
+              >Развернуть</button>
             </td>
           </tr>
           {% empty %}
-          <tr class="ap-empty"><td colspan="9">Жалоб нет</td></tr>
+          <tr class="ap-empty"><td colspan="8">Жалоб нет</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -608,6 +666,42 @@
     </div>
     {% endif %}
   </div>
+
+<!-- Модальное окно жалобы -->
+<div class="ap-report-modal-backdrop" id="apReportBackdrop">
+  <div class="ap-report-modal" role="dialog" aria-modal="true">
+    <button type="button" class="ap-report-close-btn" id="apReportCloseBtn">✕</button>
+    <div class="ap-report-modal-title" id="apReportTitle">Жалоба</div>
+    <div class="ap-report-modal-body">
+      <div class="ap-report-modal-section">
+        <strong>Комментарий жалобы:</strong>
+        <p id="apReportComment">—</p>
+      </div>
+      <div class="ap-report-modal-section" id="apReportAdminSection" style="display:none;">
+        <strong>Комментарий админа:</strong>
+        <p id="apReportAdminComment"></p>
+      </div>
+      <div id="apReportPendingBlock">
+        <div class="ap-report-modal-section">
+          <label for="apReportMessage"><strong>Сообщение создателю:</strong></label>
+          <textarea id="apReportMessage" class="ap-admin-note" placeholder="Напишите сообщение создателю квиза..." maxlength="1000"></textarea>
+        </div>
+        <div class="ap-report-modal-actions">
+          <form method="post" id="apReportAcceptForm" class="ap-report-modal-form">
+            {% csrf_token %}
+            <input type="hidden" name="admin_comment" id="apReportAcceptComment">
+            <button type="submit" class="ap-btn ap-btn-ok ap-btn-half">✓ Принять</button>
+          </form>
+          <form method="post" id="apReportRejectForm" class="ap-report-modal-form">
+            {% csrf_token %}
+            <input type="hidden" name="admin_comment" id="apReportRejectComment">
+            <button type="submit" class="ap-btn ap-btn-del ap-btn-half">✕ Отклонить</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 </div>
 
@@ -851,5 +945,84 @@ function initCommentModals() {
 }
 
 initCommentModals();
+
+// ── Модальное окно жалобы ──
+(function() {
+  const backdrop = document.getElementById('apReportBackdrop');
+  const closeBtn = document.getElementById('apReportCloseBtn');
+  const titleEl = document.getElementById('apReportTitle');
+  const commentEl = document.getElementById('apReportComment');
+  const adminSection = document.getElementById('apReportAdminSection');
+  const adminCommentEl = document.getElementById('apReportAdminComment');
+  const pendingBlock = document.getElementById('apReportPendingBlock');
+  const messageEl = document.getElementById('apReportMessage');
+  const acceptForm = document.getElementById('apReportAcceptForm');
+  const rejectForm = document.getElementById('apReportRejectForm');
+  const acceptComment = document.getElementById('apReportAcceptComment');
+  const rejectComment = document.getElementById('apReportRejectComment');
+
+  if (!backdrop) return;
+
+  function openModal(btn) {
+    const id = btn.dataset.reportId;
+    const comment = btn.dataset.reportComment;
+    const adminComment = btn.dataset.reportAdminComment;
+    const status = btn.dataset.reportStatus;
+    const acceptUrl = btn.dataset.reportAcceptUrl;
+    const rejectUrl = btn.dataset.reportRejectUrl;
+
+    titleEl.textContent = 'Жалоба #' + id;
+    commentEl.textContent = comment || '—';
+
+    if (adminComment) {
+      adminSection.style.display = '';
+      adminCommentEl.textContent = adminComment;
+    } else {
+      adminSection.style.display = 'none';
+    }
+
+    if (status === 'pending') {
+      pendingBlock.style.display = '';
+      messageEl.value = '';
+      acceptForm.action = acceptUrl;
+      rejectForm.action = rejectUrl;
+    } else {
+      pendingBlock.style.display = 'none';
+    }
+
+    backdrop.classList.add('is-open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    backdrop.classList.remove('is-open');
+    document.body.style.overflow = '';
+  }
+
+  document.querySelectorAll('.js-report-expand').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      openModal(this);
+    });
+  });
+
+  closeBtn.addEventListener('click', closeModal);
+  backdrop.addEventListener('click', function(e) {
+    if (e.target === backdrop) closeModal();
+  });
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && backdrop.classList.contains('is-open')) closeModal();
+  });
+
+  // Sync textarea to hidden inputs on submit
+  [acceptForm, rejectForm].forEach(function(form) {
+    if (!form) return;
+    form.addEventListener('submit', function() {
+      var val = messageEl.value;
+      acceptComment.value = val;
+      rejectComment.value = val;
+    });
+  });
+})();
 </script>
 {% endblock %}

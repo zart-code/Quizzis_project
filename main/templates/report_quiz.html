@@ -37,13 +37,13 @@
                 </div>
 
                 <div class="report-actions">
-                    <button
-                        type="submit"
-                        class="btn btn-primary"
-                        {% if pending_report_exists %}disabled{% endif %}
-                    >
+                    {% if pending_report_exists %}
+                    <p class="report-pending-notice">⏳ Ваша жалоба на этот квиз уже ожидает проверки.</p>
+                    {% else %}
+                    <button type="submit" class="btn btn-primary">
                         Отправить жалобу
                     </button>
+                    {% endif %}
                     <a href="{% url 'quizzes_view' %}" class="btn btn-secondary">
                         Отмена
                     </a>
@@ -109,6 +109,16 @@
 }
 textarea.form-control {
     resize: vertical;
+}
+.report-pending-notice {
+    color: #FBBF24;
+    font-weight: 600;
+    font-size: .95rem;
+    padding: .6rem 1rem;
+    background: rgba(251, 191, 36, .1);
+    border: 1px solid rgba(251, 191, 36, .3);
+    border-radius: 10px;
+    width: 100%;
 }
 </style>
 {% endblock %}
