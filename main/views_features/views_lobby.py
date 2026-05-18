@@ -36,6 +36,8 @@ def create_lobby_view(request, quiz_id):
     if quiz.status == Quiz.DRAFT:
         return redirect("my_quizzes")
 
+    GameSession.objects.filter(host=request.user, status=GameSession.WAITING).delete()
+
     session = GameSession.objects.create(
         quiz=quiz,
         revision=get_current_revision(quiz),
@@ -96,6 +98,11 @@ def join_lobby_view(request, pin):
 
     if session.host == request.user:
         return redirect("lobby", pin=pin)
+
+    if session.status == GameSession.IN_PROGRESS and GameParticipant.objects.filter(
+        session=session, user=request.user
+    ).exists():
+        return redirect("session_play", pin=pin)
 
     if session.status != GameSession.WAITING:
         return render(

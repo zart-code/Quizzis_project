@@ -455,7 +455,10 @@ class BugConditionExplorationTest(TestCase):
         self.client = Client()
         self.teacher = User.objects.get(pk=2)
         self.student = User.objects.get(pk=1)
-        self.quiz = Quiz.objects.get(pk=1)  # active quiz
+        self.quiz = Quiz.objects.get(pk=1)
+        # Ensure quiz is ACTIVE so create_lobby_view doesn't early-return
+        self.quiz.status = Quiz.ACTIVE
+        self.quiz.save()
 
     def test_create_lobby_deletes_existing_waiting_session(self):
         """Случай A: Хост с существующей WAITING сессией создаёт новое лобби.
