@@ -36,6 +36,13 @@ def create_lobby_view(request, quiz_id):
     if quiz.status == Quiz.DRAFT:
         return redirect("my_quizzes")
 
+    # Clean up all expired WAITING sessions (older than 1 hour)
+    expiry_threshold = timezone.now() - timezone.timedelta(hours=1)
+    GameSession.objects.filter(
+        status=GameSession.WAITING, created_at__lt=expiry_threshold
+    ).delete()
+
+    # Delete all WAITING sessions for this host
     GameSession.objects.filter(host=request.user, status=GameSession.WAITING).delete()
 
     session = GameSession.objects.create(
@@ -49,6 +56,14 @@ def create_lobby_view(request, quiz_id):
 @login_required
 def lobby_view(request, pin):
     session = get_object_or_404(GameSession, pin=pin, host=request.user)
+
+    # Auto-expire WAITING sessions older than 1 hour
+    if session.status == GameSession.WAITING:
+        expiry_threshold = timezone.now() - timezone.timedelta(hours=1)
+        if session.created_at < expiry_threshold:
+            session.delete()
+            return redirect("my_quizzes")
+
     return render(request, "lobby.html", {"session": session})
 
 
@@ -95,6 +110,16 @@ def api_players_view(request, pin):
 @login_required
 def join_lobby_view(request, pin):
     session = get_object_or_404(GameSession, pin=pin)
+
+    # Auto-expire WAITING sessions older than 1 hour
+    if session.status == GameSession.WAITING:
+        expiry_threshold = timezone.now() - timezone.timedelta(hours=1)
+        if session.created_at < expiry_threshold:
+            session.delete()
+            return render(
+                request, "lobby_error.html",
+                {"message": "Это лобби истекло и было закрыто."}
+            )
 
     if session.host == request.user:
         return redirect("lobby", pin=pin)
