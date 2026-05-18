@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from django.urls import reverse
 from django.utils import timezone
 from main.models import Quiz, GameSession, GameParticipant, GameAnswer, QuizResult
+from main.services.quiz_revisions import get_current_revision
 
 
 class LobbyViewsTest(TestCase):
@@ -225,3 +226,140 @@ class LobbyViewsTest(TestCase):
         self.assertIn("rows", response.context)
         self.assertEqual(len(response.context["rows"]), 1)
         self.assertEqual(response.context["rows"][0]["user"], self.student)
+
+
+class BugConditionExplorationTest(TestCase):
+    """Тесты исследования баг-условий: очистка осиротевших сессий и переподключение игрока.
+
+    **Проверяет: Требования 1.1, 1.2, 1.3**
+
+    Эти тесты кодируют ОЖИДАЕМОЕ (правильное) поведение. Они спроектированы так,
+    чтобы ПАДАТЬ на неисправленном коде, доказывая наличие багов.
+    После применения исправления тесты должны проходить.
+    """
+
+    fixtures = ["db.json"]
+
+    def setUp(self):
+        self.client = Client()
+        self.teacher = User.objects.get(pk=2)
+        self.student = User.objects.get(pk=1)
+        self.quiz = Quiz.objects.get(pk=1)  # active quiz
+
+    def test_create_lobby_deletes_existing_waiting_session(self):
+        """Случай A: Хост с существующей WAITING сессией создаёт новое лобби.
+
+        Баг-условие (Треб. 1.2): create_lobby_view НЕ удаляет осиротевшие
+        WAITING сессии при создании нового лобби для того же хоста.
+
+        Ожидаемое поведение: старая WAITING сессия должна быть удалена.
+        """
+        # Create an existing WAITING session for the host
+        old_session = GameSession.objects.create(
+            quiz=self.quiz,
+            host=self.teacher,
+            pin="111111",
+            status=GameSession.WAITING,
+            is_locked=False,
+        )
+        old_session_id = old_session.id
+
+        # Host creates a new lobby for the same quiz
+        self.client.force_login(self.teacher)
+        self.client.get(reverse("create_lobby", args=[self.quiz.id]))
+
+        # Assert: the old WAITING session should no longer exist
+        self.assertFalse(
+            GameSession.objects.filter(id=old_session_id).exists(),
+            "Bug confirmed: Old WAITING session was NOT deleted when host "
+            "created a new lobby. create_lobby_view does not clean up orphans.",
+        )
+
+    def test_join_lobby_redirects_existing_participant_to_session_play(self):
+        """Случай B: Существующий GameParticipant пытается войти в IN_PROGRESS сессию.
+
+        Баг-условие (Треб. 1.3): join_lobby_view возвращает 200 с шаблоном ошибки
+        вместо редиректа существующего участника на session_play.
+
+        Ожидаемое поведение: должен быть редирект (302) на URL session_play.
+        """
+        # Create an IN_PROGRESS session
+        session = GameSession.objects.create(
+            quiz=self.quiz,
+            host=self.teacher,
+            pin="222222",
+            status=GameSession.IN_PROGRESS,
+            is_locked=False,
+            current_question=0,
+            current_question_started_at=timezone.now(),
+        )
+
+        # Create a GameParticipant for the student in this session
+        GameParticipant.objects.create(session=session, user=self.student)
+
+        # Student (existing participant) tries to join via PIN
+        self.client.force_login(self.student)
+        response = self.client.get(reverse("join_lobby", args=[session.pin]))
+
+        # Assert: should be a redirect (302) to session_play
+        self.assertEqual(
+            response.status_code,
+            302,
+            "Bug confirmed: join_lobby_view returns 200 with error template "
+            "instead of 302 redirect for existing participant in IN_PROGRESS session.",
+        )
+        self.assertIn(
+            reverse("session_play", args=[session.pin]),
+            response.url,
+            "Bug confirmed: Redirect target is not session_play URL.",
+        )
+
+    def test_create_lobby_deletes_all_orphaned_waiting_sessions(self):
+        """Случай C: Хост с несколькими WAITING сессиями создаёт новое лобби.
+
+        Баг-условие (Треб. 1.2): create_lobby_view НЕ удаляет осиротевшие
+        WAITING сессии, оставляя несколько «сирот» в базе данных.
+
+        Ожидаемое поведение: все старые WAITING сессии должны быть удалены,
+        и должна остаться только новая.
+        """
+        # Create multiple WAITING sessions for the host
+        session1 = GameSession.objects.create(
+            quiz=self.quiz,
+            host=self.teacher,
+            pin="333333",
+            status=GameSession.WAITING,
+            is_locked=False,
+        )
+        session2 = GameSession.objects.create(
+            quiz=self.quiz,
+            host=self.teacher,
+            pin="444444",
+            status=GameSession.WAITING,
+            is_locked=False,
+        )
+        old_session_ids = [session1.id, session2.id]
+
+        # Host creates a new lobby
+        self.client.force_login(self.teacher)
+        self.client.get(reverse("create_lobby", args=[self.quiz.id]))
+
+        # Assert: all old WAITING sessions should be deleted
+        remaining_old = GameSession.objects.filter(id__in=old_session_ids).count()
+        self.assertEqual(
+            remaining_old,
+            0,
+            "Bug confirmed: Old WAITING sessions were NOT deleted when host "
+            "created a new lobby. Multiple orphans remain in the database.",
+        )
+
+        # Assert: only one WAITING session should exist for this host (the new one)
+        waiting_sessions = GameSession.objects.filter(
+            host=self.teacher, status=GameSession.WAITING
+        )
+        self.assertEqual(
+            waiting_sessions.count(),
+            1,
+            "Bug confirmed: Expected exactly 1 WAITING session after creating "
+            "new lobby, but found multiple (orphans not cleaned up).",
+        )
