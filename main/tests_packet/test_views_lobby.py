@@ -251,7 +251,6 @@ class BugConditionExplorationTest(TestCase):
 
         Баг-условие (Треб. 1.2): create_lobby_view НЕ удаляет осиротевшие
         WAITING сессии при создании нового лобби для того же хоста.
-
         Ожидаемое поведение: старая WAITING сессия должна быть удалена.
         """
         # Create an existing WAITING session for the host
