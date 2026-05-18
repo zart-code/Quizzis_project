@@ -81,6 +81,16 @@
                             </a>
                         </div>
 
+                        {% if quiz.accepted_reports %}
+                        <div class="mq-report-hidden" style="display:none" aria-hidden="true">
+                            <span>Нарушение подтверждено администратором</span>
+                            {% for report in quiz.accepted_reports %}
+                            <span>{{ report.comment }}</span>
+                            <span>{{ report.admin_comment }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
                         {% if quiz.description %}
                         <p class="mq-card-desc">{{ quiz.description|truncatechars:80 }}</p>
                         {% endif %}
