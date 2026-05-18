@@ -195,6 +195,7 @@ def session_play_view(request, pin):
             {
                 "session": session,
                 "participant": participant,
+                "max_score": total_max_score,
             },
         )
 

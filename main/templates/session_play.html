@@ -94,6 +94,16 @@
             window.addEventListener('pageshow',function(e){
                 if(e.persisted){window.location.reload();}
             });
+
+            // Warn player before leaving the game
+            function beforeUnloadHandler(e){
+                e.preventDefault();
+                e.returnValue='Вы точно хотите выйти? Сейчас идет игра!';
+            }
+            window.addEventListener('beforeunload',beforeUnloadHandler);
+            form.addEventListener('submit',function(){
+                window.removeEventListener('beforeunload',beforeUnloadHandler);
+            });
         });
         </script>
         {% endif %}
