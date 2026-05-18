@@ -149,6 +149,73 @@ def api_state_view(request, pin):
 
 
 @login_required
+def api_game_stats_view(request, pin):
+    """API: статистика игры в реальном времени для хоста."""
+    session = get_object_or_404(GameSession, pin=pin, host=request.user)
+    questions = get_session_questions(session)
+    total_questions = len(questions)
+    total_participants = session.participants.count()
+    answered_count = session.participants.filter(is_answered=True).count()
+
+    current_q = min(session.current_question, total_questions - 1)
+    current_question_text = ""
+    if 0 <= current_q < total_questions:
+        current_question_text = questions[current_q].text
+
+    participants = (
+        session.participants.select_related("user")
+        .order_by("-score")
+    )
+    players = [
+        {
+            "username": p.user.username,
+            "score": p.score,
+            "is_answered": p.is_answered,
+        }
+        for p in participants
+    ]
+
+    # Build history of answers per question
+    question_history = []
+    for i, q in enumerate(questions):
+        if i >= session.current_question and session.status != GameSession.FINISHED:
+            break
+        answer_lookup = {"session": session}
+        if session.revision_id:
+            answer_lookup["revision_question"] = q
+        else:
+            answer_lookup["question"] = q
+
+        answers = GameAnswer.objects.filter(**answer_lookup).select_related(
+            "participant__user"
+        )
+        q_data = {
+            "number": i + 1,
+            "text": q.text,
+            "answers": [
+                {
+                    "username": a.participant.user.username,
+                    "is_correct": a.is_correct,
+                    "points": a.points,
+                }
+                for a in answers
+            ],
+        }
+        question_history.append(q_data)
+
+    return JsonResponse({
+        "status": session.status,
+        "current_question": min(current_q + 1, total_questions),
+        "total_questions": total_questions,
+        "current_question_text": current_question_text,
+        "answered_count": answered_count,
+        "total_participants": total_participants,
+        "players": players,
+        "question_history": question_history,
+    })
+
+
+@login_required
 def session_play_view(request, pin):
     session = get_object_or_404(GameSession, pin=pin)
     participant = get_object_or_404(

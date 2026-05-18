@@ -75,6 +75,7 @@ from main.views_features.views_lobby import (
     start_game_view,
     api_state_view,
     session_play_view,
+    api_game_stats_view,
     session_results_teacher_view,
     quiz_sessions_list_view,
 )
@@ -118,6 +119,7 @@ urlpatterns = [
     path("join/<str:pin>/", join_lobby_view, name="join_lobby"),
     path("lobby/<str:pin>/start/", start_game_view, name="start_game"),
     path("session/<str:pin>/api/state/", api_state_view, name="api_state"),
+    path("lobby/<str:pin>/api/game-stats/", api_game_stats_view, name="api_game_stats"),
     path("session/<str:pin>/play/", session_play_view, name="session_play"),
     path(
         "quiz/<int:quiz_id>/sessions/",
