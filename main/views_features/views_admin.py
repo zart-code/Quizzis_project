@@ -30,6 +30,7 @@ def admin_required(view_func):
 @admin_required
 def admin_panel_view(request):
     """Главная страница панели администратора"""
+
     total_users = User.objects.count()
     total_quizzes = Quiz.objects.count()
     total_banned_users = Profile.objects.filter(is_banned=True).count()
