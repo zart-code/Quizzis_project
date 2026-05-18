@@ -228,6 +228,217 @@ class LobbyViewsTest(TestCase):
         self.assertEqual(response.context["rows"][0]["user"], self.student)
 
 
+class PreservationPropertyTest(TestCase):
+    """Тесты сохранения существующего поведения лобби (Property 2: Preservation).
+
+    **Проверяет: Требования 3.1, 3.2, 3.3, 3.4, 3.5, 3.6**
+
+    Эти тесты фиксируют ТЕКУЩЕЕ корректное поведение, которое должно
+    остаться неизменным после применения исправлений багов.
+    Все тесты должны ПРОХОДИТЬ как на неисправленном, так и на исправленном коде.
+    """
+
+    fixtures = ["db.json"]
+
+    def setUp(self):
+        self.client = Client()
+        self.teacher = User.objects.get(pk=2)
+        self.student = User.objects.get(pk=1)
+        self.quiz = Quiz.objects.get(pk=1)  # active quiz
+
+    # --- Requirement 3.1: Normal exit via "Выйти" preserves delete + redirect ---
+    def test_delete_session_view_deletes_and_redirects(self):
+        """Preservation: delete_session_view POST удаляет сессию и редиректит на my_quizzes.
+
+        Требование 3.1: Хост нажимает «Выйти» — сессия удаляется, редирект на my_quizzes.
+        """
+        session = GameSession.objects.create(
+            quiz=self.quiz,
+            host=self.teacher,
+            pin="900001",
+            status=GameSession.WAITING,
+            is_locked=False,
+        )
+        session_id = session.id
+
+        self.client.force_login(self.teacher)
+        response = self.client.post(reverse("delete_session", args=[session.pin]))
+
+        # Should redirect to my_quizzes
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("my_quizzes"), response.url)
+
+        # Session should be deleted
+        self.assertFalse(
+            GameSession.objects.filter(id=session_id).exists(),
+            "Preservation violated: delete_session_view did not delete the session.",
+        )
+
+    # --- Requirement 3.2: Non-participant on IN_PROGRESS session gets error ---
+    def test_join_lobby_non_participant_in_progress_gets_error(self):
+        """Preservation: non-participant на IN_PROGRESS сессии получает 200 с ошибкой.
+
+        Требование 3.2: Новый пользователь (не участник) пытается войти в
+        IN_PROGRESS сессию — видит ошибку «Игра уже началась или завершена».
+        """
+        session = GameSession.objects.create(
+            quiz=self.quiz,
+            host=self.teacher,
+            pin="900002",
+            status=GameSession.IN_PROGRESS,
+            is_locked=False,
+            current_question=0,
+            current_question_started_at=timezone.now(),
+        )
+
+        # Student is NOT a participant in this session
+        self.client.force_login(self.student)
+        response = self.client.get(reverse("join_lobby", args=[session.pin]))
+
+        self.assertEqual(
+            response.status_code,
+            200,
+            "Preservation violated: non-participant on IN_PROGRESS session "
+            "should get 200 with error template.",
+        )
+        self.assertTemplateUsed(response, "lobby_error.html")
+        self.assertContains(response, "Игра уже началась или завершена")
+
+    # --- Requirement 3.3: Locked lobby blocks new players ---
+    def test_join_lobby_locked_session_blocks_player(self):
+        """Preservation: locked лобби блокирует новых игроков с ошибкой.
+
+        Требование 3.3: Пользователь пытается войти в закрытое лобби —
+        видит ошибку «Лобби закрыто для новых игроков».
+        """
+        session = GameSession.objects.create(
+            quiz=self.quiz,
+            host=self.teacher,
+            pin="900003",
+            status=GameSession.WAITING,
+            is_locked=True,
+        )
+
+        self.client.force_login(self.student)
+        response = self.client.get(reverse("join_lobby", args=[session.pin]))
+
+        self.assertEqual(
+            response.status_code,
+            200,
+            "Preservation violated: locked lobby should return 200 with error.",
+        )
+        self.assertTemplateUsed(response, "lobby_error.html")
+        self.assertContains(response, "Лобби закрыто для новых игроков")
+
+    # --- Requirement 3.4: Full lobby blocks new players ---
+    def test_join_lobby_full_session_blocks_player(self):
+        """Preservation: полное лобби (25 игроков) блокирует новых игроков.
+
+        Требование 3.4: Пользователь пытается войти в полное лобби —
+        видит ошибку «Лобби заполнено (максимум 25 игроков)».
+        """
+        session = GameSession.objects.create(
+            quiz=self.quiz,
+            host=self.teacher,
+            pin="900004",
+            status=GameSession.WAITING,
+            is_locked=False,
+        )
+
+        # Create 25 participants to fill the lobby
+        for i in range(25):
+            user = User.objects.create_user(
+                username=f"filler_user_{i}", password="testpass"
+            )
+            GameParticipant.objects.create(session=session, user=user)
+
+        self.client.force_login(self.student)
+        response = self.client.get(reverse("join_lobby", args=[session.pin]))
+
+        self.assertEqual(
+            response.status_code,
+            200,
+            "Preservation violated: full lobby should return 200 with error.",
+        )
+        self.assertTemplateUsed(response, "lobby_error.html")
+        self.assertContains(response, "Лобби заполнено (максимум 25 игроков)")
+
+    # --- Requirement 3.5: Normal lobby creation (no orphans) works ---
+    def test_create_lobby_no_orphans_creates_session_normally(self):
+        """Preservation: create_lobby_view без существующих WAITING сессий работает нормально.
+
+        Требование 3.5: Хост создаёт лобби для квиза без осиротевших сессий —
+        сессия создаётся и происходит редирект на страницу лобби.
+        """
+        # Use an ACTIVE quiz (fixture quiz is DRAFT by default)
+        active_quiz = Quiz.objects.create(
+            title="Active Quiz", creator=self.teacher, status=Quiz.ACTIVE
+        )
+
+        # Ensure no existing WAITING sessions for this teacher
+        GameSession.objects.filter(
+            host=self.teacher, status=GameSession.WAITING
+        ).delete()
+
+        self.client.force_login(self.teacher)
+        response = self.client.get(reverse("create_lobby", args=[active_quiz.id]))
+
+        # Should redirect to the lobby page
+        self.assertEqual(
+            response.status_code,
+            302,
+            "Preservation violated: create_lobby_view should redirect to lobby.",
+        )
+
+        # A new session should exist
+        new_session = GameSession.objects.filter(
+            host=self.teacher, status=GameSession.WAITING, quiz=active_quiz
+        ).first()
+        self.assertIsNotNone(
+            new_session,
+            "Preservation violated: create_lobby_view did not create a new session.",
+        )
+
+        # Redirect should point to the lobby URL
+        self.assertIn(
+            reverse("lobby", args=[new_session.pin]),
+            response.url,
+            "Preservation violated: redirect target is not the lobby page.",
+        )
+
+    # --- Requirement 3.6: Player joining WAITING session gets GameParticipant ---
+    def test_join_lobby_waiting_session_creates_participant(self):
+        """Preservation: игрок входит в WAITING сессию — создаётся GameParticipant, ответ 200.
+
+        Требование 3.6: Игрок входит в WAITING сессию по PIN —
+        создаётся GameParticipant и рендерится join_lobby.html.
+        """
+        session = GameSession.objects.create(
+            quiz=self.quiz,
+            host=self.teacher,
+            pin="900006",
+            status=GameSession.WAITING,
+            is_locked=False,
+        )
+
+        self.client.force_login(self.student)
+        response = self.client.get(reverse("join_lobby", args=[session.pin]))
+
+        self.assertEqual(
+            response.status_code,
+            200,
+            "Preservation violated: joining WAITING session should return 200.",
+        )
+        self.assertTemplateUsed(response, "join_lobby.html")
+        self.assertTrue(
+            GameParticipant.objects.filter(
+                session=session, user=self.student
+            ).exists(),
+            "Preservation violated: GameParticipant was not created for player "
+            "joining a WAITING session.",
+        )
+
+
 class BugConditionExplorationTest(TestCase):
     """Тесты исследования баг-условий: очистка осиротевших сессий и переподключение игрока.
 
