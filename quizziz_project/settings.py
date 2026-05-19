@@ -80,10 +80,12 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
-STATIC_ROOT = BASE_DIR / "static"
+STATIC_ROOT = "/home/site1/app/static/"
 
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+CSRF_TRUSTED_ORIGINS = ['http://188.127.251.236:8081']
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
