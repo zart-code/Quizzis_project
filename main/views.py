@@ -212,7 +212,15 @@ def join_by_code(request):
     if request.method == "POST":
         pin = request.POST.get("pin", "").strip().upper()
         if pin:
-            if GameSession.objects.filter(pin=pin).exists():
+            session = GameSession.objects.filter(pin=pin).first()
+            if session is not None:
+                # Не создаём гостя для завершённой сессии
+                if session.status == GameSession.FINISHED:
+                    messages.error(
+                        request,
+                        "Эта игра уже завершена. Присоединиться невозможно.",
+                    )
+                    return redirect("main_page")
                 if not request.user.is_authenticated:
                     nickname = request.POST.get("nickname", "").strip()
                     # Если это первый раз (нет guest_user_id), очищаем флаг

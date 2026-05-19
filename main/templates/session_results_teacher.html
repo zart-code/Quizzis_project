@@ -57,8 +57,8 @@
                             {% endif %}
                         </td>
                         <td class="tr-td-user">
-                            <span class="tr-avatar">{{ row.user.username.0|upper }}</span>
-                            {{ row.user.username }}
+                            <span class="tr-avatar">{{ row.display_name.0|upper }}</span>
+                            {{ row.display_name }}
                         </td>
                         {% for result in row.q_results %}
                         <td class="tr-td-q">

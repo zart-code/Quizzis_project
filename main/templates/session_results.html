@@ -21,10 +21,10 @@
             <h2 class="sr-lb-title">🥇 Таблица лидеров</h2>
             <ol class="sr-lb-list">
                 {% for p in session.participants.all %}
-                <li class="sr-lb-item {% if p.user == request.user %}sr-lb-me{% endif %}">
+                <li class="sr-lb-item {% if p.id == participant.id %}sr-lb-me{% endif %}">
                     <span class="sr-lb-pos">{{ forloop.counter }}</span>
                     <span class="sr-lb-name">
-                        {% if p.user == request.user %}⭐ {% endif %}{{ p.user.username }}
+                        {% if p.id == participant.id %}⭐ {% endif %}{{ p.get_display_name }}
                     </span>
                     <span class="sr-lb-score">{{ p.score }} / {{ max_score }}</span>
                 </li>
