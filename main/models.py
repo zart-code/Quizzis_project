@@ -452,8 +452,15 @@ class QuizResult(models.Model):
 
     user = models.ForeignKey(
         User,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="quiz_results",
+    )
+    display_name = models.CharField(
+        max_length=150,
+        blank=True,
+        verbose_name="Отображаемое имя",
     )
     quiz = models.ForeignKey(
         Quiz,
@@ -488,6 +495,14 @@ class QuizResult(models.Model):
 
     def __str__(self):
         return str(self.score)
+
+    def get_display_name(self) -> str:
+        """Resolve display name with fallback chain."""
+        if self.display_name:
+            return self.display_name
+        if self.user is not None:
+            return self.user.username
+        return "Удалённый пользователь"
 
 
 class Achievement(models.Model):
@@ -622,9 +637,16 @@ class GameParticipant(models.Model):
     )
     user = models.ForeignKey(
         User,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="game_participations",
         verbose_name="Игрок",
+    )
+    display_name = models.CharField(
+        max_length=150,
+        blank=True,
+        verbose_name="Отображаемое имя",
     )
     score = models.IntegerField(default=0, verbose_name="Счёт")
     is_answered = models.BooleanField(
@@ -638,14 +660,28 @@ class GameParticipant(models.Model):
         Метаданные
         """
 
-        unique_together = ["session", "user"]
         ordering = ["-score"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["session", "user"],
+                condition=models.Q(user__isnull=False),
+                name="unique_participant_per_session",
+            ),
+        ]
 
     def __str__(self):
         """
         Отладочная информация
         """
         return f"присоединился: {self.joined_at}"
+
+    def get_display_name(self) -> str:
+        """Resolve display name with fallback chain."""
+        if self.display_name:
+            return self.display_name
+        if self.user is not None:
+            return self.user.username
+        return "Удалённый пользователь"
 
 
 class GameAnswer(models.Model):

@@ -15,6 +15,7 @@ class QuizReportForm(forms.ModelForm):
                 attrs={
                     "class": "form-control",
                     "rows": 5,
+                    "maxlength": "500",
                     "placeholder": "Опишите проблему, если нужно.",
                 }
             ),

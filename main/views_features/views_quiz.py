@@ -133,7 +133,7 @@ def my_quizzes_view(request):
             .order_by("-reviewed_at", "-created_at")
         )
         # keep only the most recent accepted report to avoid UI clutter
-        quiz.accepted_reports = reports[:1] if reports else []
+        quiz.accepted_reports = reports
 
     context = {
         "quizzes": quizzes,
@@ -206,12 +206,6 @@ def report_quiz_view(request, quiz_id):
     else:
         form = QuizReportForm()
 
-        if pending_report_exists:
-            messages.info(
-                request,
-                "Ваша жалоба на этот квиз уже ожидает проверки.",
-            )
-
     return render(
         request,
         "report_quiz.html",
@@ -224,11 +218,14 @@ def report_quiz_view(request, quiz_id):
     )
 
 
-@login_required
 def play_quiz_view(request, quiz_id):
     quiz = get_object_or_404(Quiz, id=quiz_id)
 
-    if quiz.status == Quiz.DRAFT and quiz.creator != request.user:
+    # Get current user (authenticated or guest)
+    from main.views_features.views_lobby import _get_request_user
+    current_user = _get_request_user(request)
+
+    if quiz.status == Quiz.DRAFT and quiz.creator != current_user:
         return redirect("quizzes_view")
 
     questions = get_quiz_questions(quiz)
@@ -250,7 +247,7 @@ def play_quiz_view(request, quiz_id):
             if result_id:
                 QuizResult.objects.filter(
                     id=result_id,
-                    user=request.user,
+                    user=current_user,
                     quiz=quiz,
                 ).update(
                     score=score,
@@ -391,7 +388,7 @@ def play_quiz_view(request, quiz_id):
             )
 
     result = QuizResult.objects.create(
-        user=request.user,
+        user=current_user,
         quiz=quiz,
         revision=current_revision,
         score=0,

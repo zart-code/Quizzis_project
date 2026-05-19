@@ -4,10 +4,11 @@
 
 {% block content %}
     <div class="container">
-        <div class="lobby-wrapper">
+        <!-- Lobby waiting view -->
+        <div class="lobby-wrapper" id="lobby-waiting" {% if session.status != 'waiting' %}style="display:none"{% endif %}>
             <div class="lobby-header">
                 <h1 class="lobby-title">🎮 {{ session.quiz.title }}</h1>
-                <p class="lobby-meta">Вопросов: <strong>{{ session.quiz.questions.count }}</strong></p>
+                <p class="lobby-meta">Вопросов: <strong>{{ session.quiz.total_questions }}</strong></p>
             </div>
 
             <div class="lobby-grid">
@@ -50,7 +51,7 @@
 
                 <form method="post" action="{% url 'start_game' session.pin %}" style="display:inline">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-primary" id="start-btn" disabled>▶ Начать игру </button>
+                    <button type="submit" class="btn btn-primary" id="start-btn" disabled>▶ Начать игру</button>
                 </form>
 
                 <form method="post" action="{% url 'delete_session' session.pin %}" style="display:inline">
@@ -59,15 +60,98 @@
                 </form>
             </div>
         </div>
+
+        <!-- Game in progress dashboard -->
+        <div class="lobby-wrapper" id="lobby-game" {% if session.status == 'waiting' %}style="display:none"{% endif %}>
+            <div class="lobby-header">
+                <h1 class="lobby-title">🎮 {{ session.quiz.title }}</h1>
+                <div class="game-status-badge" id="game-status-badge">
+                    <span class="lbadge lbadge-success">▶ Игра идёт</span>
+                </div>
+            </div>
+
+            <div class="game-progress card">
+                <div class="game-progress-row">
+                    <span class="game-progress-label">Вопрос</span>
+                    <span class="game-progress-value"><span id="gs-current-q">1</span> / <span id="gs-total-q">{{ session.quiz.total_questions }}</span></span>
+                </div>
+                <div class="game-progress-row">
+                    <span class="game-progress-label">Ответили</span>
+                    <span class="game-progress-value"><span id="gs-answered">0</span> / <span id="gs-total-p">0</span></span>
+                </div>
+                <div class="game-progress-bar-bg">
+                    <div class="game-progress-bar" id="gs-bar" style="width:0%"></div>
+                </div>
+            </div>
+
+            <div class="game-question-card card" id="gs-question-card">
+                <div class="game-question-label">Текущий вопрос:</div>
+                <div class="game-question-text" id="gs-question-text"></div>
+            </div>
+
+            <!-- Question history (accumulates as game progresses) -->
+            <div id="gs-history"></div>
+
+            <div class="game-leaderboard card">
+                <h3 class="section-title">🏆 Таблица очков</h3>
+                <div class="game-lb-list" id="gs-leaderboard"></div>
+            </div>
+
+            <div class="lobby-actions" id="gs-finished-actions" style="display:none;">
+                <a href="{% url 'session_results_teacher' session.pin %}" class="btn btn-primary" id="gs-results-link">📊 Подробные результаты</a>
+                <form method="post" action="{% url 'delete_session' session.pin %}" style="display:inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger" onclick="return confirm('Удалить сессию?')">🗑 Удалить сессию</button>
+                </form>
+            </div>
+        </div>
     </div>
 
-
+<style>
+.game-progress{padding:1.5rem;margin-bottom:1rem}
+.game-progress-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem}
+.game-progress-label{color:var(--text-muted);font-size:.9rem}
+.game-progress-value{font-weight:700;color:var(--primary-light);font-size:1.1rem}
+.game-progress-bar-bg{height:8px;background:rgba(139,92,246,.15);border-radius:10px;overflow:hidden;margin-top:.5rem}
+.game-progress-bar{height:100%;background:linear-gradient(90deg,var(--primary),var(--secondary));border-radius:10px;transition:width .5s ease}
+.game-question-card{padding:1.5rem;margin-bottom:1rem}
+.game-question-label{color:var(--text-muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem}
+.game-question-text{font-size:1.2rem;font-weight:600;color:var(--text-primary);line-height:1.4}
+.game-leaderboard{padding:1.5rem;margin-bottom:1rem}
+.game-lb-list{display:flex;flex-direction:column;gap:.4rem}
+.game-lb-row{display:flex;align-items:center;gap:.8rem;padding:.6rem .8rem;border-radius:10px;background:rgba(139,92,246,.06);border:1px solid rgba(139,92,246,.1);transition:all .3s}
+.game-lb-row.answered{border-color:rgba(34,197,94,.3);background:rgba(34,197,94,.08)}
+.game-lb-pos{font-weight:700;color:var(--primary-light);min-width:1.5rem;text-align:center}
+.game-lb-name{flex:1;color:var(--text-primary);font-weight:500}
+.game-lb-score{font-weight:700;color:var(--accent)}
+.game-lb-status{font-size:.75rem;padding:.2rem .5rem;border-radius:6px}
+.game-lb-status.done{background:rgba(34,197,94,.2);color:#4ade80}
+.game-lb-status.waiting{background:rgba(139,92,246,.15);color:var(--primary-light)}
+.game-status-badge{margin-top:.3rem}
+.game-history-card{padding:1.2rem;margin-bottom:.8rem;border:1px solid rgba(139,92,246,.15);border-radius:14px;background:rgba(139,92,246,.03)}
+.game-history-q-title{font-weight:600;color:var(--text-primary);margin-bottom:.6rem;font-size:.95rem}
+.game-history-answers{display:flex;flex-direction:column;gap:.3rem}
+.game-history-answer{display:flex;align-items:center;gap:.6rem;font-size:.85rem;padding:.3rem .6rem;border-radius:8px}
+.game-history-answer.correct{background:rgba(34,197,94,.1);color:#4ade80}
+.game-history-answer.wrong{background:rgba(239,68,68,.08);color:#F87171}
+.game-history-answer .gha-name{flex:1}
+.game-history-answer .gha-points{font-weight:600}
+</style>
 
 <script>
-    const apiUrl = "{% url 'api_players' session.pin %}";
+    const pin = "{{ session.pin }}";
+    const apiPlayersUrl = "{% url 'api_players' session.pin %}";
+    const apiGameStatsUrl = "{% url 'api_game_stats' session.pin %}";
+    const apiStateUrl = "{% url 'api_state' session.pin %}";
+    let gameStarted = "{{ session.status }}" !== "waiting";
+    let gameFinished = "{{ session.status }}" === "finished";
+
     function copyLink(){navigator.clipboard.writeText(document.getElementById('join-link').textContent)}
+
+    // Lobby polling (waiting state)
     function fetchPlayers(){
-        fetch(apiUrl).then(r=>r.json()).then(data=>{
+        if (gameStarted) return;
+        fetch(apiPlayersUrl).then(r=>r.json()).then(data=>{
             document.getElementById('player-count').textContent=data.count;
             const list=document.getElementById('players-list');
             list.innerHTML=data.players.length===0?'<li class="players-empty">Ожидание игроков...</li>':data.players.map(p=>`<li class="player-chip">👤 ${p.username}</li>`).join('');
@@ -75,7 +159,123 @@
             document.getElementById('lock-status-badge').innerHTML=data.is_locked?'<span class="lbadge lbadge-danger">Закрыто</span>':'<span class="lbadge lbadge-success">Открыто</span>';
         });
     }
-    fetchPlayers();
-    setInterval(fetchPlayers, 1000);
+
+    // Check if game started
+    function checkGameState(){
+        if (gameStarted) return;
+        fetch(apiStateUrl).then(r=>r.json()).then(data=>{
+            if (data.status === 'in_progress' || data.status === 'finished') {
+                gameStarted = true;
+                document.getElementById('lobby-waiting').style.display = 'none';
+                document.getElementById('lobby-game').style.display = '';
+                startGamePolling();
+            }
+        });
+    }
+
+    // Game stats polling
+    function fetchGameStats(){
+        fetch(apiGameStatsUrl).then(r=>r.json()).then(data=>{
+            document.getElementById('gs-current-q').textContent = data.current_question;
+            document.getElementById('gs-total-q').textContent = data.total_questions;
+            document.getElementById('gs-answered').textContent = data.answered_count;
+            document.getElementById('gs-total-p').textContent = data.total_participants;
+
+            // Progress bar
+            const pct = data.total_participants > 0 ? (data.answered_count / data.total_participants * 100) : 0;
+            document.getElementById('gs-bar').style.width = pct + '%';
+
+            // Current question text
+            if (data.status === 'finished') {
+                document.getElementById('gs-question-card').style.display = 'none';
+            } else {
+                document.getElementById('gs-question-text').textContent = data.current_question_text || '';
+            }
+
+            // Leaderboard
+            const lb = document.getElementById('gs-leaderboard');
+            lb.innerHTML = data.players.map((p, i) => `
+                <div class="game-lb-row ${p.is_answered ? 'answered' : ''}">
+                    <span class="game-lb-pos">${i+1}</span>
+                    <span class="game-lb-name">${p.username}</span>
+                    <span class="game-lb-score">${p.score}</span>
+                    <span class="game-lb-status ${p.is_answered ? 'done' : 'waiting'}">${p.is_answered ? '✓' : '⏳'}</span>
+                </div>
+            `).join('');
+
+            // Question history (accumulates)
+            const historyEl = document.getElementById('gs-history');
+            if (data.question_history && data.question_history.length > 0) {
+                let html = '';
+                data.question_history.forEach(function(q) {
+                    html += '<div class="game-history-card card">';
+                    html += '<div class="game-history-q-title">Вопрос ' + q.number + ': ' + q.text + '</div>';
+                    html += '<div class="game-history-answers">';
+                    if (q.answers.length === 0) {
+                        html += '<span style="color:var(--text-muted);font-size:.85rem;">Нет ответов</span>';
+                    } else {
+                        q.answers.forEach(function(a) {
+                            const cls = a.is_correct ? 'correct' : 'wrong';
+                            const icon = a.is_correct ? '✓' : '✗';
+                            html += '<div class="game-history-answer ' + cls + '">';
+                            html += '<span class="gha-name">' + icon + ' ' + a.username + '</span>';
+                            html += '<span class="gha-points">' + a.points + ' очк.</span>';
+                            html += '</div>';
+                        });
+                    }
+                    html += '</div></div>';
+                });
+                historyEl.innerHTML = html;
+            }
+
+            // Status badge & finished state
+            const badge = document.getElementById('game-status-badge');
+            if (data.status === 'finished' && !gameFinished) {
+                gameFinished = true;
+                badge.innerHTML = '<span class="lbadge lbadge-danger">🏁 Игра завершена</span>';
+                document.getElementById('gs-finished-actions').style.display = '';
+                // Remove beforeunload since game is over
+                window.removeEventListener('beforeunload', beforeUnloadHandler);
+            }
+        });
+    }
+
+    let gameInterval = null;
+    function startGamePolling(){
+        fetchGameStats();
+        gameInterval = setInterval(fetchGameStats, 1000);
+    }
+
+    // Initial setup
+    if (gameStarted) {
+        startGamePolling();
+    } else {
+        fetchPlayers();
+        setInterval(fetchPlayers, 1000);
+        setInterval(checkGameState, 1500);
+    }
+
+    // Beforeunload — only while game is not finished
+    function beforeUnloadHandler(e) {
+        e.preventDefault();
+        e.returnValue = 'Вы точно хотите выйти? Сессия будет удалена';
+    }
+    if (!gameFinished) {
+        window.addEventListener('beforeunload', beforeUnloadHandler);
+    }
+
+    document.querySelectorAll('form').forEach(function(form) {
+        form.addEventListener('submit', function() {
+            window.removeEventListener('beforeunload', beforeUnloadHandler);
+        });
+    });
+
+    // Also remove beforeunload when clicking results link
+    var resultsLink = document.getElementById('gs-results-link');
+    if (resultsLink) {
+        resultsLink.addEventListener('click', function() {
+            window.removeEventListener('beforeunload', beforeUnloadHandler);
+        });
+    }
 </script>
 {% endblock %}

@@ -4,11 +4,14 @@
 
 import logging
 from django.contrib.auth import login, logout
+from django.contrib.auth.models import User
 from django.shortcuts import render, redirect
+from django.urls import reverse
 from django.db.models import Count, Avg, Q, F, IntegerField
 from django.db.models.functions import Coalesce
 from .forms import CustomUserCreationForm, StyledAuthenticationForm
 from main.models import Quiz
+from main.views_features.views_lobby import _get_request_user
 from .forms import CustomUserCreationForm, StyledAuthenticationForm
 
 # Настройка логгера
@@ -74,7 +77,14 @@ def main_page(request):
         request.user.username if request.user.is_authenticated else "Anonymous",
         request.META.get("REMOTE_ADDR"),
     )
-    return render(request, "main_page.html")
+    context = {
+        "join_pin_prefill": request.GET.get("pin", ""),
+        "highlight_nickname": (
+            request.GET.get("highlight") == "1"
+            and not request.user.is_authenticated
+        ),
+    }
+    return render(request, "main_page.html", context)
 
 
 def register_page(request):
@@ -202,8 +212,25 @@ def join_by_code(request):
     if request.method == "POST":
         pin = request.POST.get("pin", "").strip().upper()
         if pin:
-            if GameSession.objects.filter(pin=pin).exists():
-                return redirect("join_lobby", pin=pin)
+            session = GameSession.objects.filter(pin=pin).first()
+            if session is not None:
+                # Не создаём гостя для завершённой сессии
+                if session.status == GameSession.FINISHED:
+                    messages.error(
+                        request,
+                        "Эта игра уже завершена. Присоединиться невозможно.",
+                    )
+                    return redirect("main_page")
+                if not request.user.is_authenticated:
+                    nickname = request.POST.get("nickname", "").strip()
+                    # Если это первый раз (нет guest_user_id), очищаем флаг
+                    # Если это повторный раз (есть guest_user_id), обновляем ник существующего гостя
+                    if not request.session.get("guest_user_id"):
+                        request.session.pop("guest_nickname_set", None)
+                    # Устанавливаем флаг того, что ник был введён
+                    request.session["guest_nickname_set"] = True
+                    _get_request_user(request, guest_name=nickname)
+                return redirect(f"{reverse('join_lobby', kwargs={'pin': pin})}?from_code=1")
             else:
                 messages.error(
                     request,

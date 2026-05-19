@@ -63,6 +63,16 @@
 
                         <div class="mq-title-row">
                             <h3 class="mq-card-title">{{ quiz.title }}</h3>
+                            {% if quiz.accepted_reports %}
+                            <span class="mq-reports-indicator">
+                                <span class="mq-reports-text">Есть жалобы</span>
+                                <button class="mq-reports-eye js-mq-reports-btn"
+                                    data-quiz-title="{{ quiz.title }}"
+                                    data-quiz-id="{{ quiz.id }}"
+                                    title="Посмотреть жалобы"
+                                    aria-label="Посмотреть жалобы">👁</button>
+                            </span>
+                            {% endif %}
                             <a href="{% url 'edit_quiz' quiz.id %}"
                                class="mq-edit-btn"
                                title="Редактировать квиз"
@@ -71,30 +81,18 @@
                             </a>
                         </div>
 
-                        {% if quiz.description %}
-                        <p class="mq-card-desc">{{ quiz.description|truncatechars:80 }}</p>
+                        {% if quiz.accepted_reports %}
+                        <div class="mq-report-hidden" style="display:none" aria-hidden="true">
+                            <span>Нарушение подтверждено администратором</span>
+                            {% for report in quiz.accepted_reports %}
+                            <span>{{ report.comment }}</span>
+                            <span>{{ report.admin_comment }}</span>
+                            {% endfor %}
+                        </div>
                         {% endif %}
 
-                        {% if quiz.accepted_reports %}
-                        <div class="mq-report-alert">
-                            <div class="mq-report-title">
-                                ⚠ Нарушение подтверждено администратором
-                            </div>
-                            {% for report in quiz.accepted_reports %}
-                            <div class="mq-report-item">
-                                <div><strong>Причина:</strong> {{ report.get_reason_display }}</div>
-                                {% if report.comment %}
-                                <div><strong>Жалоба:</strong> {{ report.comment }}</div>
-                                {% endif %}
-                                {% if report.admin_comment %}
-                                <div><strong>Комментарий администратора:</strong> {{ report.admin_comment }}</div>
-                                {% endif %}
-                            </div>
-                            {% endfor %}
-                            <div class="mq-report-footnote">
-                                Исправьте квиз и сохраните новую версию.
-                            </div>
-                        </div>
+                        {% if quiz.description %}
+                        <p class="mq-card-desc">{{ quiz.description|truncatechars:80 }}</p>
                         {% endif %}
 
                         <div class="mq-card-meta">
@@ -281,5 +279,162 @@
         font-size: 0.78rem;
         margin-top: 0.55rem;
     }
+    .mq-reports-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        margin-left: auto;
+        margin-right: .3rem;
+    }
+    .mq-reports-text {
+        color: #F87171;
+        font-size: .78rem;
+        font-weight: 600;
+    }
+    .mq-reports-eye {
+        background: rgba(239, 68, 68, .15);
+        border: 1px solid rgba(239, 68, 68, .35);
+        border-radius: 8px;
+        padding: .2rem .45rem;
+        font-size: .9rem;
+        cursor: pointer;
+        transition: all .2s;
+        line-height: 1;
+    }
+    .mq-reports-eye:hover {
+        background: rgba(239, 68, 68, .3);
+        border-color: #F87171;
+    }
+    /* Reports modal */
+    .mq-reports-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.6);
+        backdrop-filter: blur(4px);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .2s;
+    }
+    .mq-reports-modal-backdrop.is-open {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    .mq-reports-modal {
+        width: min(600px, 92%);
+        max-height: 80vh;
+        overflow-y: auto;
+        background: var(--card-bg, #1a1a2e);
+        border: 1px solid rgba(245, 158, 11, .3);
+        border-radius: 16px;
+        padding: 2rem;
+        position: relative;
+        box-shadow: 0 20px 60px rgba(0,0,0,.4);
+    }
+    .mq-reports-modal-close {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        font-size: 1.3rem;
+        cursor: pointer;
+    }
+    .mq-reports-modal-close:hover { color: var(--text-primary); }
+    .mq-reports-modal-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #FCD34D;
+        margin-bottom: 1.2rem;
+    }
+    .mq-reports-modal-item {
+        background: rgba(245, 158, 11, .06);
+        border: 1px solid rgba(245, 158, 11, .15);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: .8rem;
+        font-size: .9rem;
+        line-height: 1.5;
+    }
+    .mq-reports-modal-item p { margin: .3rem 0; color: var(--text-secondary); white-space: pre-wrap; word-wrap: break-word; }
+    .mq-reports-modal-item strong { color: var(--text-primary); }
 </style>
+
+<!-- Модальное окно жалоб -->
+<script id="mq-reports-data" type="application/json">
+{
+{% for quiz in quizzes %}{% if quiz.accepted_reports %}"{{ quiz.id }}": [{% for r in quiz.accepted_reports %}{"reason": "{{ r.get_reason_display|escapejs }}", "comment": "{{ r.comment|default:"—"|escapejs }}", "admin_comment": "{{ r.admin_comment|default:""|escapejs }}", "date": "{{ r.reviewed_at|date:"d.m.Y"|default:"" }}"}{% if not forloop.last %},{% endif %}{% endfor %}]{% if not forloop.last %},{% endif %}{% endif %}{% endfor %}
+}
+</script>
+<div class="mq-reports-modal-backdrop" id="mqReportsBackdrop">
+    <div class="mq-reports-modal">
+        <button class="mq-reports-modal-close" id="mqReportsClose">✕</button>
+        <div class="mq-reports-modal-title" id="mqReportsTitle">Жалобы</div>
+        <div id="mqReportsBody"></div>
+    </div>
+</div>
+
+<script>
+(function() {
+    var backdrop = document.getElementById('mqReportsBackdrop');
+    var closeBtn = document.getElementById('mqReportsClose');
+    var titleEl = document.getElementById('mqReportsTitle');
+    var bodyEl = document.getElementById('mqReportsBody');
+    if (!backdrop) return;
+
+    var reportsData = {};
+    try {
+        reportsData = JSON.parse(document.getElementById('mq-reports-data').textContent || '{}');
+    } catch(e) {}
+
+    function closeModal() {
+        backdrop.classList.remove('is-open');
+        document.body.style.overflow = '';
+    }
+
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('.js-mq-reports-btn');
+        if (!btn) return;
+        e.preventDefault();
+
+        var quizTitle = btn.dataset.quizTitle;
+        var quizId = btn.dataset.quizId;
+        var reports = reportsData[quizId] || [];
+
+        titleEl.textContent = '⚠ Жалобы на «' + quizTitle + '»';
+        var html = '';
+        reports.forEach(function(r) {
+            html += '<div class="mq-reports-modal-item">';
+            html += '<p><strong>Причина:</strong> ' + r.reason + '</p>';
+            html += '<p><strong>Комментарий:</strong> ' + (r.comment || '—') + '</p>';
+            if (r.admin_comment) {
+                html += '<p><strong>Комментарий админа:</strong> ' + r.admin_comment + '</p>';
+            }
+            if (r.date) {
+                html += '<p style="color:var(--text-muted);font-size:.8rem;">Дата: ' + r.date + '</p>';
+            }
+            html += '</div>';
+        });
+        if (!reports.length) {
+            html = '<p style="color:var(--text-muted);">Нет жалоб.</p>';
+        }
+        bodyEl.innerHTML = html;
+
+        backdrop.classList.add('is-open');
+        document.body.style.overflow = 'hidden';
+    });
+
+    closeBtn.addEventListener('click', closeModal);
+    backdrop.addEventListener('click', function(e) {
+        if (e.target === backdrop) closeModal();
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && backdrop.classList.contains('is-open')) closeModal();
+    });
+})();
+</script>
 {% endblock %}

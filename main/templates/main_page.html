@@ -11,28 +11,90 @@
             <div class="hero-actions">
                 <a href="{% url 'register_page' %}" class="btn btn-large btn-primary">Начать сейчас</a>
             </div>
-        {% else %}
+        {% endif %}
 
-
-            <div class="join-code-block">
-                <p class="join-code-label">Есть код от лобби? Войди прямо сейчас!</p>
-                <form method="post" action="{% url 'join_by_code' %}" class="join-code-form">
-                    {% csrf_token %}
-                    <div class="join-code-input-wrap">
+        <div class="join-code-block">
+            <p class="join-code-label">Есть код от лобби? Войдите прямо сейчас!</p>
+            <form method="post" action="{% url 'join_by_code' %}" class="join-code-form">
+                {% csrf_token %}
+                <div class="join-code-input-wrap">
+                    <input
+                        type="text"
+                        name="pin"
+                        id="pin-input"
+                        class="join-code-input"
+                        placeholder="XXXXXX"
+                        maxlength="10"
+                        autocomplete="off"
+                        value="{{ join_pin_prefill }}"
+                    >
+                    {% if not user.is_authenticated %}
+                        <div class="join-code-popup" id="join-code-popup">
+                            Введите ник, чтобы гостевой пользователь был сохранён и отображался в лобби.
+                        </div>
+                    {% endif %}
+                    <span class="join-code-hint">Введите 6-значный код</span>
+                </div>
+                {% if not user.is_authenticated %}
+                    <div class="join-code-input-wrap join-code-nickname-wrap">
                         <input
                             type="text"
-                            name="pin"
-                            id="pin-input"
+                            name="nickname"
+                            id="nickname-input"
                             class="join-code-input"
-                            placeholder="XXXXXX"
-                            maxlength="10"
+                            placeholder="Ваш ник"
+                            maxlength="30"
                             autocomplete="off"
+                            required
                         >
-                        <span class="join-code-hint">Введите 6-значный код</span>
+                        <span class="join-code-hint">Ник будет сохранён для гостевого пользователя.</span>
+                        {% if highlight_nickname %}
+                            <div class="join-code-error">Заполните это поле</div>
+                        {% endif %}
                     </div>
-                    <button type="submit" class="btn btn-primary join-code-btn">Войти →</button>
-                </form>
-            </div>
+                {% endif %}
+                <button type="submit" class="btn btn-primary join-code-btn">Войти →</button>
+            </form>
+        </div>
+        <style>
+            .join-code-input-wrap { position: relative; margin-bottom: 1rem; }
+            .join-code-popup {
+                display: none;
+                position: absolute;
+                left: 0;
+                right: 0;
+                top: 100%;
+                margin-top: .6rem;
+                padding: .75rem 1rem;
+                border-radius: 12px;
+                background: #fff;
+                border: 1px solid rgba(107, 114, 128, .2);
+                color: #1f2937;
+                box-shadow: 0 12px 30px rgba(0, 0, 0, .08);
+                font-size: .95rem;
+                line-height: 1.4;
+            }
+            #pin-input:focus + .join-code-popup {
+                display: block;
+            }
+            .join-code-nickname-wrap .join-code-input {
+                margin-top: .5rem;
+            }
+            .join-code-error {
+                margin-top: .5rem;
+                color: #dc2626;
+                font-size: .95rem;
+            }
+        </style>
+        {% if highlight_nickname and not user.is_authenticated %}
+            <script>
+                window.addEventListener('DOMContentLoaded', function() {
+                    const nicknameInput = document.getElementById('nickname-input');
+                    if (nicknameInput) {
+                        nicknameInput.focus();
+                    }
+                });
+            </script>
         {% endif %}
     </div>
 </div>

@@ -9,7 +9,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Count
+from django.db.models import Count, Case, When, Value, IntegerField, F
 from django.utils import timezone
 from main.models import Quiz, Profile, QuizReport
 
@@ -33,6 +33,7 @@ def admin_required(view_func):
 @admin_required
 def admin_panel_view(request):
     """Главная страница панели администратора"""
+
     total_users = User.objects.count()
     total_quizzes = Quiz.objects.count()
     total_banned_users = Profile.objects.filter(is_banned=True).count()
@@ -49,7 +50,16 @@ def admin_panel_view(request):
 
     quizzes = (
         Quiz.objects.select_related("creator")
-        .annotate(question_count=Count("questions"))
+        .annotate(
+            question_count=Case(
+                When(
+                    current_revision__isnull=False,
+                    then=F("current_revision__question_count"),
+                ),
+                default=Count("questions"),
+                output_field=IntegerField(),
+            )
+        )
         .order_by("-created_at")
     )
     reports = QuizReport.objects.select_related(
@@ -247,7 +257,16 @@ def api_admin_quizzes_view(request):
     """API: список квизов для авто-обновления таблицы"""
     quizzes = (
         Quiz.objects.select_related("creator")
-        .annotate(question_count=Count("questions"))
+        .annotate(
+            question_count=Case(
+                When(
+                    current_revision__isnull=False,
+                    then=F("current_revision__question_count"),
+                ),
+                default=Count("questions"),
+                output_field=IntegerField(),
+            )
+        )
         .order_by("-created_at")
         .values(
             "id",

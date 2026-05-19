@@ -8,7 +8,7 @@
         <div class="card jl-card">
             <div class="jl-icon">🎮</div>
             <h1 class="jl-title">{{ session.quiz.title }}</h1>
-            <p class="jl-sub">Вы подключились как <strong class="jl-name">{{ request.user.username }}</strong></p>
+            <p class="jl-sub">Вы подключились как <strong class="jl-name">{{ participant.get_display_name }}</strong></p>
 
             <div class="jl-status-box">
                 <div class="jl-waiting-dots"><span></span><span></span><span></span></div>
