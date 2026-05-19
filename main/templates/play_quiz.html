@@ -10,7 +10,7 @@
         {% if not finished %}
         <div class="sp-header">
             <div class="sp-quiz-title">{{ quiz.title }}</div>
-            {% if user != quiz.creator %}
+            {% if user.is_authenticated and user != quiz.creator %}
             <div class="sp-report-row">
                 <a href="{% url 'report_quiz' quiz.id %}?next={{ request.get_full_path|urlencode }}"
                    class="sp-report-link">
@@ -36,7 +36,7 @@
                 <a href="{% url 'play_quiz' quiz.id %}" class="btn btn-primary btn-large">🔄 Пройти ещё раз</a>
                 <a href="{% url 'main_page' %}" class="btn btn-secondary">← На главную</a>
                 <a href="{% url 'quizzes_view' %}" class="btn btn-secondary">← К квизам</a>
-                {% if user != quiz.creator %}
+                {% if user.is_authenticated and user != quiz.creator %}
                 <a href="{% url 'report_quiz' quiz.id %}" class="btn btn-secondary">
                     ⚑ Пожаловаться
                 </a>
