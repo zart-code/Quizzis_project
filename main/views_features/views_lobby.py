@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 from main.models import (
     GameSession,
@@ -15,30 +16,74 @@ from main.models import (
     QuizResult,
 )
 from django.utils import timezone
+
+
+def _get_guest_username(guest_name: str | None, exclude_user_id: int | None = None) -> str:
+    """Формирует уникальное имя гостя на основе ника или случайного идентификатора."""
+    if guest_name:
+        cleaned = "".join(
+            ch if ch.isalnum() or ch in "_-" else "_"
+            for ch in guest_name.strip()
+        )
+        cleaned = cleaned.strip("_-")[:120]
+        if cleaned:
+            username = f"guest_{cleaned}"
+        else:
+            username = None
+    else:
+        username = None
+
+    if not username:
+        username = f"guest_{uuid.uuid4().hex[:8]}"
+
+    original = username
+    counter = 1
+    conflict_query = User.objects.filter(username=username)
+    if exclude_user_id is not None:
+        conflict_query = conflict_query.exclude(pk=exclude_user_id)
+    while conflict_query.exists():
+        username = f"{original}_{counter}"
+        counter += 1
+        conflict_query = User.objects.filter(username=username)
+        if exclude_user_id is not None:
+            conflict_query = conflict_query.exclude(pk=exclude_user_id)
+
+    return username
+
+
+def _get_request_user(request, guest_name=None):
+    """Возвращает пользователя для игры: реального или гостевого."""
+    if request.user.is_authenticated:
+        return request.user
+
+    guest_user = None
+    guest_user_id = request.session.get("guest_user_id")
+    if guest_user_id:
+        try:
+            guest_user = User.objects.get(pk=guest_user_id)
+        except User.DoesNotExist:
+            request.session.pop("guest_user_id", None)
+            guest_user = None
+
+    if guest_user is not None:
+        if guest_name:
+            new_username = _get_guest_username(guest_name, exclude_user_id=guest_user.id)
+            if new_username != guest_user.username:
+                guest_user.username = new_username
+                guest_user.save()
+        return guest_user
+
+    username = _get_guest_username(guest_name)
+    guest_user = User.objects.create_user(username=username)
+    request.session["guest_user_id"] = guest_user.id
+    return guest_user
+
 from main.services.quiz_revisions import (
     get_current_revision,
     get_session_max_score,
     get_session_questions,
 )
 from main.services.quiz_scoring import score_question
-
-
-def _get_request_user(request):
-    """Возвращает пользователя для игры: реального или гостевого."""
-    if request.user.is_authenticated:
-        return request.user
-
-    guest_user_id = request.session.get("guest_user_id")
-    if guest_user_id:
-        try:
-            return User.objects.get(pk=guest_user_id)
-        except User.DoesNotExist:
-            request.session.pop("guest_user_id", None)
-
-    username = f"guest_{uuid.uuid4().hex[:8]}"
-    guest_user = User.objects.create_user(username=username)
-    request.session["guest_user_id"] = guest_user.id
-    return guest_user
 
 
 @login_required(login_url="login_page")
@@ -122,6 +167,23 @@ def api_players_view(request, pin):
 
 def join_lobby_view(request, pin):
     session = get_object_or_404(GameSession, pin=pin)
+
+    if not request.user.is_authenticated:
+        # Проверяем, пришли ли мы через ввод кода или по прямой ссылке
+        from_code = request.GET.get("from_code") == "1"
+        guest_nickname_set = request.session.get("guest_nickname_set")
+
+        # Если пришли по прямой ссылке (не через from_code) или ник не был установлен
+        if not from_code and not guest_nickname_set:
+            # Очищаем старого гостя и требуем ввод нового ника при заходе по ссылке
+            request.session.pop("guest_user_id", None)
+            request.session.pop("guest_nickname_set", None)
+            return redirect(f"{reverse('main_page')}?pin={pin}&highlight=1")
+
+        # Если пришли через код, очищаем флаг для следующего раза
+        if from_code:
+            request.session.pop("guest_nickname_set", None)
+
     current_user = _get_request_user(request)
 
     # Auto-expire WAITING sessions older than 1 hour
