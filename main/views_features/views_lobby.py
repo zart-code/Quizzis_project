@@ -1,6 +1,8 @@
 """Views для лобби"""
 
+import uuid
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
@@ -13,13 +15,6 @@ from main.models import (
     QuizResult,
 )
 from django.utils import timezone
-from main.models import (
-    GameAnswer,
-    GameParticipant,
-    GameSession,
-    Quiz,
-    QuizResult,
-)
 from main.services.quiz_revisions import (
     get_current_revision,
     get_session_max_score,
@@ -28,7 +23,25 @@ from main.services.quiz_revisions import (
 from main.services.quiz_scoring import score_question
 
 
-@login_required
+def _get_request_user(request):
+    """Возвращает пользователя для игры: реального или гостевого."""
+    if request.user.is_authenticated:
+        return request.user
+
+    guest_user_id = request.session.get("guest_user_id")
+    if guest_user_id:
+        try:
+            return User.objects.get(pk=guest_user_id)
+        except User.DoesNotExist:
+            request.session.pop("guest_user_id", None)
+
+    username = f"guest_{uuid.uuid4().hex[:8]}"
+    guest_user = User.objects.create_user(username=username)
+    request.session["guest_user_id"] = guest_user.id
+    return guest_user
+
+
+@login_required(login_url="login_page")
 def create_lobby_view(request, quiz_id):
     """Создание лобби по текущей ревизии квиза."""
     quiz = get_object_or_404(Quiz, id=quiz_id, creator=request.user)
@@ -53,7 +66,7 @@ def create_lobby_view(request, quiz_id):
     return redirect("lobby", pin=session.pin)
 
 
-@login_required
+@login_required(login_url="login_page")
 def lobby_view(request, pin):
     session = get_object_or_404(GameSession, pin=pin, host=request.user)
 
@@ -67,7 +80,7 @@ def lobby_view(request, pin):
     return render(request, "lobby.html", {"session": session})
 
 
-@login_required
+@login_required(login_url="login_page")
 @require_POST
 def toggle_lock_view(request, pin):
     """Закрытие/открытие возможности присоединиться к сессии"""
@@ -77,7 +90,7 @@ def toggle_lock_view(request, pin):
     return redirect("lobby", pin=pin)
 
 
-@login_required
+@login_required(login_url="login_page")
 @require_POST
 def delete_session_view(request, pin):
     """"""
@@ -86,7 +99,7 @@ def delete_session_view(request, pin):
     return redirect("my_quizzes")
 
 
-@login_required
+@login_required(login_url="login_page")
 def api_players_view(request, pin):
     session = get_object_or_404(GameSession, pin=pin, host=request.user)
     participants = session.participants.select_related("user").all()
@@ -107,9 +120,9 @@ def api_players_view(request, pin):
     )
 
 
-@login_required
 def join_lobby_view(request, pin):
     session = get_object_or_404(GameSession, pin=pin)
+    current_user = _get_request_user(request)
 
     # Auto-expire WAITING sessions older than 1 hour
     if session.status == GameSession.WAITING:
@@ -118,14 +131,14 @@ def join_lobby_view(request, pin):
             session.delete()
             return render(
                 request, "lobby_error.html",
-                {"message": "Это лобби истекло и было закрыто."}
+                {"message": "Это лобби истекло и было закрыто."},
             )
 
-    if session.host == request.user:
+    if session.host == current_user:
         return redirect("lobby", pin=pin)
 
     if session.status == GameSession.IN_PROGRESS and GameParticipant.objects.filter(
-        session=session, user=request.user
+        session=session, user=current_user
     ).exists():
         return redirect("session_play", pin=pin)
 
@@ -146,12 +159,12 @@ def join_lobby_view(request, pin):
             {"message": "Лобби заполнено (максимум 25 игроков)."},
         )
 
-    GameParticipant.objects.get_or_create(session=session, user=request.user)
+    GameParticipant.objects.get_or_create(session=session, user=current_user)
 
     return render(request, "join_lobby.html", {"session": session})
 
 
-@login_required
+@login_required(login_url="login_page")
 @require_POST
 def start_game_view(request, pin):
     session = get_object_or_404(GameSession, pin=pin, host=request.user)
@@ -163,7 +176,6 @@ def start_game_view(request, pin):
     return redirect("lobby", pin=pin)
 
 
-@login_required
 def api_state_view(request, pin):
     session = get_object_or_404(GameSession, pin=pin)
     return JsonResponse(
@@ -173,7 +185,7 @@ def api_state_view(request, pin):
     )
 
 
-@login_required
+@login_required(login_url="login_page")
 def api_game_stats_view(request, pin):
     """API: статистика игры в реальном времени для хоста."""
     session = get_object_or_404(GameSession, pin=pin, host=request.user)
@@ -240,14 +252,15 @@ def api_game_stats_view(request, pin):
     })
 
 
-@login_required
 def session_play_view(request, pin):
     session = get_object_or_404(GameSession, pin=pin)
-    participant = get_object_or_404(
-        GameParticipant,
+    current_user = _get_request_user(request)
+    participant = GameParticipant.objects.filter(
         session=session,
-        user=request.user,
-    )
+        user=current_user,
+    ).first()
+    if participant is None:
+        return redirect("join_lobby", pin=pin)
 
     questions = get_session_questions(session)
     total = len(questions)
@@ -272,7 +285,7 @@ def session_play_view(request, pin):
         if result_id is not None:
             QuizResult.objects.filter(
                 id=result_id,
-                user=request.user,
+                user=current_user,
             ).update(
                 score=participant.score,
                 max_score=total_max_score,
@@ -299,7 +312,7 @@ def session_play_view(request, pin):
 
     if result_id is None:
         result = QuizResult.objects.create(
-            user=request.user,
+            user=current_user,
             quiz=session.quiz,
             revision=session.revision,
             score=0,
