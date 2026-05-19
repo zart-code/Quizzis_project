@@ -6,11 +6,15 @@
 
 import random
 import string
+import logging
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
+
+# Настройка логгера для моделей
+logger = logging.getLogger(__name__)
 
 
 class Profile(models.Model):
@@ -753,4 +757,50 @@ class GameAnswer(models.Model):
         return f"{self.answer} — {self.question}"
 
 
-# pylint: enable=too-few-public-methods
+"""
+Логирование
+"""
+
+
+@receiver(post_save, sender=Quiz)
+def log_quiz_save(sender, instance, created, **kwargs):
+    """Логирует создание и обновление квизов"""
+    if created:
+        logger.info(f"[DB CREATE] Квиз: '{instance.title}'"
+                    f" (ID: {instance.id}) создан пользователем {instance.creator.username}")
+    else:
+        logger.debug(f"[DB UPDATE] Квиз: '{instance.title}' (ID: {instance.id}) обновлён")
+
+
+@receiver(post_delete, sender=Quiz)
+def log_quiz_delete(sender, instance, **kwargs):
+    """Логирует удаление квизов"""
+    logger.warning(f"[DB DELETE] Квиз: '{instance.title}' (ID: {instance.id}) удалён")
+
+
+@receiver(post_save, sender=GameSession)
+def log_gamesession_save(sender, instance, created, **kwargs):
+    """Логирует создание и изменение игровых сессий"""
+    if created:
+        logger.info(f"[GAME LOBBY] Создана сессия PIN: {instance.pin} для квиза '{instance.quiz.title}'"
+                    f" (хост: {instance.host.username})")
+    elif instance.status == "in_progress":
+        logger.info(f"[GAME LOBBY] Сессия {instance.pin}: игра начата")
+    elif instance.status == "finished":
+        logger.info(f"[GAME LOBBY] Сессия {instance.pin}: игра завершена")
+
+
+@receiver(post_save, sender=GameParticipant)
+def log_participant_join(sender, instance, created, **kwargs):
+    """Логирует подключение игроков к лобби"""
+    if created:
+        logger.info(f"[GAME JOIN] Игрок {instance.user.username} присоединился к сессии "
+                    f"{instance.session.pin}")
+
+
+@receiver(post_save, sender=QuizResult)
+def log_quiz_result(sender, instance, created, **kwargs):
+    """Логирует завершение квизов"""
+    if not created and instance.completed:
+        logger.info(f"[QUIZ COMPLETE] Пользователь {instance.user.username} завершил квиз '{instance.quiz.title}':"
+                    f" {instance.score}/{instance.max_score} ({instance.score_percent:.1f}%)")

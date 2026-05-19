@@ -1,5 +1,5 @@
 """
-Модуль тестов для форм приложения main.
+Тесты для форм приложения main.
 """
 
 from django.test import TestCase
