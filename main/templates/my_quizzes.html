@@ -117,9 +117,9 @@
                                 {% csrf_token %}
                                 <button type="submit" class="mq-btn mq-btn-play">
                                     {% if quiz.status == 'draft' %}
-                                        <span>✔</span> Активировать
+                                        <span>✔</span> Опубликовать
                                     {% else %}
-                                        <span>↩</span> В черновик
+                                        <span>↩</span> Снять с публикации
                                     {% endif %}
                                 </button>
                             </form>
