@@ -766,10 +766,14 @@ class GameAnswer(models.Model):
 def log_quiz_save(sender, instance, created, **kwargs):
     """Логирует создание и обновление квизов"""
     if created:
-        logger.info(f"[DB CREATE] Квиз: '{instance.title}'"
-                    f" (ID: {instance.id}) создан пользователем {instance.creator.username}")
+        logger.info(
+            f"[DB CREATE] Квиз: '{instance.title}'"
+            f" (ID: {instance.id}) создан пользователем {instance.creator.username}"
+        )
     else:
-        logger.debug(f"[DB UPDATE] Квиз: '{instance.title}' (ID: {instance.id}) обновлён")
+        logger.debug(
+            f"[DB UPDATE] Квиз: '{instance.title}' (ID: {instance.id}) обновлён"
+        )
 
 
 @receiver(post_delete, sender=Quiz)
@@ -782,8 +786,10 @@ def log_quiz_delete(sender, instance, **kwargs):
 def log_gamesession_save(sender, instance, created, **kwargs):
     """Логирует создание и изменение игровых сессий"""
     if created:
-        logger.info(f"[GAME LOBBY] Создана сессия PIN: {instance.pin} для квиза '{instance.quiz.title}'"
-                    f" (хост: {instance.host.username})")
+        logger.info(
+            f"[GAME LOBBY] Создана сессия PIN: {instance.pin} для квиза '{instance.quiz.title}'"
+            f" (хост: {instance.host.username})"
+        )
     elif instance.status == "in_progress":
         logger.info(f"[GAME LOBBY] Сессия {instance.pin}: игра начата")
     elif instance.status == "finished":
@@ -794,13 +800,17 @@ def log_gamesession_save(sender, instance, created, **kwargs):
 def log_participant_join(sender, instance, created, **kwargs):
     """Логирует подключение игроков к лобби"""
     if created:
-        logger.info(f"[GAME JOIN] Игрок {instance.user.username} присоединился к сессии "
-                    f"{instance.session.pin}")
+        logger.info(
+            f"[GAME JOIN] Игрок {instance.user.username} присоединился к сессии "
+            f"{instance.session.pin}"
+        )
 
 
 @receiver(post_save, sender=QuizResult)
 def log_quiz_result(sender, instance, created, **kwargs):
     """Логирует завершение квизов"""
     if not created and instance.completed:
-        logger.info(f"[QUIZ COMPLETE] Пользователь {instance.user.username} завершил квиз '{instance.quiz.title}':"
-                    f" {instance.score}/{instance.max_score} ({instance.score_percent:.1f}%)")
+        logger.info(
+            f"[QUIZ COMPLETE] Пользователь {instance.user.username} завершил квиз '{instance.quiz.title}':"
+            f" {instance.score}/{instance.max_score} ({instance.score_percent:.1f}%)"
+        )

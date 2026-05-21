@@ -85,7 +85,7 @@ STATIC_ROOT = "/home/site1/app/static/"
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-CSRF_TRUSTED_ORIGINS = ['http://188.127.251.236:8081']
+CSRF_TRUSTED_ORIGINS = ["http://188.127.251.236:8081"]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

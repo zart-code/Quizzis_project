@@ -80,8 +80,7 @@ def main_page(request):
     context = {
         "join_pin_prefill": request.GET.get("pin", ""),
         "highlight_nickname": (
-            request.GET.get("highlight") == "1"
-            and not request.user.is_authenticated
+            request.GET.get("highlight") == "1" and not request.user.is_authenticated
         ),
     }
     return render(request, "main_page.html", context)
@@ -230,7 +229,9 @@ def join_by_code(request):
                     # Устанавливаем флаг того, что ник был введён
                     request.session["guest_nickname_set"] = True
                     _get_request_user(request, guest_name=nickname)
-                return redirect(f"{reverse('join_lobby', kwargs={'pin': pin})}?from_code=1")
+                return redirect(
+                    f"{reverse('join_lobby', kwargs={'pin': pin})}?from_code=1"
+                )
             else:
                 messages.error(
                     request,

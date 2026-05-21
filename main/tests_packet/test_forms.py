@@ -3,7 +3,9 @@
 """
 
 from django.test import TestCase
-from django.contrib.auth.models import User  # noqa: F401 (оставлен для возможного использования)
+from django.contrib.auth.models import (
+    User,
+)  # noqa: F401 (оставлен для возможного использования)
 from main.forms import CustomUserCreationForm, StyledAuthenticationForm
 from main.models import Profile
 

@@ -1,6 +1,7 @@
 """Views для панели администратора"""
 
 import logging
+
 # pylint: disable=no-member,unused-argument
 
 from django.http import JsonResponse

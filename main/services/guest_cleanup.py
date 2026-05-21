@@ -50,10 +50,14 @@ def cleanup_guest_users(session: GameSession) -> int:
     deleted_count = 0
     for participant in guest_participants:
         guest_user = participant.user
-        has_active_sessions = GameParticipant.objects.filter(
-            user=guest_user,
-            session__status__in=[GameSession.WAITING, GameSession.IN_PROGRESS],
-        ).exclude(session=session).exists()
+        has_active_sessions = (
+            GameParticipant.objects.filter(
+                user=guest_user,
+                session__status__in=[GameSession.WAITING, GameSession.IN_PROGRESS],
+            )
+            .exclude(session=session)
+            .exists()
+        )
 
         if not has_active_sessions:
             guest_user.delete()

@@ -223,6 +223,7 @@ def play_quiz_view(request, quiz_id):
 
     # Get current user (authenticated or guest)
     from main.views_features.views_lobby import _get_request_user
+
     current_user = _get_request_user(request)
 
     if quiz.status == Quiz.DRAFT and quiz.creator != current_user:

@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from django.urls import reverse
 from django.utils import timezone
 from main.models import Quiz, GameSession, GameParticipant, GameAnswer
+
 # pylint: disable=no-member
 from main.models import Quiz, GameSession, GameParticipant, GameAnswer, QuizResult
 from main.services.quiz_revisions import get_current_revision
@@ -39,9 +40,7 @@ class LobbyViewsTest(TestCase):
         self.assertRedirects(
             response, reverse("my_quizzes"), fetch_redirect_response=False
         )
-        session = GameSession.objects.filter(
-            quiz=self.quiz, host=self.teacher
-        ).last()
+        session = GameSession.objects.filter(quiz=self.quiz, host=self.teacher).last()
         self.assertIsNotNone(session)
         self.assertEqual(session.status, GameSession.WAITING)
 
@@ -239,13 +238,13 @@ class LobbyViewsTest(TestCase):
     def test_session_results_teacher_view(self):
         """Учитель может просмотреть детальные результаты по конкретной сессии."""
         self.client.force_login(self.teacher)
-        GameParticipant.objects.create(
-            session=self.session, user=self.student, score=4
-        )
+        GameParticipant.objects.create(session=self.session, user=self.student, score=4)
         question = self.quiz.questions.first()
         GameAnswer.objects.create(
             session=self.session,
-            participant=GameParticipant.objects.get(session=self.session, user=self.student),
+            participant=GameParticipant.objects.get(
+                session=self.session, user=self.student
+            ),
             question=question,
             is_correct=True,
             points=4,
@@ -463,9 +462,7 @@ class PreservationPropertyTest(TestCase):
         )
         self.assertTemplateUsed(response, "join_lobby.html")
         self.assertTrue(
-            GameParticipant.objects.filter(
-                session=session, user=self.student
-            ).exists(),
+            GameParticipant.objects.filter(session=session, user=self.student).exists(),
             "Preservation violated: GameParticipant was not created for player "
             "joining a WAITING session.",
         )

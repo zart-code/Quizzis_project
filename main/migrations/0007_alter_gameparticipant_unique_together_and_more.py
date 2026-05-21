@@ -8,37 +8,58 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('main', '0006_quizreport'),
+        ("main", "0006_quizreport"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AlterUniqueTogether(
-            name='gameparticipant',
+            name="gameparticipant",
             unique_together=set(),
         ),
         migrations.AddField(
-            model_name='gameparticipant',
-            name='display_name',
-            field=models.CharField(blank=True, max_length=150, verbose_name='Отображаемое имя'),
+            model_name="gameparticipant",
+            name="display_name",
+            field=models.CharField(
+                blank=True, max_length=150, verbose_name="Отображаемое имя"
+            ),
         ),
         migrations.AddField(
-            model_name='quizresult',
-            name='display_name',
-            field=models.CharField(blank=True, max_length=150, verbose_name='Отображаемое имя'),
+            model_name="quizresult",
+            name="display_name",
+            field=models.CharField(
+                blank=True, max_length=150, verbose_name="Отображаемое имя"
+            ),
         ),
         migrations.AlterField(
-            model_name='gameparticipant',
-            name='user',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='game_participations', to=settings.AUTH_USER_MODEL, verbose_name='Игрок'),
+            model_name="gameparticipant",
+            name="user",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="game_participations",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Игрок",
+            ),
         ),
         migrations.AlterField(
-            model_name='quizresult',
-            name='user',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='quiz_results', to=settings.AUTH_USER_MODEL),
+            model_name="quizresult",
+            name="user",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="quiz_results",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddConstraint(
-            model_name='gameparticipant',
-            constraint=models.UniqueConstraint(condition=models.Q(('user__isnull', False)), fields=('session', 'user'), name='unique_participant_per_session'),
+            model_name="gameparticipant",
+            constraint=models.UniqueConstraint(
+                condition=models.Q(("user__isnull", False)),
+                fields=("session", "user"),
+                name="unique_participant_per_session",
+            ),
         ),
     ]

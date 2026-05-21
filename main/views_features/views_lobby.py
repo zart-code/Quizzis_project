@@ -19,12 +19,13 @@ from main.models import (
 from django.utils import timezone
 
 
-def _get_guest_username(guest_name: str | None, exclude_user_id: int | None = None) -> str:
+def _get_guest_username(
+    guest_name: str | None, exclude_user_id: int | None = None
+) -> str:
     """Формирует уникальное имя гостя на основе ника или случайного идентификатора."""
     if guest_name:
         cleaned = "".join(
-            ch if ch.isalnum() or ch in "_-" else "_"
-            for ch in guest_name.strip()
+            ch if ch.isalnum() or ch in "_-" else "_" for ch in guest_name.strip()
         )
         cleaned = cleaned.strip("_-")[:120]
         if cleaned:
@@ -68,7 +69,9 @@ def _get_request_user(request, guest_name=None):
 
     if guest_user is not None:
         if guest_name:
-            new_username = _get_guest_username(guest_name, exclude_user_id=guest_user.id)
+            new_username = _get_guest_username(
+                guest_name, exclude_user_id=guest_user.id
+            )
             if new_username != guest_user.username:
                 guest_user.username = new_username
                 guest_user.save()
@@ -79,7 +82,11 @@ def _get_request_user(request, guest_name=None):
     request.session["guest_user_id"] = guest_user.id
     return guest_user
 
-from main.services.guest_cleanup import cleanup_guest_users, resolve_display_name_from_user
+
+from main.services.guest_cleanup import (
+    cleanup_guest_users,
+    resolve_display_name_from_user,
+)
 from main.services.quiz_revisions import (
     get_current_revision,
     get_session_max_score,
@@ -196,9 +203,7 @@ def join_lobby_view(request, pin):
 
     # Для завершённых сессий не создаём нового гостя — показываем ошибку
     if session.status == GameSession.FINISHED:
-        return render(
-            request, "lobby_error.html", {"message": "Игра уже завершена."}
-        )
+        return render(request, "lobby_error.html", {"message": "Игра уже завершена."})
 
     if not request.user.is_authenticated:
         # Проверяем, пришли ли мы через ввод кода или по прямой ссылке
@@ -224,16 +229,18 @@ def join_lobby_view(request, pin):
         if session.created_at < expiry_threshold:
             session.delete()
             return render(
-                request, "lobby_error.html",
+                request,
+                "lobby_error.html",
                 {"message": "Это лобби истекло и было закрыто."},
             )
 
     if session.host == current_user:
         return redirect("lobby", pin=pin)
 
-    if session.status == GameSession.IN_PROGRESS and GameParticipant.objects.filter(
-        session=session, user=current_user
-    ).exists():
+    if (
+        session.status == GameSession.IN_PROGRESS
+        and GameParticipant.objects.filter(session=session, user=current_user).exists()
+    ):
         return redirect("session_play", pin=pin)
 
     if session.status != GameSession.WAITING:
@@ -253,7 +260,9 @@ def join_lobby_view(request, pin):
             {"message": "Лобби заполнено (максимум 25 игроков)."},
         )
 
-    participant, created = GameParticipant.objects.get_or_create(session=session, user=current_user)
+    participant, created = GameParticipant.objects.get_or_create(
+        session=session, user=current_user
+    )
     if created:
         # Сохраняем отображаемое имя при создании участника
         participant.display_name = resolve_display_name_from_user(current_user)
@@ -272,7 +281,9 @@ def join_lobby_view(request, pin):
     # можно было показать результаты
     request.session[f"lobby_participant_{pin}"] = participant.id
 
-    return render(request, "join_lobby.html", {"session": session, "participant": participant})
+    return render(
+        request, "join_lobby.html", {"session": session, "participant": participant}
+    )
 
 
 @login_required(login_url="login_page")
@@ -324,10 +335,7 @@ def api_game_stats_view(request, pin):
     if 0 <= current_q < total_questions:
         current_question_text = questions[current_q].text
 
-    participants = (
-        session.participants.select_related("user")
-        .order_by("-score")
-    )
+    participants = session.participants.select_related("user").order_by("-score")
     players = [
         {
             "username": p.get_display_name(),
@@ -365,16 +373,18 @@ def api_game_stats_view(request, pin):
         }
         question_history.append(q_data)
 
-    return JsonResponse({
-        "status": session.status,
-        "current_question": min(current_q + 1, total_questions),
-        "total_questions": total_questions,
-        "current_question_text": current_question_text,
-        "answered_count": answered_count,
-        "total_participants": total_participants,
-        "players": players,
-        "question_history": question_history,
-    })
+    return JsonResponse(
+        {
+            "status": session.status,
+            "current_question": min(current_q + 1, total_questions),
+            "total_questions": total_questions,
+            "current_question_text": current_question_text,
+            "answered_count": answered_count,
+            "total_participants": total_participants,
+            "players": players,
+            "question_history": question_history,
+        }
+    )
 
 
 def session_play_view(request, pin):
