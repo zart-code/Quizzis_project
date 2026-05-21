@@ -1,93 +1,211 @@
 # Quizzis_project
 
+## О проекте
 
+**Quizzis** — это веб-платформа для создания и прохождения квизов с разделением ролей: **Админ**, **Учитель**, **Ученик**. Проект позволяет проводить как синхронные, так и асинхронные викторины, управлять контентом, модерировать пользователей и анализировать результаты.
 
-## Getting started
+### Архитектурный обзор: Сценарии использования
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+Ниже описаны основные пути пользователя в системе Quizzis.
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+#### Сценарий 1: Гость или Анонимный пользователь
+1.  **Вход:** Пользователь попадает на главную страницу (`main_page`).
+2.  **Присоединение:** Вводит код лобби и никнейм. Система вызывает `join_by_code`.
+3.  **Создание профиля:** Если пользователь не авторизован, функция `_get_request_user` автоматически создаёт в базе данных временного пользователя с префиксом `guest_`.
+4.  **Вход в игру:** Пользователь перенаправляется в лобби (`join_lobby_view`), где становится участником сессии (`GameParticipant`).
+5.  **Игра:** После старта сессии пользователь переходит на экран игры (`session_play_view`).
+6.  **Завершение:** После окончания игры система проверяет, не участвует ли гость в других активных сессиях. Если нет — временный профиль удаляется.
 
-## Add your files
+#### Сценарий 2: Зарегистрированный Учитель
+1.  **Создание контента:** Учитель создаёт квиз через `create_quiz_view`. Данные сохраняются в модели `Quiz`, а вопросы/ответы — в связанной ревизии (`QuizRevision`).
+2.  **Управление:** Учитель видит свои квизы на странице `my_quizzes_view`.
+3.  **Запуск игры:** Учитель выбирает квиз и создаёт лобби (`create_lobby_view`). Он становится хостом сессии (`GameSession`).
+4.  **Контроль:** На странице лобби (`lobby_view`) учитель видит список игроков (получая данные через API `api_players_view`) и управляет игрой (старт, удаление).
+5.  **Анализ:** После игры учитель может посмотреть детальную статистику ответов каждого участника через `session_results_teacher_view`.
 
-* [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+#### Сценарий 3: Зарегистрированный Ученик
+1.  **Поиск:** Ученик заходит в каталог квизов (`quizzes_view`), где может фильтровать и сортировать список.
+2.  **Прохождение:** Ученик выбирает квиз и проходит его индивидуально (`play_quiz_view`). Его результат сохраняется в модели `QuizResult`.
+3.  **История:** Ученик может просмотреть свою историю прохождений и статистику на странице профиля (`profile_history_view`).
+
+---
+
+## Возможности
+
+*   Создание и редактирование вопросов (множественный выбор, текстовый ответ, одиночный выбор).
+*   Категоризация вопросов и квизов.
+*   Проведение квизов в реальном времени (синхронный режим).
+*   Подключение к квизу по уникальному коду.
+*   Гибкая система ролей и прав доступа.
+*   Панель администратора для модерации.
+*   Просмотр результатов для создателя и проходящего.
+
+## Технологии
+
+*   **Язык:** Python
+*   **Фреймворк:** Django
+*   **База данных:** PostgreSQL
+*   **Деплой:** GitLab CI/CD
+
+---
+
+## Быстрый старт
+
+Для запуска проекта локально выполните следующие шаги:
+
+1.  **Клонируйте репозиторий:**
+    ```bash
+    git clone https://gitlab.informatics.ru/2025-2026/kor/s101d/quizzis_project.git
+    cd quizzis_project
+    ```
+2.  **Установите зависимости:**
+    ```bash
+    pip install -r requirements.txt
+    ```
+3.  **Настройте окружение:**
+    Создайте файл `.env` на основе `.env.example`.
+4.  **Примените миграции базы данных:**
+    ```bash
+    python manage.py migrate
+    ```
+5.  **Запустите сервер разработки:**
+    ```bash
+    python manage.py runserver
+    ```
+6.  **Откройте приложение в браузере:**
+    Перейдите по адресу `http://127.0.0.1:8000`.
+
+---
+
+## Структура проекта
 
 ```
-cd existing_repo
-git remote add origin https://gitlab.informatics.ru/2025-2026/kor/s101d/quizzis_project.git
-git branch -M main
-git push -uf origin main
+quizzis_project/
+├── backend/          # Серверная часть (Django приложение)
+│   ├── app/          # Исходный код приложения
+│   ├── migrations/   # Миграции базы данных
+│   ├── manage.py     # Скрипт управления проектом
+│   └── requirements.txt # Зависимости Python
+├── docker-compose.yml # Конфигурация Docker (если используется)
+├── .env.example      # Пример файла с переменными окружения
+└── README.md         # Текущий файл
 ```
 
-## Integrate with your tools
+---
 
-* [Set up project integrations](https://gitlab.informatics.ru/2025-2026/kor/s101d/quizzis_project/-/settings/integrations)
+## Тестирование
 
-## Collaborate with your team
+Для запуска тестов используйте команду:
+```bash
+pytest
+```
+Все тесты должны проходить успешно перед отправкой изменений в основную ветку.
 
-* [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+---
 
-## Test and Deploy
+## Деплой и CI/CD
 
-Use the built-in continuous integration in GitLab.
+Проект использует встроенные пайплайны GitLab CI/CD для автоматического тестирования и деплоя.
+1. Все изменения отправляются в отдельные ветки (`feature/*`).
+2. После ревью создаётся merge request.
+3. Пайплайн автоматически запускает тесты и сборку.
+4. После одобрения изменения попадают в ветку `main`.
 
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+---
 
-***
+## Вклад в проект
 
-# Editing this README
+Мы рады любым предложениям и улучшениям! Чтобы внести свой вклад:
+1. Создайте новую ветку: `git checkout -b feature/имя_фичи`
+2. Внесите изменения и закоммитьте их: `git commit -m "Описание изменений"`
+3. Отправьте изменения: `git push origin feature/имя_фичи`
+4. Создайте merge request и опишите свои изменения.
+5. Дождитесь ревью и одобрения.
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+---
 
-## Suggestions for a good README
+## Лицензия
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+Проект распространяется под лицензией [MIT](LICENSE).
 
-## Name
-Choose a self-explaining name for your project.
+---
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+## Отчёт о состоянии проекта — Квиз-платформа
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+### Общая информация
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+Проект представляет собой веб-платформу для создания и прохождения квизов с разделением ролей: **Админ**, **Учитель**, **Ученик**.
+Ниже приведена детальная сводка о реализации требований, обсуждавшихся на этапе проектирования.
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+### 🟢 Реализованный функционал
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+#### Авторизация и роли
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+| Функция | Статус |
+| :--- | :--- |
+| Регистрация пользователя | ✅ Реализовано |
+| Вход для всех ролей | ✅ Реализовано |
+| Роли: ученик, учитель, администратор | ✅ Реализовано |
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+#### Функционал по ролям
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+| Роль | Возможности |
+| :--- | :--- |
+| **Админ** | Управление всеми квизами и пользователями (бан, удаление). |
+| **Учитель** | Создание/управление только своими квизами. |
+| **Ученик** | Прохождение квизов, просмотр своих результатов. |
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+#### Панель администратора
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+> ✅ Всё реализовано.
+> *Отображение статистики, модерация жалоб, блокировка.*
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+#### Типы вопросов в квизах
 
-## License
-For open source projects, say how it is licensed.
+*   ✅ Множественный выбор.
+*   ✅ Текстовый ответ.
+*   ✅ Одиночный выбор.
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+#### Управление квизами
+
+*   ✅ Создание квизов.
+*   ✅ Открытие лобби.
+*   ✅ Подключение по коду.
+
+#### Результаты
+
+*   ✅ Таблица результатов для создателя.
+*   ✅ Просмотр своих результатов.
+
+#### Модерация
+
+> ✅ Возможность жалобы на квиз и его блокировки по жалобе.
+
+#### Навигация
+
+> ✅ Страницы реализованы: «Мои квизы», «Все квизы», «Профиль», «Создания квиза».
+
+### 🟡 Частично реализованное / отклонения
+
+| Требование | Статус | Пояснение |
+| :--- | :--- | :--- |
+| Подключение по QR-коду | ❌ Не реализовано | Требуется интеграция генератора QR-кодов. |
+| Сортировка на странице «Все квизы» | ❌ Не реализовано | Нет функционала фильтрации/сортировки списка. |
+| Тип вопроса «тестовый с проверкой учителя» | ❌ Не реализовано | Вопросы требуют ручной проверки ответов учителем. |
+| Синхронный квиз с ручным переключением вопросов | ❌ Не реализовано | Ожидание всех работает, но ручное переключение отсутствует. |
+
+### 🔴 Ключевые несоответствия требованиям
+
+> **Синхронный режим:**
+> По требованию: «Создатель должен иметь возможность переключать вопросы вручную».
+> Факт: Ожидание всех участников реализовано, но ручное управление вопросами отсутствует.
+>
+> Отсутствие возможности входа без полной регистрации (например, гостевой режим).
+
+### Итог
+
+Проект реализует основной функционал MVP (минимально жизнеспособный продукт) и позволяет проводить полноценные викторины. Однако требуется доработка по ряду требований для соответствия полному техническому заданию:
+1. Реализация QR-кодов для входа.
+2. Добавление сортировки на странице со списком квизов.
+3. Внедрение вопросов с ручной проверкой учителем.
+4. Доработка синхронного режима (ручное переключение вопросов).
