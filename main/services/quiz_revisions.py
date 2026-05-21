@@ -32,16 +32,6 @@ def get_quiz_questions(quiz):
 
     return list(quiz.questions.prefetch_related("answers").order_by("order", "id"))
 
-
-def get_quiz_question_count(quiz):
-    """Количество вопросов в текущей версии квиза."""
-    revision = get_current_revision(quiz)
-    if revision is not None:
-        return revision.question_count
-
-    return quiz.questions.count()
-
-
 def get_quiz_max_score(quiz):
     """Максимальный балл в текущей версии квиза."""
     revision = get_current_revision(quiz)
@@ -75,14 +65,6 @@ def get_session_max_score(session):
         return session.revision.max_score
 
     return get_quiz_max_score(session.quiz)
-
-
-def get_revision_question_count_for_result(result):
-    """Количество вопросов для конкретного результата."""
-    if result.revision_id:
-        return result.revision.question_count
-
-    return result.quiz.total_questions()
 
 
 def build_revision_payload(revision):

@@ -219,10 +219,3 @@ def edit_profile_view(request, user_id=None):
         "is_admin_edit": is_admin_edit,
     }
     return render(request, "edit_profile.html", context)
-
-
-@login_required(login_url="login_page")
-def continue_quiz_view(request, quiz_id):
-    """Продолжить прохождение квиза."""
-    quiz = get_object_or_404(Quiz, id=quiz_id)
-    return redirect("play_quiz", quiz_id=quiz_id)

@@ -13,7 +13,6 @@ from main.models import (
     Quiz,
     GameParticipant,
     GameAnswer,
-    Question,
     QuizResult,
 )
 from django.utils import timezone
@@ -259,6 +258,10 @@ def join_lobby_view(request, pin):
         participant.display_name = resolve_display_name_from_user(current_user)
         participant.save()
 
+    # Сохраняем ID участника в HTTP-сессии, чтобы после удаления гостя
+    # можно было показать результаты
+    request.session[f"lobby_participant_{pin}"] = participant.id
+
     logger.info(
         "Игрок %s присоединился к лобби %s (квиз «%s», хост: %s) (IP: %s)",
         request.user.username,
@@ -267,11 +270,6 @@ def join_lobby_view(request, pin):
         session.host.username,
         request.META.get("REMOTE_ADDR"),
     )
-    return render(request, "join_lobby.html", {"session": session})
-    # Сохраняем ID участника в HTTP-сессии, чтобы после удаления гостя
-    # можно было показать результаты
-    request.session[f"lobby_participant_{pin}"] = participant.id
-
     return render(request, "join_lobby.html", {"session": session, "participant": participant})
 
 

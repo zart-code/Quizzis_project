@@ -21,18 +21,6 @@ def resolve_display_name_from_user(user: User) -> str:
     return user.username
 
 
-def get_display_name(record) -> str:
-    """Определяет отображаемое имя с цепочкой приоритетов.
-
-    Порядок: display_name → user.username → плейсхолдер «Удалённый пользователь».
-    """
-    if record.display_name:
-        return record.display_name
-    if record.user is not None:
-        return record.user.username
-    return "Удалённый пользователь"
-
-
 def cleanup_guest_users(session: GameSession) -> int:
     """Удаляет гостевых пользователей завершённой сессии, не участвующих в других активных сессиях.
 
