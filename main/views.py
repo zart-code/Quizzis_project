@@ -4,15 +4,12 @@
 
 import logging
 from django.contrib.auth import login, logout
-from django.contrib.auth.models import User
 from django.shortcuts import render, redirect
 from django.urls import reverse
-from django.db.models import Count, Avg, Q, F, IntegerField
-from django.db.models.functions import Coalesce
+from django.db.models import Count, Avg, Q, F
 from .forms import CustomUserCreationForm, StyledAuthenticationForm
 from main.models import Quiz
 from main.views_features.views_lobby import _get_request_user
-from .forms import CustomUserCreationForm, StyledAuthenticationForm
 
 # Настройка логгера
 logger = logging.getLogger(__name__)
@@ -238,13 +235,3 @@ def join_by_code(request):
                     f"Лобби с кодом «{pin}» не найдено. Проверьте код и попробуйте снова.",
                 )
     return redirect("main_page")
-
-
-def my_quizzes(request):
-    """Страница квиза (учителя)"""
-    logger.info(
-        "Пользователь %s перешёл на 'Мои квизы' (IP: %s)",
-        request.user.username if request.user.is_authenticated else "Anonymous",
-        request.META.get("REMOTE_ADDR"),
-    )
-    return render(request, "my_quizzes.html")

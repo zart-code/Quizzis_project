@@ -1,7 +1,6 @@
 """Views для квизов"""
 
 import logging
-import re
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -221,12 +220,11 @@ def report_quiz_view(request, quiz_id):
 def play_quiz_view(request, quiz_id):
     quiz = get_object_or_404(Quiz, id=quiz_id)
 
-    # Get current user (authenticated or guest)
-    from main.views_features.views_lobby import _get_request_user
+    # Для незарегистрированных пользователей не создаём гостевой аккаунт —
+    # статистика прохождений ведётся только для авторизованных
+    current_user = request.user if request.user.is_authenticated else None
 
-    current_user = _get_request_user(request)
-
-    if quiz.status == Quiz.DRAFT and quiz.creator != current_user:
+    if quiz.status == Quiz.DRAFT and (current_user is None or quiz.creator != current_user):
         return redirect("quizzes_view")
 
     questions = get_quiz_questions(quiz)
@@ -262,6 +260,25 @@ def play_quiz_view(request, quiz_id):
             request.session.pop(f"quiz_{quiz_id}_index", None)
             request.session.pop(f"quiz_{quiz_id}_result_id", None)
             request.session.pop(f"quiz_{quiz_id}_answered", None)
+
+            # Удаляем гостевого пользователя после завершения одиночного квиза,
+            # если он не участвует в активных лобби-сессиях
+            guest_user_id = request.session.get("guest_user_id")
+            if guest_user_id:
+                from django.contrib.auth.models import User
+                from main.models import GameParticipant, GameSession
+                try:
+                    guest_user = User.objects.get(pk=guest_user_id)
+                    if guest_user.username.startswith("guest_"):
+                        has_active = GameParticipant.objects.filter(
+                            user=guest_user,
+                            session__status__in=[GameSession.WAITING, GameSession.IN_PROGRESS],
+                        ).exists()
+                        if not has_active:
+                            guest_user.delete()
+                            request.session.pop("guest_user_id", None)
+                except User.DoesNotExist:
+                    request.session.pop("guest_user_id", None)
 
             logger.info(
                 "Пользователь %s завершил одиночное прохождение квиза «%s» (ID: %d). Баллы: %d / %d (%.1f%%) (IP: %s)",
@@ -388,19 +405,21 @@ def play_quiz_view(request, quiz_id):
                 },
             )
 
-    result = QuizResult.objects.create(
-        user=current_user,
-        quiz=quiz,
-        revision=current_revision,
-        score=0,
-        max_score=get_quiz_max_score(quiz),
-        score_percent=0,
-        completed=False,
-    )
+    # Статистика ведётся только для авторизованных пользователей
+    if current_user is not None:
+        result = QuizResult.objects.create(
+            user=current_user,
+            quiz=quiz,
+            revision=current_revision,
+            score=0,
+            max_score=get_quiz_max_score(quiz),
+            score_percent=0,
+            completed=False,
+        )
+        request.session[f"quiz_{quiz_id}_result_id"] = result.id
 
     request.session[f"quiz_{quiz_id}_log"] = []
     request.session[f"quiz_{quiz_id}_index"] = 0
-    request.session[f"quiz_{quiz_id}_result_id"] = result.id
     request.session[f"quiz_{quiz_id}_answered"] = {}
 
     return render(
