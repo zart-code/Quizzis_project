@@ -1,9 +1,6 @@
-
 image: python:3.13.3-alpine3.20
 
 before_script:
-  - git clean -ffdx
-  - git reset --hard
   - python3 -m venv .venv
   - . .venv/bin/activate
   - pip install -r requirements.txt
@@ -13,6 +10,7 @@ stages:
   - test
   - docs
   - deploy
+
 
 pylint:
   stage: style
@@ -66,39 +64,13 @@ deploy:
   only:
     - master
   script:
-    - apk add --no-cache openssh rsync
+    - apk add --no-cache openssh rsync   # ssh и rsync нужны, git - нет
     - eval $(ssh-agent -s)
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
     - mkdir -p ~/.ssh && chmod 700 ~/.ssh
     - ssh-keyscan -H $DEPLOY_HOST >> ~/.ssh/known_hosts
-    # Синхронизация: исключаем вирт.окружение и прочее
-    - rsync -avz --delete
-        --exclude='.git/'
-        --exclude='venv/'
-        --exclude='__pycache__/'
-        --exclude='*.pyc'
-        --exclude='static/'
-        --exclude='media/'
-        --exclude='.env'
-        --exclude='.idea/'
-        --exclude='.vscode/'
-        --exclude='gunicorn.log'
-        --exclude='logs/'
-        --exclude='db.sqlite3'
-        ./
-        $DEPLOY_USER@$DEPLOY_HOST:/home/site1/app/quizzis_project/
-    # Удалённые команды: обновление и перезапуск сервиса
-    - |
-      ssh $DEPLOY_USER@$DEPLOY_HOST "
-        cd /home/site1/app/quizzis_project &&
-        source /home/site1/app/venv/bin/activate &&
-        pip install -r requirements.txt &&
-        python manage.py migrate --noinput &&
-        python manage.py collectstatic --noinput &&
-        export XDG_RUNTIME_DIR=/run/user/\$(id -u) &&
-        systemctl --user restart quizzis
-      "
-    - echo "Deploy completed."
+    - rsync -avz --delete ... (твои параметры) ...
+    - ssh ... (твоя команда перезапуска) ...
   environment:
     name: production
     url: http://188.127.251.236:8081
