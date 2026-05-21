@@ -99,4 +99,4 @@ deploy:
   environment:
     name: production
     url: http://188.127.251.236:8081
-  when: on_successm
+  when: on_success
