@@ -1,0 +1,576 @@
+================================================================================
+ДОКУМЕНТАЦИЯ: Views и Forms — как работает каждая функция и её связи
+================================================================================
+
+
+================================================================================
+ФАЙЛ: main/views.py — Основные views (главная, авторизация, каталог квизов)
+================================================================================
+
+--- _handle_form(request, form_class, template_name, success_url, ...) ---
+
+Что делает: Универсальный обработчик форм. Убирает дублирование логики POST/GET
+для регистрации и логина.
+
+Связи:
+  - POST: Создаёт форму из request.POST → валидирует
+    → CustomUserCreationForm: создаёт User в БД + login(request, user)
+    → StyledAuthenticationForm: достаёт User из БД + login(request, user)
+    → редирект на success_url
+  - GET: Создаёт пустую форму → передаёт в шаблон template_name
+  - Вызывается из: register_page()
+
+
+--- main_page(request) ---
+
+Что делает: Рендерит главную страницу с формой ввода кода лобби.
+
+URL: / (name="main_page")
+Шаблон: main_page.html
+Контекст:
+  - join_pin_prefill — из GET ?pin=... (предзаполнение поля кода)
+  - highlight_nickname — True если ?highlight=1 и пользователь не авторизован
+Кто перенаправляет сюда:
+  - join_lobby_view (гость зашёл по прямой ссылке без ника)
+  - logout_view
+  - join_by_code (при ошибке)
+
+
+--- register_page(request) ---
+
+Что делает: Страница регистрации нового пользователя.
+
+URL: /register/ (name="register_page")
+Шаблон: register.html
+Форма: CustomUserCreationForm (из main/forms.py)
+БД:
+  - Создаёт User (django.contrib.auth.models.User)
+  - Автоматически создаётся Profile через сигнал post_save в models.py
+После успеха: login(request, user) → редирект на main_page
+
+
+--- login_page(request) ---
+
+Что делает: Страница входа в систему.
+
+URL: /login/ (name="login_page")
+Шаблон: login_page.html
+Форма: StyledAuthenticationForm (из main/forms.py)
+БД: form.get_user() — ищет User по credentials
+GET-параметр next: Если пришёл с защищённой страницы (@login_required),
+  после логина вернёт туда
+После успеха: login(request, user) → редирект на next или main_page
+
+
+--- logout_view(request) ---
+
+Что делает: Выход из системы.
+
+URL: /logout/ (name="logout")
+Действие: logout(request) — очищает сессию, удаляет auth cookie
+Редирект: → main_page
+
+
+--- quizzes_view(request) ---
+
+Что делает: Страница "Все квизы" — каталог опубликованных квизов.
+
+URL: /quizzes/ (name="quizzes_view")
+Шаблон: quizzes_view.html
+БД запрос:
+  - Quiz.objects.filter(status=Quiz.ACTIVE) — только опубликованные
+  - .select_related("creator", "current_revision") — JOIN с автором и ревизией
+  - .annotate(...) — для каждого квиза считает:
+    • passed_count — кол-во завершённых прохождений текущей ревизии
+    • avg_score_percent — средний процент
+    • avg_score_points / avg_max_points — средние баллы
+  - Фильтр current_revision_filter — статистика только по текущей ревизии
+Сортировка (GET ?sort=):
+  - "new" (по умолчанию) — по дате создания
+  - "popular" — по количеству прохождений
+  - "best" — по среднему проценту
+Поиск (GET ?search=): title__icontains — подстрока в названии
+Контекст → шаблон: quizzes (QuerySet), current_sort, search_query
+
+
+--- join_by_code(request) ---
+
+Что делает: Обрабатывает POST-форму "Войти по коду" с главной страницы.
+
+URL: /join/ (name="join_by_code")
+Метод: Только POST
+Входные данные: pin (код лобби), nickname (ник гостя)
+БД запрос: GameSession.objects.filter(pin=pin).first()
+Логика:
+  1. Сессия не найдена → messages.error → редирект main_page
+  2. Сессия FINISHED → messages.error("Эта игра уже завершена") → main_page
+     (гость НЕ создаётся)
+  3. Пользователь не авторизован:
+     - _get_request_user(request, guest_name=nickname) — создаёт/обновляет
+       гостевого User в БД (username = "guest_<ник>")
+     - Сохраняет guest_user_id в Django-сессии
+     - Устанавливает флаг guest_nickname_set
+  4. Редирект → join_lobby/<pin>/?from_code=1
+Связь с _get_request_user: Создаёт User в БД
+Связь с join_lobby_view: Перенаправляет туда с ?from_code=1
+
+
+================================================================================
+ФАЙЛ: main/views_features/views_lobby.py — Views для лобби (мультиплеер)
+================================================================================
+
+--- _get_guest_username(guest_name, exclude_user_id=None) ---
+
+Что делает: Формирует уникальное имя гостя.
+
+Логика:
+  - Если guest_name задан: очищает от спецсимволов → "guest_<очищенный_ник>"
+  - Если не задан: "guest_<uuid4_hex[:8]>"
+  - Проверяет уникальность в БД (User.objects.filter(username=...))
+  - Если конфликт — добавляет суффикс _1, _2, ...
+  - exclude_user_id — исключает текущего гостя из проверки (при переименовании)
+БД: User.objects.filter(username=...) — проверка уникальности
+
+
+--- _get_request_user(request, guest_name=None) ---
+
+Что делает: Возвращает пользователя для игры — реального или гостевого.
+
+Логика:
+  1. Если request.user.is_authenticated → возвращает его
+  2. Если в сессии есть guest_user_id:
+     - Ищет User в БД по ID
+     - Если не найден (удалён) — очищает сессию
+     - Если найден и передан guest_name — обновляет username
+  3. Если гостя нет — создаёт нового User через create_user()
+     - Сохраняет guest_user_id в Django-сессии
+БД:
+  - User.objects.get(pk=guest_user_id) — поиск существующего гостя
+  - User.objects.create_user(username=...) — создание нового
+Вызывается из: join_by_code, join_lobby_view, session_play_view
+
+
+--- create_lobby_view(request, quiz_id) ---
+
+Что делает: Создаёт новое лобби для квиза.
+
+URL: /quiz/<quiz_id>/lobby/create/ (name="create_lobby")
+Доступ: @login_required, только создатель квиза
+БД:
+  - get_object_or_404(Quiz, id=quiz_id, creator=request.user)
+  - Удаляет просроченные WAITING сессии (старше 1 часа)
+  - Удаляет все WAITING сессии этого хоста (чтобы не было дублей)
+  - GameSession.objects.create(...) — создаёт сессию с PIN и ревизией
+Связь с get_current_revision: Получает текущую ревизию квиза
+Редирект: → lobby/<pin>/
+
+
+--- lobby_view(request, pin) ---
+
+Что делает: Страница лобби для хоста (ожидание игроков).
+
+URL: /lobby/<pin>/ (name="lobby")
+Доступ: @login_required, только хост сессии
+Шаблон: lobby.html
+БД: get_object_or_404(GameSession, pin=pin, host=request.user)
+Логика: Если сессия просрочена (>1 час) — удаляет и редиректит на my_quizzes
+
+
+--- toggle_lock_view(request, pin) ---
+
+Что делает: Закрывает/открывает лобби для новых игроков.
+
+URL: /lobby/<pin>/toggle-lock/ (name="toggle_lock")
+Доступ: @login_required, POST, только хост
+БД: session.is_locked = not session.is_locked → session.save()
+Редирект: → lobby/<pin>/
+
+
+--- delete_session_view(request, pin) ---
+
+Что делает: Удаляет лобби.
+
+URL: /lobby/<pin>/delete/ (name="delete_session")
+Доступ: @login_required, POST, только хост
+БД: session.delete() — каскадно удаляет GameParticipant, GameAnswer
+Редирект: → my_quizzes
+
+
+--- api_players_view(request, pin) ---
+
+Что делает: API — список игроков в лобби (для JS-поллинга).
+
+URL: /lobby/<pin>/api/players/ (name="api_players")
+Доступ: @login_required, только хост
+Ответ: JSON {players: [{username: ...}], count: N, is_locked: bool}
+БД: session.participants.select_related("user").all()
+Связь: Вызывает p.get_display_name() — метод модели GameParticipant
+
+
+--- join_lobby_view(request, pin) ---
+
+Что делает: Присоединение игрока к лобби.
+
+URL: /lobby/<pin>/join/ (name="join_lobby")
+Шаблон: join_lobby.html (или lobby_error.html при ошибке)
+Логика (по порядку):
+  1. Если сессия FINISHED → ошибка "Игра уже завершена" (гость НЕ создаётся)
+  2. Если не авторизован:
+     - Проверяет from_code и guest_nickname_set
+     - Если зашёл по прямой ссылке без ника → редирект на main_page с ?pin=&highlight=1
+  3. _get_request_user(request) — получает/создаёт пользователя
+  4. Проверки: просрочка, хост ли это, уже в игре, статус, блокировка, лимит 25
+  5. GameParticipant.objects.get_or_create(...) — создаёт участника
+  6. Если created: заполняет display_name через resolve_display_name_from_user
+  7. Сохраняет participant.id в request.session["lobby_participant_<pin>"]
+БД:
+  - GameSession (get_object_or_404)
+  - GameParticipant (get_or_create, count)
+  - User (через _get_request_user)
+
+
+--- start_game_view(request, pin) ---
+
+Что делает: Запускает игру (хост нажимает "Начать").
+
+URL: /lobby/<pin>/start/ (name="start_game")
+Доступ: @login_required, POST, только хост
+БД:
+  - session.status = GameSession.IN_PROGRESS
+  - session.current_question_started_at = timezone.now()
+  - session.save()
+Редирект: → lobby/<pin>/ (JS на странице лобби увидит смену статуса)
+
+
+--- api_state_view(request, pin) ---
+
+Что делает: API — текущий статус сессии (для JS-поллинга игроков).
+
+URL: /session/<pin>/api/state/ (name="api_state")
+Ответ: JSON {status: "waiting"|"in_progress"|"finished"}
+Используется: JS в join_lobby.html — поллит каждые 2 сек, при "in_progress"
+  редиректит игрока на session_play
+
+
+--- api_game_stats_view(request, pin) ---
+
+Что делает: API — полная статистика игры в реальном времени для хоста.
+
+URL: /lobby/<pin>/api/game-stats/ (name="api_game_stats")
+Доступ: @login_required, только хост
+Ответ: JSON со статусом, текущим вопросом, списком игроков (с очками),
+  историей ответов по вопросам
+БД:
+  - get_session_questions(session) — вопросы из ревизии или квиза
+  - session.participants — подсчёт ответивших
+  - GameAnswer.objects.filter(...) — история ответов
+Связь: Вызывает p.get_display_name() и a.participant.get_display_name()
+
+
+--- session_play_view(request, pin) ---
+
+Что делает: Основная view игрового процесса — показ вопросов, приём ответов.
+
+URL: /session/<pin>/play/ (name="session_play")
+Шаблон: session_play.html (игра) или session_results.html (результаты)
+Логика:
+  1. Поиск участника:
+     - Сначала по lobby_participant_<pin> из HTTP-сессии (для удалённых гостей)
+     - Затем по user через _get_request_user
+  2. Если сессия FINISHED → обновляет QuizResult → рендерит session_results.html
+  3. Если IN_PROGRESS:
+     - GET: Показывает текущий вопрос с таймером
+     - POST (ответ):
+       a. Проверяет, не отвечал ли уже (GameAnswer exists)
+       b. score_question() — подсчёт баллов
+       c. Обновляет participant.score, participant.is_answered
+       d. Создаёт GameAnswer
+       e. Если все ответили → переход к следующему вопросу
+       f. Если вопросы кончились → session.status = FINISHED → cleanup_guest_users()
+БД:
+  - GameParticipant (поиск, обновление score)
+  - GameAnswer (проверка дубля, создание)
+  - QuizResult (создание при первом входе, обновление при завершении)
+  - GameSession (обновление current_question, status)
+  - User (удаление гостей через cleanup_guest_users)
+Связь с cleanup_guest_users: Удаляет гостей после завершения сессии
+Связь с score_question: Подсчёт баллов за ответ
+Кэширование: Отключено (Cache-Control: no-store)
+
+
+--- quiz_sessions_list_view(request, quiz_id) ---
+
+Что делает: Список всех сессий квиза для учителя (история лобби).
+
+URL: /quiz/<quiz_id>/sessions/ (name="quiz_sessions_list")
+Доступ: @login_required, только создатель квиза
+Шаблон: quiz_sessions_list.html
+БД: quiz.sessions.all().order_by("-created_at")
+
+
+--- session_results_teacher_view(request, pin) ---
+
+Что делает: Детальные результаты сессии — таблица "участник × вопрос".
+
+URL: /session/<pin>/results/teacher/ (name="session_results_teacher")
+Доступ: @login_required, только хост
+Шаблон: session_results_teacher.html
+БД:
+  - get_session_questions(session) — список вопросов
+  - session.participants.select_related("user") — участники
+  - GameAnswer.objects.filter(session=session).values(...) — все ответы
+Логика:
+  - Строит answers_map: {participant_id: {question_id: {is_correct, points}}}
+  - Для каждого участника формирует строку с результатами по каждому вопросу
+  - Передаёт rows в шаблон (rank, display_name, score, q_results)
+
+
+================================================================================
+ФАЙЛ: main/views_features/views_quiz.py — Views для квизов (создание, прохождение)
+================================================================================
+
+--- _render_quiz_form(request, *, quiz=None, quiz_payload=None) ---
+
+Что делает: Единая отрисовка формы создания/редактирования квиза.
+
+Шаблон: create_quiz.html
+Контекст: is_edit (bool), quiz (объект или None), quiz_payload (данные формы)
+Вызывается из: create_quiz_view, edit_quiz_view
+
+
+--- create_quiz_view(request) ---
+
+Что делает: Создание нового квиза.
+
+URL: /quiz/create/ (name="create_quiz")
+Доступ: @login_required, роль TEACHER или ADMIN, не забанен
+Логика POST:
+  1. Извлекает title из POST
+  2. collect_question_payloads_from_post(request) — парсит вопросы из POST
+  3. Валидация: title не пустой, есть хотя бы 1 вопрос
+  4. Quiz.objects.create(title, creator, status=DRAFT)
+  5. create_revision_from_payloads(...) — создаёт QuizRevision + RevisionQuestion + RevisionAnswer
+БД:
+  - Quiz.objects.create(...)
+  - QuizRevision, RevisionQuestion, RevisionAnswer (через create_revision_from_payloads)
+Редирект: → my_quizzes
+
+
+--- my_quizzes_view(request) ---
+
+Что делает: Страница "Мои квизы" — список квизов текущего учителя.
+
+URL: /my-quizzes/ (name="my_quizzes")
+Доступ: @login_required, роль TEACHER или ADMIN
+Шаблон: my_quizzes.html
+БД:
+  - Quiz.objects.filter(creator=request.user).select_related("current_revision")
+  - Для каждого квиза: quiz.total_questions() — кол-во вопросов
+  - QuizReport.objects.filter(quiz=quiz, status=ACCEPTED) — принятые жалобы
+Контекст: quizzes, total_questions, search_query
+
+
+--- toggle_quiz_status_view(request, quiz_id) ---
+
+Что делает: Переключает статус квиза (DRAFT ↔ ACTIVE).
+
+URL: /quiz/<quiz_id>/toggle/ (name="toggle_quiz_status")
+Доступ: @login_required, POST, только создатель
+БД: quiz.status = ACTIVE/DRAFT → quiz.save()
+Редирект: → my_quizzes
+
+
+--- report_quiz_view(request, quiz_id) ---
+
+Что делает: Создание жалобы на квиз.
+
+URL: /quiz/<quiz_id>/report/ (name="report_quiz")
+Доступ: @login_required
+Шаблон: report_quiz.html
+Форма: QuizReportForm (из forms_features/forms_reports.py)
+Логика:
+  - Нельзя жаловаться на свой квиз
+  - Нельзя создать дубль (pending_report_exists)
+  - При валидации: создаёт QuizReport (quiz, revision, reporter)
+БД:
+  - QuizReport.objects.filter(...).exists() — проверка дубля
+  - report.save() — создание жалобы
+Редирект: → quizzes_view (или next_url)
+
+
+--- play_quiz_view(request, quiz_id) ---
+
+Что делает: Одиночное прохождение квиза (из раздела "Все квизы").
+
+URL: /quiz/<quiz_id>/play/ (name="play_quiz")
+Шаблон: play_quiz.html
+Доступ: Все (авторизованные и анонимные)
+Логика:
+  - current_user = request.user если авторизован, иначе None
+  - Черновик доступен только создателю
+  - GET (первый вход):
+    • Если авторизован: создаёт QuizResult в БД (score=0, completed=False)
+    • Инициализирует сессионные ключи: quiz_<id>_log, _index, _answered
+  - POST action="answer":
+    • Проверяет, не отвечал ли уже (answered_questions в сессии)
+    • score_question(question, request, timed_out) — подсчёт баллов
+    • Сохраняет результат в сессию (quiz_<id>_log, quiz_<id>_answered)
+    • Рендерит результат ответа (правильно/неправильно, баллы)
+  - POST action="next":
+    • Показывает следующий вопрос
+  - POST action="finish":
+    • Суммирует баллы из quiz_<id>_log
+    • Если авторизован: обновляет QuizResult (score, completed=True)
+    • Очищает сессионные ключи
+    • Удаляет гостя из БД (если есть guest_user_id и нет активных лобби)
+    • Рендерит финальный экран с результатом
+БД:
+  - Quiz (get_object_or_404)
+  - QuizResult (create при старте, update при финише) — только для авторизованных
+  - User (удаление гостя при финише)
+  - GameParticipant (проверка активных сессий гостя)
+Связь с score_question: Подсчёт баллов
+Связь с get_quiz_questions: Получение вопросов текущей ревизии
+Хранение состояния: Django session (quiz_<id>_log, _index, _answered, _result_id)
+
+
+--- edit_quiz_view(request, quiz_id) ---
+
+Что делает: Редактирование существующего квиза.
+
+URL: /quiz/<quiz_id>/edit/ (name="edit_quiz")
+Доступ: @login_required, роль TEACHER/ADMIN, только создатель
+Шаблон: create_quiz.html (тот же, что и для создания, с is_edit=True)
+Логика POST:
+  1. Парсит title и question_payloads из POST
+  2. Валидация
+  3. quiz.title = title → quiz.save()
+  4. create_revision_from_payloads(...) — создаёт НОВУЮ ревизию (старая остаётся)
+БД:
+  - Quiz (get_object_or_404, save)
+  - QuizRevision, RevisionQuestion, RevisionAnswer (новая ревизия)
+Логика GET: build_quiz_payload_for_edit(quiz) — загружает данные текущей ревизии
+Редирект: → my_quizzes
+
+
+================================================================================
+ФАЙЛ: main/views_features/views_profile.py — Views для профиля
+================================================================================
+
+--- profile_view(request, user_id=None) ---
+
+Что делает: Страница профиля пользователя.
+
+URL: /profile/ (name="profile") или /admin/user/<user_id>/ (name="admin_user_profile")
+Доступ: @login_required; чужой профиль — только админ
+Шаблон: profile.html
+БД:
+  - Quiz.objects.count() — общее кол-во квизов
+  - QuizResult.objects.filter(user=user, completed=True) — прохождения
+    • .values("quiz").distinct().count() — уникальные пройденные квизы
+    • .aggregate(Avg("score_percent")) — средний балл
+  - Quiz.objects.values("category__name").annotate(...) — статистика по категориям
+  - QuizResult...order_by("-completed_at")[:5] — последние 5 прохождений
+  - UserAchievement.objects.filter(user=user) — достижения пользователя
+  - Achievement.objects.all() — все достижения (для отображения locked/unlocked)
+Контекст: profile_user, total_quizzes, completed_quizzes, average_score,
+  category_stats, recent_quiz_history, achievements, is_admin_view, is_student
+
+
+--- profile_history_view(request, user_id=None) ---
+
+Что делает: Полная история прохождений.
+
+URL: /profile/history/ (name="profile_history")
+Доступ: @login_required; чужая история — только админ
+Шаблон: profile_history.html
+БД: QuizResult.objects.filter(user=user, completed=True)
+  .select_related("quiz", "quiz__creator", "revision")
+  .order_by("-completed_at")
+
+
+--- edit_profile_view(request, user_id=None) ---
+
+Что делает: Редактирование профиля (своего или чужого для админа).
+
+URL: /profile/edit/ (name="edit_profile") или /admin/user/<user_id>/edit/
+Доступ: @login_required; чужой — только админ
+Шаблон: edit_profile.html
+Логика POST:
+  1. Обновление username (с проверкой уникальности в БД)
+  2. Обновление email (с проверкой уникальности)
+  3. Обновление пароля (с проверкой совпадения и длины ≥8)
+  4. user.save()
+  5. update_session_auth_hash(request, user) — чтобы не разлогинило после смены пароля
+БД:
+  - User.objects.filter(username=...).exclude(pk=...).exists() — проверка уникальности
+  - user.set_password(password) + user.save()
+Редирект: → profile или admin_user_profile
+
+
+================================================================================
+ФАЙЛ: main/forms.py — Формы авторизации
+================================================================================
+
+--- CustomUserCreationForm ---
+
+Что делает: Форма регистрации с выбором роли (Учитель/Ученик).
+
+Наследует: UserCreationForm (Django)
+Поля: username, email, password1, password2, role
+Модель: User
+Метод save():
+  - Создаёт User через super().save()
+  - Обновляет Profile (role, is_admin) — Profile создаётся автоматически
+    через сигнал post_save
+  - Если username == "admin" → role=ADMIN, is_admin=True
+Используется в: register_page (views.py)
+
+
+--- StyledAuthenticationForm ---
+
+Что делает: Форма входа со стилизованными полями.
+
+Наследует: AuthenticationForm (Django)
+Добавляет: CSS-класс "form-control" на все поля
+Используется в: login_page (views.py)
+
+
+================================================================================
+ФАЙЛ: main/forms_features/forms_reports.py — Форма жалобы
+================================================================================
+
+--- QuizReportForm ---
+
+Что делает: Форма отправки жалобы на квиз.
+
+Наследует: ModelForm
+Модель: QuizReport
+Поля: reason (Select), comment (Textarea)
+Валидация: Если reason == "Другое" и comment пустой → ошибка
+Используется в: report_quiz_view (views_quiz.py)
+
+
+================================================================================
+ОБЩАЯ СХЕМА СВЯЗЕЙ
+================================================================================
+
+Пользователь → main_page → join_by_code → join_lobby_view → session_play_view
+                                              ↓
+                                    _get_request_user (создаёт гостя)
+                                              ↓
+                                    GameParticipant.get_or_create
+                                              ↓
+                                    session_play_view (игра)
+                                              ↓
+                                    cleanup_guest_users (удаление гостя)
+
+Учитель → create_quiz_view → my_quizzes_view → create_lobby_view → lobby_view
+                                                       ↓
+                                              start_game_view
+                                                       ↓
+                                              api_game_stats_view (поллинг)
+                                                       ↓
+                                              session_results_teacher_view
+
+Все пользователи → quizzes_view → play_quiz_view (одиночное прохождение)
