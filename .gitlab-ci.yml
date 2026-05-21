@@ -1,6 +1,9 @@
+
 image: python:3.13.3-alpine3.20
 
 before_script:
+  - git clean -ffdx
+  - git reset --hard
   - python3 -m venv .venv
   - . .venv/bin/activate
   - pip install -r requirements.txt
