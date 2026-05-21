@@ -1,3 +1,7 @@
+variables:
+  GIT_STRATEGY: clone
+
+
 image: python:3.13.3-alpine3.20
 
 before_script:
