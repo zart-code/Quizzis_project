@@ -6,6 +6,7 @@
 
 from django.contrib import admin
 from django.urls import path
+from django.shortcuts import render
 from main.views import (
     main_page,
     login_page,
@@ -135,3 +136,11 @@ urlpatterns = [
     path("admin-panel/api/users/", api_admin_users_view, name="api_admin_users"),
     path("admin-panel/api/quizzes/", api_admin_quizzes_view, name="api_admin_quizzes"),
 ]
+
+
+def custom_404(request, exception):
+    """Кастомная страница 404."""
+    return render(request, "404.html", status=404)
+
+
+handler404 = custom_404
