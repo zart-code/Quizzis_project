@@ -151,6 +151,8 @@
     const apiStateUrl = "{% url 'api_state' session.pin %}";
     let gameStarted = "{{ session.status }}" !== "waiting";
     let gameFinished = "{{ session.status }}" === "finished";
+    let lastLeaderboardQuestion = null;
+    let leaderboardLoaded = false;
 
     function copyLink(){navigator.clipboard.writeText(document.getElementById('join-link').textContent)}
 
@@ -212,16 +214,25 @@
                 }
             }
 
-            // Leaderboard
+            // Leaderboard updates only after the question is completed
             const lb = document.getElementById('gs-leaderboard');
-            lb.innerHTML = data.players.map((p, i) => `
-                <div class="game-lb-row ${p.is_answered ? 'answered' : ''}">
-                    <span class="game-lb-pos">${i+1}</span>
-                    <span class="game-lb-name">${p.username}</span>
-                    <span class="game-lb-score">${p.score}</span>
-                    <span class="game-lb-status ${p.is_answered ? 'done' : 'waiting'}">${p.is_answered ? '✓' : '⏳'}</span>
-                </div>
-            `).join('');
+            const shouldUpdateLeaderboard = !leaderboardLoaded
+                || data.status === 'finished'
+                || data.current_question !== lastLeaderboardQuestion
+                || data.answered_count === data.total_participants;
+
+            if (shouldUpdateLeaderboard) {
+                lb.innerHTML = data.players.map((p, i) => `
+                    <div class="game-lb-row ${p.is_answered ? 'answered' : ''}">
+                        <span class="game-lb-pos">${i+1}</span>
+                        <span class="game-lb-name">${p.username}</span>
+                        <span class="game-lb-score">${p.score}</span>
+                        <span class="game-lb-status ${p.is_answered ? 'done' : 'waiting'}">${p.is_answered ? '✓' : '⏳'}</span>
+                    </div>
+                `).join('');
+                leaderboardLoaded = true;
+                lastLeaderboardQuestion = data.current_question;
+            }
 
             // Question history (accumulates)
             const historyEl = document.getElementById('gs-history');
