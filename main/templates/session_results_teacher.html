@@ -41,7 +41,7 @@
                         <th class="tr-th-rank">Место</th>
                         <th class="tr-th-user">Участник</th>
                         {% for q in questions %}
-                        <th class="tr-th-q" title="{{ q.text }}">В{{ forloop.counter }}</th>
+                        <th class="tr-th-q" title="{{ q.text|escape }}">В{{ forloop.counter }}</th>
                         {% endfor %}
                         <th class="tr-th-total">Итого</th>
                     </tr>
@@ -90,13 +90,13 @@
                 <li class="tr-leg-item">
                     <div class="tr-leg-head">
                         <span class="tr-leg-num">В{{ forloop.counter }}</span>
-                        <span class="tr-leg-text">{{ q.text }}</span>
+                        <span class="tr-leg-text">{{ q.text|escape }}</span>
                     </div>
                     <ul class="tr-leg-options">
                         {% for opt in q.options %}
                         <li class="tr-leg-option {% if opt.is_correct %}tr-leg-option-correct{% endif %}">
                             <span class="tr-leg-opt-label">{{ opt.letter }}</span>
-                            <span class="tr-leg-opt-text">{{ opt.text }}</span>
+                            <span class="tr-leg-opt-text">{{ opt.text|escape }}</span>
                             {% if opt.is_correct %}
                             <span class="tr-leg-opt-badge">✔</span>
                             {% endif %}
