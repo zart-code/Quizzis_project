@@ -734,11 +734,38 @@ def advance_question_view(request, pin):
 
 
 def get_current_question_view(request, pin):
-    """API: получить текущий номер вопроса в сессии."""
+    """API: получить текущий номер вопроса в сессии.
+
+    Дополнительно возвращает has_answered — есть ли у текущего
+    игрока реальный ответ на текущий вопрос. Если нет — значит
+    вопрос уже переключился, а игрок завис на экране ожидания,
+    и надо немедленно перезагрузить страницу.
+    """
     session = get_object_or_404(GameSession, pin=pin)
+
+    # Определяем участника по сохранённому ID в HTTP-сессии
+    has_answered = True  # по умолчанию: не показываем вопрос
+    stored_participant_id = request.session.get(f"lobby_participant_{pin}")
+    if stored_participant_id:
+        participant = GameParticipant.objects.filter(
+            id=stored_participant_id, session=session
+        ).first()
+        if participant:
+            questions = get_session_questions(session)
+            current_q_index = session.current_question
+            if 0 <= current_q_index < len(questions):
+                current_question = questions[current_q_index]
+                answer_check = {"session": session, "participant": participant}
+                if session.revision_id:
+                    answer_check["revision_question"] = current_question
+                else:
+                    answer_check["question"] = current_question
+                has_answered = GameAnswer.objects.filter(**answer_check).exists()
+
     return JsonResponse({
         "current_question": session.current_question,
         "status": session.status,
+        "has_answered": has_answered,
     })
 
 

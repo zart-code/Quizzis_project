@@ -20,28 +20,32 @@
             <div class="sp-waiting-dots"><span></span><span></span><span></span></div>
         </div>
         <script>
-        // Проверяем, переключился ли вопрос
+        // Проверяем, переключился ли вопрос или нет ли рассинхрона
         const currentQuestion = {{ index }};
         const pin = "{{ session.pin }}";
         const apiCurrentQuestionUrl = "{% url 'get_current_question' session.pin %}";
 
         function checkForNextQuestion(){
             fetch(apiCurrentQuestionUrl).then(r => r.json()).then(data => {
-                // Если текущий вопрос в сессии изменился или игра завершена - перезагружаем
-                if (data.current_question !== currentQuestion || data.status === 'finished') {
+                // Вопрос сменился, игра завершена — или сервер говорит что
+                // у нас нет реального ответа (рассинхрон: учитель перешёл
+                // пока мы висели, ответ авто-засчитали, потом сбросили флаги)
+                if (
+                    data.current_question !== currentQuestion ||
+                    data.status === 'finished' ||
+                    data.has_answered === false
+                ) {
                     window.location.reload();
                 } else {
-                    // Проверим еще раз через 1 секунду
                     setTimeout(checkForNextQuestion, 1000);
                 }
             }).catch(err => {
                 console.error('Ошибка проверки вопроса:', err);
-                // При ошибке просто проверим через 1 сек
                 setTimeout(checkForNextQuestion, 1000);
             });
         }
 
-        // Начинаем проверку
+        // Запускаем сразу — не ждём таймера
         checkForNextQuestion();
         </script>
         {% else %}
@@ -124,6 +128,27 @@
             window.addEventListener('pageshow',function(e){
                 if(e.persisted){window.location.reload();}
             });
+
+            // Следим за сменой вопроса на сервере.
+            // Если учитель перешёл к следующему вопросу пока игрок
+            // не ответил — сразу перезагружаем страницу, чтобы
+            // показать новый вопрос и не терять баллы.
+            const myQuestionIndex = {{ index }};
+            const apiQuestionUrl = "{% url 'get_current_question' session.pin %}";
+            function pollCurrentQuestion(){
+                fetch(apiQuestionUrl)
+                    .then(r => r.json())
+                    .then(data => {
+                        if(data.current_question !== myQuestionIndex || data.status === 'finished'){
+                            window.location.reload();
+                        } else {
+                            setTimeout(pollCurrentQuestion, 1000);
+                        }
+                    })
+                    .catch(() => setTimeout(pollCurrentQuestion, 1500));
+            }
+            // Запускаем polling сразу (страхует если таймер завис или JS сломался)
+            setTimeout(pollCurrentQuestion, 1000);
 
             // Warn player before leaving the game
             function beforeUnloadHandler(e){
