@@ -101,23 +101,6 @@
             {% endif %}
         </div>
 
-        {% if category_stats %}
-        <!-- Статистика по категориям -->
-        <div class="profile-category-stats">
-            <h3 class="profile-section-title">Статистика по категориям</h3>
-            <div class="profile-categories-grid">
-                {% for category in category_stats %}
-                    <div class="profile-category-card">
-                        <h4>{{ category.category__name }}</h4>
-                        <div class="profile-category-info">
-                            <span>Пройдено: {{ category.quizzes_taken }}</span>
-                            <span>Средний балл: {{ category.average_score|floatformat:0 }}%</span>
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
 
         {% if achievements %}
         <!-- Достижения -->
