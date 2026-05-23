@@ -375,6 +375,13 @@ def api_game_stats_view(request, pin):
             "total_participants": total_participants,
             "players": players,
             "question_history": question_history,
+            # current question's available options (text only, do not reveal correctness)
+            "current_options": (
+                [
+                    {"id": ao.id, "text": ao.text}
+                    for ao in (questions[current_q].answers.all() if 0 <= current_q < total_questions else [])
+                ]
+            ),
         }
     )
 

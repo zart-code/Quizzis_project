@@ -87,6 +87,7 @@
             <div class="game-question-card card" id="gs-question-card">
                 <div class="game-question-label">Текущий вопрос:</div>
                 <div class="game-question-text" id="gs-question-text"></div>
+                <div id="gs-options" style="margin-top:.6rem"></div>
             </div>
 
             <!-- Question history (accumulates as game progresses) -->
@@ -185,11 +186,19 @@
             const pct = data.total_participants > 0 ? (data.answered_count / data.total_participants * 100) : 0;
             document.getElementById('gs-bar').style.width = pct + '%';
 
-            // Current question text
+            // Current question text and options
             if (data.status === 'finished') {
                 document.getElementById('gs-question-card').style.display = 'none';
             } else {
                 document.getElementById('gs-question-text').textContent = data.current_question_text || '';
+                const optsEl = document.getElementById('gs-options');
+                if (data.current_options && data.current_options.length > 0) {
+                    optsEl.innerHTML = data.current_options.map(function(o){
+                        return '<div style="padding:.4rem .6rem;border-radius:8px;background:rgba(139,92,246,.02);margin-bottom:.3rem;color:var(--text-primary);">' + o.text + '</div>';
+                    }).join('');
+                } else {
+                    optsEl.innerHTML = '';
+                }
             }
 
             // Leaderboard
