@@ -88,6 +88,10 @@
                 <div class="game-question-label">Текущий вопрос:</div>
                 <div class="game-question-text" id="gs-question-text"></div>
                 <div id="gs-options" style="margin-top:.6rem"></div>
+                <div id="gs-next-question-prompt" style="margin-top: 1rem; padding: 0.8rem; background: rgba(34, 197, 94, 0.1); border-radius: 8px; display: none; text-align: center;">
+                    <p style="color: var(--text-primary); margin-bottom: 0.5rem; font-weight: 600;">Все ответили! ✓</p>
+                    <button class="btn btn-primary" onclick="advanceQuestion()" id="gs-advance-btn">⬆ Следующий вопрос</button>
+                </div>
             </div>
 
             <!-- Question history (accumulates as game progresses) -->
@@ -149,10 +153,48 @@
     const apiPlayersUrl = "{% url 'api_players' session.pin %}";
     const apiGameStatsUrl = "{% url 'api_game_stats' session.pin %}";
     const apiStateUrl = "{% url 'api_state' session.pin %}";
+    const apiAdvanceQuestionUrl = "{% url 'advance_question' session.pin %}";
     let gameStarted = "{{ session.status }}" !== "waiting";
     let gameFinished = "{{ session.status }}" === "finished";
     let lastLeaderboardQuestion = null;
     let leaderboardLoaded = false;
+
+    function copyLink(){navigator.clipboard.writeText(document.getElementById('join-link').textContent)}
+
+    function advanceQuestion(){
+        const btn = document.getElementById('gs-advance-btn');
+        btn.disabled = true;
+        btn.textContent = '⏳ Загрузка...';
+
+        // Получаем CSRF токен
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+        fetch(apiAdvanceQuestionUrl, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrftoken,
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('gs-next-question-prompt').style.display = 'none';
+                    // Сразу же обновим статистику игры
+                    fetchGameStats();
+                } else {
+                    alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+                    btn.disabled = false;
+                    btn.textContent = '⬆ Следующий вопрос';
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Ошибка сети');
+                btn.disabled = false;
+                btn.textContent = '⬆ Следующий вопрос';
+            });
+    }
 
     function copyLink(){navigator.clipboard.writeText(document.getElementById('join-link').textContent)}
 
@@ -211,6 +253,16 @@
                 } else {
                     optsEl.classList.remove('gs-options');
                     optsEl.innerHTML = '';
+                }
+
+                // Показываем кнопку "Следующий вопрос", если все ответили
+                const promptEl = document.getElementById('gs-next-question-prompt');
+                if (data.ready_for_next_question && data.answered_count === data.total_participants) {
+                    promptEl.style.display = '';
+                    document.getElementById('gs-advance-btn').disabled = false;
+                    document.getElementById('gs-advance-btn').textContent = '⬆ Следующий вопрос';
+                } else {
+                    promptEl.style.display = 'none';
                 }
             }
 

@@ -382,6 +382,7 @@ def api_game_stats_view(request, pin):
                     for ao in (questions[current_q].answers.all() if 0 <= current_q < total_questions else [])
                 ]
             ),
+            "ready_for_next_question": session.ready_for_next_question,
         }
     )
 
@@ -545,15 +546,9 @@ def session_play_view(request, pin):
             answered_count = session.participants.filter(is_answered=True).count()
 
             if answered_count >= total_participants:
-                session.participants.update(is_answered=False)
-                session.current_question += 1
-
-                if session.current_question >= total:
-                    session.status = GameSession.FINISHED
-                    session.current_question_started_at = None
-                else:
-                    session.current_question_started_at = timezone.now()
-
+                # Все ответили, но вопрос не переключаем автоматически
+                # Учитель должен нажать "Следующий вопрос"
+                session.ready_for_next_question = True
                 session.save()
 
                 if session.status == GameSession.FINISHED:
@@ -595,7 +590,49 @@ def quiz_sessions_list_view(request, quiz_id):
     )
 
 
-@login_required
+@login_required(login_url="login_page")
+def advance_question_view(request, pin):
+    """API: учитель переводит игру на следующий вопрос."""
+    session = get_object_or_404(GameSession, pin=pin, host=request.user)
+
+    if request.method == "POST" and session.ready_for_next_question:
+        # Очищаем флаги ответов для всех участников
+        session.participants.update(is_answered=False)
+        session.ready_for_next_question = False
+        session.current_question += 1
+
+        questions = get_session_questions(session)
+        total_questions = len(questions)
+
+        if session.current_question >= total_questions:
+            session.status = GameSession.FINISHED
+            session.current_question_started_at = None
+        else:
+            session.current_question_started_at = timezone.now()
+
+        session.save()
+
+        return JsonResponse({
+            "success": True,
+            "current_question": session.current_question,
+        })
+
+    return JsonResponse({
+        "success": False,
+        "error": "Не готово или не авторизовано"
+    }, status=400)
+
+
+def get_current_question_view(request, pin):
+    """API: получить текущий номер вопроса в сессии."""
+    session = get_object_or_404(GameSession, pin=pin)
+    return JsonResponse({
+        "current_question": session.current_question,
+        "status": session.status,
+    })
+
+
+@login_required(login_url="login_page")
 def session_results_teacher_view(request, pin):
     """Детальные результаты сессии для учителя: таблица участник × вопрос."""
     session = get_object_or_404(GameSession, pin=pin, host=request.user)
