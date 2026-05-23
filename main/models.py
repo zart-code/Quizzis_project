@@ -3,4 +3,5 @@
 Так стоп, это уже было...
 """
 
-from models_packet import *
+# pylint: disable=wildcard-import
+from .models_packet import *

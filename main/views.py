@@ -8,7 +8,7 @@ from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.db.models import Count, Avg, Q, F
 from .forms import CustomUserCreationForm, StyledAuthenticationForm
-from main.models import Quiz
+from main.models_packet.quiz_models import Quiz
 from main.views_features.views_lobby import _get_request_user
 
 # Настройка логгера

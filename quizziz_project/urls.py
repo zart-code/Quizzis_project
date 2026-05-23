@@ -2,9 +2,10 @@
 Главный файл url проекта
 """
 
+# pylint: disable=duplicate-code
+
 from django.contrib import admin
 from django.urls import path
-
 from main.views import (
     main_page,
     login_page,
