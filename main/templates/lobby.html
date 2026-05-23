@@ -88,10 +88,19 @@
                 <div class="game-question-label">Текущий вопрос:</div>
                 <div class="game-question-text" id="gs-question-text"></div>
                 <div id="gs-options" style="margin-top:.6rem"></div>
-                <div id="gs-next-question-prompt" style="margin-top: 1rem; padding: 0.8rem; background: rgba(34, 197, 94, 0.1); border-radius: 8px; display: none; text-align: center;">
-                    <p style="color: var(--text-primary); margin-bottom: 0.5rem; font-weight: 600;">Все ответили! ✓</p>
-                    <button class="btn btn-primary" onclick="advanceQuestion()" id="gs-advance-btn">⬆ Следующий вопрос</button>
+            </div>
+
+            <!-- Results when all answered -->
+            <div class="game-results-card card" id="gs-results-card" style="display: none; margin-bottom: 1rem;">
+                <div class="game-results-header">
+                    <h3 style="margin: 0; color: var(--primary-light); font-size: 1.1rem;">📊 Результаты ответов:</h3>
                 </div>
+                <div class="game-results-list" id="gs-results-list" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem;"></div>
+            </div>
+
+            <div id="gs-next-question-prompt" style="margin-top: 1rem; padding: 0.8rem; background: rgba(34, 197, 94, 0.1); border-radius: 8px; display: none; text-align: center;">
+                <p style="color: var(--text-primary); margin-bottom: 0.5rem; font-weight: 600;">Все ответили! ✓</p>
+                <button class="btn btn-primary" onclick="advanceQuestion()" id="gs-advance-btn">⬆ Следующий вопрос</button>
             </div>
 
             <!-- Question history (accumulates as game progresses) -->

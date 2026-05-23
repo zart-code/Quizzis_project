@@ -337,11 +337,23 @@ def api_game_stats_view(request, pin):
         for p in participants
     ]
 
-    # Build history of answers per question
+    # Build history of answers per question. Include the current question
+    # when the session is finished or when the teacher marked it ready
+    # for the next question (i.e. all players have answered).
     question_history = []
     for i, q in enumerate(questions):
-        if i >= session.current_question and session.status != GameSession.FINISHED:
+        # Stop if we've passed the current question.
+        if i > session.current_question:
             break
+        # If this is the current question and the session is still in
+        # progress, skip it unless it's ready for next question.
+        if (
+            i == session.current_question
+            and session.status != GameSession.FINISHED
+            and not session.ready_for_next_question
+        ):
+            break
+
         answer_lookup = {"session": session}
         if session.revision_id:
             answer_lookup["revision_question"] = q
@@ -365,6 +377,29 @@ def api_game_stats_view(request, pin):
         }
         question_history.append(q_data)
 
+    # Get current question answers (for teacher review when all answered)
+    current_question_answers = []
+    if 0 <= current_q < total_questions:
+        current_question_obj = questions[current_q]
+        answer_lookup = {"session": session}
+        if session.revision_id:
+            answer_lookup["revision_question"] = current_question_obj
+        else:
+            answer_lookup["question"] = current_question_obj
+
+        current_answers = GameAnswer.objects.filter(**answer_lookup).select_related(
+            "participant__user"
+        ).order_by("-points", "participant__user__username")
+
+        current_question_answers = [
+            {
+                "username": a.participant.get_display_name(),
+                "is_correct": a.is_correct,
+                "points": a.points,
+            }
+            for a in current_answers
+        ]
+
     return JsonResponse(
         {
             "status": session.status,
@@ -383,6 +418,7 @@ def api_game_stats_view(request, pin):
                 ]
             ),
             "ready_for_next_question": session.ready_for_next_question,
+            "current_question_answers": current_question_answers,
         }
     )
 
