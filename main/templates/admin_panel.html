@@ -533,12 +533,7 @@
         </tbody>
       </table>
     </div>
-    {% if total_users > 15 %}
-    <div class="ap-load-wrap">
-      <button class="ap-load-btn" onclick="loadMoreRows('u-tbody', 15)">Ещё {{ total_users|add:"-15" }} пользователей</button>
-      <button class="ap-hide-btn" id="u-hide-btn" style="display:none;" onclick="hideRows('u-tbody', 15)">← Скрыть</button>
-    </div>
-    {% endif %}
+
   </div>
   <div class="ap-section">
     <div class="ap-section-title">
@@ -587,12 +582,7 @@
         </tbody>
       </table>
     </div>
-    {% if total_quizzes > 15 %}
-    <div class="ap-load-wrap">
-      <button class="ap-load-btn" onclick="loadMoreRows('q-tbody', 15)">Ещё {{ total_quizzes|add:"-15" }} квизов</button>
-      <button class="ap-hide-btn" id="q-hide-btn" style="display:none;" onclick="hideRows('q-tbody', 15)">← Скрыть</button>
-    </div>
-    {% endif %}
+
   </div>
 
   <!-- Reports -->
