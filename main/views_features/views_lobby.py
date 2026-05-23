@@ -792,6 +792,8 @@ def session_results_teacher_view(request, pin):
             }
             for idx, opt in enumerate(question.answers.all())
         ]
+        question.is_number_type = question.question_type == "number"
+        question.is_text_type = question.question_type == "text"
 
     participants = list(session.participants.select_related("user").order_by("-score"))
 

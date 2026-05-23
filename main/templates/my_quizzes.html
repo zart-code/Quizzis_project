@@ -409,13 +409,13 @@
         var html = '';
         reports.forEach(function(r) {
             html += '<div class="mq-reports-modal-item">';
-            html += '<p><strong>Причина:</strong> ' + r.reason + '</p>';
-            html += '<p><strong>Комментарий:</strong> ' + (r.comment || '—') + '</p>';
+            html += '<p><strong>Причина:</strong> ' + escapeHtml(r.reason) + '</p>';
+            html += '<p><strong>Комментарий:</strong> ' + escapeHtml(r.comment || '—') + '</p>';
             if (r.admin_comment) {
-                html += '<p><strong>Комментарий админа:</strong> ' + r.admin_comment + '</p>';
+                html += '<p><strong>Комментарий админа:</strong> ' + escapeHtml(r.admin_comment) + '</p>';
             }
             if (r.date) {
-                html += '<p style="color:var(--text-muted);font-size:.8rem;">Дата: ' + r.date + '</p>';
+                html += '<p style="color:var(--text-muted);font-size:.8rem;">Дата: ' + escapeHtml(r.date) + '</p>';
             }
             html += '</div>';
         });

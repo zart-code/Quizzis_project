@@ -213,7 +213,7 @@
         fetch(apiPlayersUrl).then(r=>r.json()).then(data=>{
             document.getElementById('player-count').textContent=data.count;
             const list=document.getElementById('players-list');
-            list.innerHTML=data.players.length===0?'<li class="players-empty">Ожидание игроков...</li>':data.players.map(p=>`<li class="player-chip">👤 ${p.username}</li>`).join('');
+            list.innerHTML=data.players.length===0?'<li class="players-empty">Ожидание игроков...</li>':data.players.map(p=>`<li class="player-chip">👤 ${escapeHtml(p.username)}</li>`).join('');
             document.getElementById('start-btn').disabled=data.count===0;
             document.getElementById('lock-status-badge').innerHTML=data.is_locked?'<span class="lbadge lbadge-danger">Закрыто</span>':'<span class="lbadge lbadge-success">Открыто</span>';
         });
@@ -256,7 +256,7 @@
                         const letter = String.fromCharCode(65 + (idx % 26));
                         return '<div class="gs-option">'
                             + '<div class="gs-option-letter">' + letter + '</div>'
-                            + '<div class="gs-option-text">' + o.text + '</div>'
+                            + '<div class="gs-option-text">' + escapeHtml(o.text) + '</div>'
                         + '</div>';
                     }).join('');
                 } else {
@@ -300,7 +300,7 @@
                 lb.innerHTML = data.players.map((p, i) => `
                     <div class="game-lb-row ${p.is_answered ? 'answered' : ''}">
                         <span class="game-lb-pos">${i+1}</span>
-                        <span class="game-lb-name">${p.username}</span>
+                        <span class="game-lb-name">${escapeHtml(p.username)}</span>
                         <span class="game-lb-score">${p.score}</span>
                         <span class="game-lb-status ${p.is_answered ? 'done' : 'waiting'}">${p.is_answered ? '✓' : '⏳'}</span>
                     </div>
@@ -315,7 +315,7 @@
                 let html = '';
                 data.question_history.forEach(function(q) {
                     html += '<div class="game-history-card card">';
-                    html += '<div class="game-history-q-title">Вопрос ' + q.number + ': ' + q.text + '</div>';
+                    html += '<div class="game-history-q-title">Вопрос ' + q.number + ': ' + escapeHtml(q.text) + '</div>';
                     html += '<div class="game-history-answers">';
                     if (q.answers.length === 0) {
                         html += '<span style="color:var(--text-muted);font-size:.85rem;">Нет ответов</span>';
@@ -324,7 +324,7 @@
                             const cls = a.is_correct ? 'correct' : 'wrong';
                             const icon = a.is_correct ? '✓' : '✗';
                             html += '<div class="game-history-answer ' + cls + '">';
-                            html += '<span class="gha-name">' + icon + ' ' + a.username + '</span>';
+                            html += '<span class="gha-name">' + icon + ' ' + escapeHtml(a.username) + '</span>';
                             html += '<span class="gha-points">' + a.points + ' очк.</span>';
                             html += '</div>';
                         });

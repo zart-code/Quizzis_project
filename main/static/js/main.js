@@ -1,3 +1,17 @@
+// ============================================
+// XSS-защита: экранирование HTML в пользовательских данных
+// ============================================
+function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+window.escapeHtml = escapeHtml;
+
 // Автоматическое скрытие flash сообщений
 document.addEventListener('DOMContentLoaded', function() {
     const alerts = document.querySelectorAll('.alert');
@@ -667,7 +681,7 @@ function fetchPlayers(){
     fetch(lobbyApiUrlFromStatic).then(r=>r.json()).then(data=>{
         document.getElementById('player-count').textContent=data.count;
         const list=document.getElementById('players-list');
-        list.innerHTML=data.players.length===0?'<li class="players-empty">Ожидание игроков...</li>':data.players.map(p=>`<li class="player-chip">👤 ${p.username}</li>`).join('');
+        list.innerHTML=data.players.length===0?'<li class="players-empty">Ожидание игроков...</li>':data.players.map(p=>`<li class="player-chip">👤 ${escapeHtml(p.username)}</li>`).join('');
         document.getElementById('start-btn').disabled=data.count===0;
         document.getElementById('lock-status-badge').innerHTML=data.is_locked?'<span class="lbadge lbadge-danger">Закрыто</span>':'<span class="lbadge lbadge-success">Открыто</span>';
     });

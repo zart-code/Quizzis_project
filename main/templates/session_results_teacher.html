@@ -92,6 +92,16 @@
                         <span class="tr-leg-num">В{{ forloop.counter }}</span>
                         <span class="tr-leg-text">{{ q.text|escape }}</span>
                     </div>
+                    {% if q.is_number_type %}
+                    <div class="tr-leg-correct-number">
+                        <span class="tr-leg-opt-badge">✔</span>
+                        <span class="tr-leg-opt-text">Правильный ответ: <strong>{{ q.correct_number }}</strong></span>
+                    </div>
+                    {% elif q.is_text_type %}
+                    <div class="tr-leg-correct-number">
+                        <span class="tr-leg-opt-text" style="color:var(--text-muted);font-style:italic">💬 Проверяется вручную</span>
+                    </div>
+                    {% else %}
                     <ul class="tr-leg-options">
                         {% for opt in q.options %}
                         <li class="tr-leg-option {% if opt.is_correct %}tr-leg-option-correct{% endif %}">
@@ -103,6 +113,7 @@
                         </li>
                         {% endfor %}
                     </ul>
+                    {% endif %}
                 </li>
                 {% endfor %}
             </ol>
@@ -185,6 +196,7 @@
 .tr-leg-opt-label{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:8px;background:rgba(139,92,246,.12);color:var(--primary-light);font-size:.8rem;font-weight:700;flex-shrink:0}
 .tr-leg-opt-text{flex:1;color:var(--text-secondary);font-size:.9rem;line-height:1.4}
 .tr-leg-opt-badge{display:inline-flex;align-items:center;justify-content:center;padding:.2rem .5rem;border-radius:8px;background:rgba(34,197,94,.15);color:#16a34a;font-size:.8rem;font-weight:700}
+.tr-leg-correct-number{display:flex;align-items:center;gap:.65rem;padding:.6rem .8rem;border-radius:10px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.18)}
 
 /* Empty */
 .tr-empty{padding:3rem;text-align:center}

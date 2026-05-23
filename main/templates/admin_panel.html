@@ -821,8 +821,8 @@ function updateUsers(users) {
       : '<span class="ap-muted">—</span>';
     return `<tr>
       <td class="ap-muted">${u.id}</td>
-      <td><a href="${URL_PROFILE}${u.id}/" class="ap-link">${u.username}</a></td>
-      <td class="ap-muted">${u.email || '—'}</td>
+      <td><a href="${URL_PROFILE}${u.id}/" class="ap-link">${escapeHtml(u.username)}</a></td>
+      <td class="ap-muted">${escapeHtml(u.email) || '—'}</td>
       <td>${roleBadge(u.profile__role)}</td>
       <td>${banned
         ? '<span class="ap-badge ap-badge-banned">Забанен</span>'
@@ -848,8 +848,8 @@ function updateQuizzes(quizzes) {
       : '';
     return `<tr>
       <td class="ap-muted">${q.id}</td>
-      <td><a href="${URL_PLAY}${q.id}/play/" class="ap-link">${q.title}</a></td>
-      <td><a href="${URL_PROFILE}${q.creator__id}/" class="ap-link">${q.creator__username}</a></td>
+      <td><a href="${URL_PLAY}${q.id}/play/" class="ap-link">${escapeHtml(q.title)}</a></td>
+      <td><a href="${URL_PROFILE}${q.creator__id}/" class="ap-link">${escapeHtml(q.creator__username)}</a></td>
       <td>${q.status === 'active'
         ? '<span class="ap-badge ap-badge-pub">Активен</span>'
         : '<span class="ap-badge ap-badge-draft">Черновик</span>'}</td>
@@ -859,7 +859,7 @@ function updateQuizzes(quizzes) {
         ${draftAction}
         <form method="post" action="${URL_DEL}${q.id}/"
               style="display:inline;"
-              onsubmit="return confirm('Удалить квиз «${q.title}»?')">
+              onsubmit="return confirm('Удалить квиз «' + escapeHtml(q.title) + '»?')">
           <input type="hidden" name="csrfmiddlewaretoken" value="${CSRF}">
           <button type="submit" class="ap-btn ap-btn-del">🗑 Удалить</button>
         </form>
