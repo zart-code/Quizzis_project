@@ -419,6 +419,13 @@ def api_game_stats_view(request, pin):
             ),
             "ready_for_next_question": session.ready_for_next_question,
             "current_question_answers": current_question_answers,
+            "time_remaining": (
+                max(0, questions[current_q].time_limit - int(
+                    (timezone.now() - session.current_question_started_at).total_seconds()
+                ))
+                if session.current_question_started_at and 0 <= current_q < total_questions
+                else 0
+            ),
         }
     )
 
@@ -525,6 +532,20 @@ def session_play_view(request, pin):
     remaining_seconds = max(0, question.time_limit - elapsed_seconds)
     server_timed_out = remaining_seconds <= 0
 
+    # Защита от рассинхрона: если is_answered=True, но реального ответа
+    # на текущий вопрос нет — игрок завис в ожидании пока учитель перешёл.
+    # Сбрасываем флаг чтобы игрок мог ответить на актуальный вопрос.
+    if participant.is_answered:
+        answer_check = {"session": session, "participant": participant}
+        if session.revision_id:
+            answer_check["revision_question"] = question
+        else:
+            answer_check["question"] = question
+        has_real_answer = GameAnswer.objects.filter(**answer_check).exists()
+        if not has_real_answer:
+            participant.is_answered = False
+            participant.save()
+
     if request.method == "POST":
         answer_lookup = {
             "session": session,
@@ -628,35 +649,88 @@ def quiz_sessions_list_view(request, quiz_id):
 
 @login_required(login_url="login_page")
 def advance_question_view(request, pin):
-    """API: учитель переводит игру на следующий вопрос."""
+    """API: учитель переводит игру на следующий вопрос.
+
+    Если кто-то из участников не успел ответить (игнорировал вопрос),
+    им автоматически засчитывается неверный ответ с 0 очков, и игра
+    продолжается без ожидания.
+    """
     session = get_object_or_404(GameSession, pin=pin, host=request.user)
 
-    if request.method == "POST" and session.ready_for_next_question:
-        # Очищаем флаги ответов для всех участников
-        session.participants.update(is_answered=False)
-        session.ready_for_next_question = False
-        session.current_question += 1
+    if request.method != "POST":
+        return JsonResponse({"success": False, "error": "Метод не разрешён"}, status=405)
 
-        questions = get_session_questions(session)
-        total_questions = len(questions)
+    if session.status == GameSession.FINISHED:
+        return JsonResponse({"success": False, "error": "Игра уже завершена"}, status=400)
 
-        if session.current_question >= total_questions:
-            session.status = GameSession.FINISHED
-            session.current_question_started_at = None
-        else:
-            session.current_question_started_at = timezone.now()
+    questions = get_session_questions(session)
+    total_questions = len(questions)
+    current_q_index = session.current_question
 
-        session.save()
+    if 0 <= current_q_index < total_questions:
+        current_question = questions[current_q_index]
 
-        return JsonResponse({
-            "success": True,
-            "current_question": session.current_question,
-        })
+        # Авто-засчитываем неверный ответ всем, кто не ответил
+        unanswered_participants = session.participants.filter(is_answered=False)
+        for participant in unanswered_participants:
+            answer_lookup = {"session": session, "participant": participant}
+            if session.revision_id:
+                answer_lookup["revision_question"] = current_question
+            else:
+                answer_lookup["question"] = current_question
+
+            already_answered = GameAnswer.objects.filter(**answer_lookup).exists()
+            if not already_answered:
+                game_answer_data = {
+                    "session": session,
+                    "participant": participant,
+                    "is_correct": False,
+                    "points": 0,
+                }
+                if session.revision_id:
+                    game_answer_data["revision_question"] = current_question
+                else:
+                    game_answer_data["question"] = current_question
+
+                GameAnswer.objects.create(**game_answer_data)
+                participant.is_answered = True
+                participant.save()
+
+                logger.info(
+                    "Игрок %s в лобби %s (квиз «%s») не ответил на вопрос %d — засчитан пропуск (IP: %s)",
+                    participant.user.username if participant.user else "unknown",
+                    pin,
+                    session.quiz.title,
+                    current_q_index + 1,
+                    request.META.get("REMOTE_ADDR"),
+                )
+
+    # Переходим к следующему вопросу
+    session.participants.update(is_answered=False)
+    session.ready_for_next_question = False
+    session.current_question += 1
+
+    if session.current_question >= total_questions:
+        session.status = GameSession.FINISHED
+        session.current_question_started_at = None
+        cleanup_guest_users(session)
+    else:
+        session.current_question_started_at = timezone.now()
+
+    session.save()
+
+    logger.info(
+        "Учитель %s перешёл к вопросу %d в лобби %s (IP: %s)",
+        request.user.username,
+        session.current_question + 1,
+        pin,
+        request.META.get("REMOTE_ADDR"),
+    )
 
     return JsonResponse({
-        "success": False,
-        "error": "Не готово или не авторизовано"
-    }, status=400)
+        "success": True,
+        "current_question": session.current_question,
+    })
 
 
 def get_current_question_view(request, pin):

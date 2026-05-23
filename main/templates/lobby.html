@@ -99,7 +99,7 @@
             </div>
 
             <div id="gs-next-question-prompt" style="margin-top: 1rem; padding: 0.8rem; background: rgba(34, 197, 94, 0.1); border-radius: 8px; display: none; text-align: center;">
-                <p style="color: var(--text-primary); margin-bottom: 0.5rem; font-weight: 600;">Все ответили! ✓</p>
+                <p style="color: var(--text-primary); margin-bottom: 0.5rem; font-weight: 600;" id="gs-advance-reason">Все ответили! ✓</p>
                 <button class="btn btn-primary" onclick="advanceQuestion()" id="gs-advance-btn">⬆ Следующий вопрос</button>
             </div>
 
@@ -264,12 +264,26 @@
                     optsEl.innerHTML = '';
                 }
 
-                // Показываем кнопку "Следующий вопрос", если все ответили
+                // Показываем кнопку "Следующий вопрос":
+                // 1) Все ответили, или
+                // 2) Таймер вышел (time_remaining === 0) — неответившие получат 0 автоматически
                 const promptEl = document.getElementById('gs-next-question-prompt');
-                if (data.ready_for_next_question && data.answered_count === data.total_participants) {
+                const reasonEl = document.getElementById('gs-advance-reason');
+                const allAnswered = data.answered_count === data.total_participants;
+                const timerExpired = data.time_remaining === 0;
+
+                if (allAnswered || timerExpired) {
                     promptEl.style.display = '';
                     document.getElementById('gs-advance-btn').disabled = false;
                     document.getElementById('gs-advance-btn').textContent = '⬆ Следующий вопрос';
+                    if (allAnswered) {
+                        reasonEl.textContent = 'Все ответили! ✓';
+                        promptEl.style.background = 'rgba(34, 197, 94, 0.1)';
+                    } else {
+                        const unanswered = data.total_participants - data.answered_count;
+                        reasonEl.textContent = '⏰ Время вышло! ' + unanswered + ' игр. не ответили — им засчитается 0 очков.';
+                        promptEl.style.background = 'rgba(239, 68, 68, 0.1)';
+                    }
                 } else {
                     promptEl.style.display = 'none';
                 }
