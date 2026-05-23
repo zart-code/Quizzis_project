@@ -32,6 +32,7 @@ def get_quiz_questions(quiz):
 
     return list(quiz.questions.prefetch_related("answers").order_by("order", "id"))
 
+
 def get_quiz_max_score(quiz):
     """Максимальный балл в текущей версии квиза."""
     revision = get_current_revision(quiz)

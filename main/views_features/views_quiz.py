@@ -224,7 +224,9 @@ def play_quiz_view(request, quiz_id):
     # статистика прохождений ведётся только для авторизованных
     current_user = request.user if request.user.is_authenticated else None
 
-    if quiz.status == Quiz.DRAFT and (current_user is None or quiz.creator != current_user):
+    if quiz.status == Quiz.DRAFT and (
+        current_user is None or quiz.creator != current_user
+    ):
         return redirect("quizzes_view")
 
     questions = get_quiz_questions(quiz)
@@ -267,12 +269,16 @@ def play_quiz_view(request, quiz_id):
             if guest_user_id:
                 from django.contrib.auth.models import User
                 from main.models import GameParticipant, GameSession
+
                 try:
                     guest_user = User.objects.get(pk=guest_user_id)
                     if guest_user.username.startswith("guest_"):
                         has_active = GameParticipant.objects.filter(
                             user=guest_user,
-                            session__status__in=[GameSession.WAITING, GameSession.IN_PROGRESS],
+                            session__status__in=[
+                                GameSession.WAITING,
+                                GameSession.IN_PROGRESS,
+                            ],
                         ).exists()
                         if not has_active:
                             guest_user.delete()
