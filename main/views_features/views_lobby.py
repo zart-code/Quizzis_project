@@ -603,6 +603,16 @@ def session_results_teacher_view(request, pin):
     questions = get_session_questions(session)
     max_score = get_session_max_score(session)
 
+    for question in questions:
+        question.options = [
+            {
+                "letter": chr(65 + idx),
+                "text": opt.text,
+                "is_correct": opt.is_correct,
+            }
+            for idx, opt in enumerate(question.answers.all())
+        ]
+
     participants = list(session.participants.select_related("user").order_by("-score"))
 
     if session.revision_id:
