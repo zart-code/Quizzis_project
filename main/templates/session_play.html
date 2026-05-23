@@ -20,32 +20,28 @@
             <div class="sp-waiting-dots"><span></span><span></span><span></span></div>
         </div>
         <script>
-        // Проверяем, переключился ли вопрос или нет ли рассинхрона
+        // Проверяем, переключился ли вопрос
         const currentQuestion = {{ index }};
         const pin = "{{ session.pin }}";
         const apiCurrentQuestionUrl = "{% url 'get_current_question' session.pin %}";
-
+        
         function checkForNextQuestion(){
             fetch(apiCurrentQuestionUrl).then(r => r.json()).then(data => {
-                // Вопрос сменился, игра завершена — или сервер говорит что
-                // у нас нет реального ответа (рассинхрон: учитель перешёл
-                // пока мы висели, ответ авто-засчитали, потом сбросили флаги)
-                if (
-                    data.current_question !== currentQuestion ||
-                    data.status === 'finished' ||
-                    data.has_answered === false
-                ) {
+                // Если текущий вопрос в сессии изменился или игра завершена - перезагружаем
+                if (data.current_question !== currentQuestion || data.status === 'finished') {
                     window.location.reload();
                 } else {
+                    // Проверим еще раз через 1 секунду
                     setTimeout(checkForNextQuestion, 1000);
                 }
             }).catch(err => {
                 console.error('Ошибка проверки вопроса:', err);
+                // При ошибке просто проверим через 1 сек
                 setTimeout(checkForNextQuestion, 1000);
             });
         }
-
-        // Запускаем сразу — не ждём таймера
+        
+        // Начинаем проверку
         checkForNextQuestion();
         </script>
         {% else %}
@@ -114,50 +110,35 @@
             let remaining=timeLimit;
             if(bar) bar.style.width=(remaining/totalTime*100)+'%';
 
-            const interval=setInterval(function(){
-                remaining--;
-                if(timerEl) timerEl.textContent=remaining;
-                if(bar) bar.style.width=(remaining/totalTime*100)+'%';
-                if(remaining<=5 && bar) bar.style.background='linear-gradient(90deg,#EF4444,#F59E0B)';
-                if(remaining<=0){clearInterval(interval);timedOut.value='1';form.submit();}
-            },1000);
-
-            form.addEventListener('submit',function(){clearInterval(interval);});
-
-            // Handle back/forward cache restoration (bfcache)
-            window.addEventListener('pageshow',function(e){
-                if(e.persisted){window.location.reload();}
-            });
-
-            // Следим за сменой вопроса на сервере.
-            // Если учитель перешёл к следующему вопросу пока игрок
-            // не ответил — сразу перезагружаем страницу, чтобы
-            // показать новый вопрос и не терять баллы.
-            const myQuestionIndex = {{ index }};
-            const apiQuestionUrl = "{% url 'get_current_question' session.pin %}";
-            function pollCurrentQuestion(){
-                fetch(apiQuestionUrl)
-                    .then(r => r.json())
-                    .then(data => {
-                        if(data.current_question !== myQuestionIndex || data.status === 'finished'){
-                            window.location.reload();
-                        } else {
-                            setTimeout(pollCurrentQuestion, 1000);
-                        }
-                    })
-                    .catch(() => setTimeout(pollCurrentQuestion, 1500));
-            }
-            // Запускаем polling сразу (страхует если таймер завис или JS сломался)
-            setTimeout(pollCurrentQuestion, 1000);
-
             // Warn player before leaving the game
             function beforeUnloadHandler(e){
                 e.preventDefault();
                 e.returnValue='Вы точно хотите выйти? Сейчас идет игра!';
             }
             window.addEventListener('beforeunload',beforeUnloadHandler);
+
+            const interval=setInterval(function(){
+                remaining--;
+                if(timerEl) timerEl.textContent=remaining;
+                if(bar) bar.style.width=(remaining/totalTime*100)+'%';
+                if(remaining<=5 && bar) bar.style.background='linear-gradient(90deg,#EF4444,#F59E0B)';
+                if(remaining<=0){
+                    clearInterval(interval);
+                    // Отключаем beforeunload ДО отправки при timeout
+                    window.removeEventListener('beforeunload',beforeUnloadHandler);
+                    timedOut.value='1';
+                    form.submit();
+                }
+            },1000);
+
             form.addEventListener('submit',function(){
+                clearInterval(interval);
                 window.removeEventListener('beforeunload',beforeUnloadHandler);
+            });
+
+            // Handle back/forward cache restoration (bfcache)
+            window.addEventListener('pageshow',function(e){
+                if(e.persisted){window.location.reload();}
             });
         });
         </script>
