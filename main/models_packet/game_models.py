@@ -80,6 +80,10 @@ class GameSession(models.Model):
         related_name="sessions",
         verbose_name="Ревизия квиза",
     )
+    ready_for_next_question = models.BooleanField(
+        default=False,
+        verbose_name="Все ответили, готово к переключению",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -90,7 +94,6 @@ class GameSession(models.Model):
         Отладочная информация
         """
         return f"{self.quiz} [{self.pin}]"
-
 
 class GameParticipant(models.Model):
     """
