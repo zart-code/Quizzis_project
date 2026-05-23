@@ -88,8 +88,21 @@
             <ol class="tr-leg-list">
                 {% for q in questions %}
                 <li class="tr-leg-item">
-                    <span class="tr-leg-num">В{{ forloop.counter }}</span>
-                    <span class="tr-leg-text">{{ q.text }}</span>
+                    <div class="tr-leg-head">
+                        <span class="tr-leg-num">В{{ forloop.counter }}</span>
+                        <span class="tr-leg-text">{{ q.text }}</span>
+                    </div>
+                    <ul class="tr-leg-options">
+                        {% for opt in q.options %}
+                        <li class="tr-leg-option {% if opt.is_correct %}tr-leg-option-correct{% endif %}">
+                            <span class="tr-leg-opt-label">{{ opt.letter }}</span>
+                            <span class="tr-leg-opt-text">{{ opt.text }}</span>
+                            {% if opt.is_correct %}
+                            <span class="tr-leg-opt-badge">✔</span>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
                 </li>
                 {% endfor %}
             </ol>
@@ -161,10 +174,17 @@
 /* Questions legend */
 .tr-questions-legend{padding:1.5rem}
 .tr-leg-title{font-size:1rem;font-weight:700;color:var(--text-primary);margin-bottom:1rem}
-.tr-leg-list{list-style:none;display:flex;flex-direction:column;gap:.5rem}
-.tr-leg-item{display:flex;align-items:flex-start;gap:.75rem;font-size:.9rem;color:var(--text-secondary)}
-.tr-leg-num{flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;padding:.2rem .55rem;border-radius:6px;background:rgba(139,92,246,.18);color:var(--primary-light);font-size:.75rem;font-weight:700;margin-top:.1rem}
-.tr-leg-text{flex:1;line-height:1.4}
+.tr-leg-list{list-style:none;display:flex;flex-direction:column;gap:1rem}
+.tr-leg-item{padding:.95rem 1rem;border-radius:14px;background:rgba(139,92,246,.05);border:1px solid rgba(139,92,246,.12)}
+.tr-leg-head{display:flex;align-items:flex-start;gap:.75rem;margin-bottom:.75rem}
+.tr-leg-num{flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:10px;background:rgba(139,92,246,.18);color:var(--primary-light);font-size:.8rem;font-weight:700}
+.tr-leg-text{flex:1;line-height:1.4;color:var(--text-primary);font-weight:600}
+.tr-leg-options{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.45rem}
+.tr-leg-option{display:flex;align-items:flex-start;gap:.65rem;padding:.45rem .5rem;border-radius:10px}
+.tr-leg-option-correct{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.18)}
+.tr-leg-opt-label{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:8px;background:rgba(139,92,246,.12);color:var(--primary-light);font-size:.8rem;font-weight:700;flex-shrink:0}
+.tr-leg-opt-text{flex:1;color:var(--text-secondary);font-size:.9rem;line-height:1.4}
+.tr-leg-opt-badge{display:inline-flex;align-items:center;justify-content:center;padding:.2rem .5rem;border-radius:8px;background:rgba(34,197,94,.15);color:#16a34a;font-size:.8rem;font-weight:700}
 
 /* Empty */
 .tr-empty{padding:3rem;text-align:center}

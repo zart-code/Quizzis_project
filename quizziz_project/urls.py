@@ -40,6 +40,8 @@ from main.views_features.views_lobby import (
     api_game_stats_view,
     session_results_teacher_view,
     quiz_sessions_list_view,
+    advance_question_view,
+    get_current_question_view,
 )
 from main.views_features.views_admin import (
     admin_panel_view,
@@ -82,6 +84,8 @@ urlpatterns = [
     path("lobby/<str:pin>/start/", start_game_view, name="start_game"),
     path("session/<str:pin>/api/state/", api_state_view, name="api_state"),
     path("lobby/<str:pin>/api/game-stats/", api_game_stats_view, name="api_game_stats"),
+    path("lobby/<str:pin>/api/advance-question/", advance_question_view, name="advance_question"),
+    path("session/<str:pin>/api/current-question/", get_current_question_view, name="get_current_question"),
     path("session/<str:pin>/play/", session_play_view, name="session_play"),
     path(
         "quiz/<int:quiz_id>/sessions/",

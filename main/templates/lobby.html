@@ -87,6 +87,20 @@
             <div class="game-question-card card" id="gs-question-card">
                 <div class="game-question-label">Текущий вопрос:</div>
                 <div class="game-question-text" id="gs-question-text"></div>
+                <div id="gs-options" style="margin-top:.6rem"></div>
+            </div>
+
+            <!-- Results when all answered -->
+            <div class="game-results-card card" id="gs-results-card" style="display: none; margin-bottom: 1rem;">
+                <div class="game-results-header">
+                    <h3 style="margin: 0; color: var(--primary-light); font-size: 1.1rem;">📊 Результаты ответов:</h3>
+                </div>
+                <div class="game-results-list" id="gs-results-list" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem;"></div>
+            </div>
+
+            <div id="gs-next-question-prompt" style="margin-top: 1rem; padding: 0.8rem; background: rgba(34, 197, 94, 0.1); border-radius: 8px; display: none; text-align: center;">
+                <p style="color: var(--text-primary); margin-bottom: 0.5rem; font-weight: 600;" id="gs-advance-reason">Все ответили! ✓</p>
+                <button class="btn btn-primary" onclick="advanceQuestion()" id="gs-advance-btn">⬆ Следующий вопрос</button>
             </div>
 
             <!-- Question history (accumulates as game progresses) -->
@@ -117,6 +131,11 @@
 .game-question-card{padding:1.5rem;margin-bottom:1rem}
 .game-question-label{color:var(--text-muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem}
 .game-question-text{font-size:1.2rem;font-weight:600;color:var(--text-primary);line-height:1.4}
+/* Options styling for teacher view */
+.gs-options{margin-top:.6rem;display:flex;flex-direction:column;gap:.5rem}
+.gs-option{display:flex;align-items:flex-start;gap:.8rem;padding:.6rem;border-radius:12px;border:1px solid rgba(139,92,246,.08);background:linear-gradient(180deg,rgba(139,92,246,.02),rgba(139,92,246,.01));}
+.gs-option-letter{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:8px;background:linear-gradient(180deg,var(--primary),var(--secondary));color:white;font-weight:700;flex-shrink:0}
+.gs-option-text{flex:1;color:var(--text-primary);font-weight:600}
 .game-leaderboard{padding:1.5rem;margin-bottom:1rem}
 .game-lb-list{display:flex;flex-direction:column;gap:.4rem}
 .game-lb-row{display:flex;align-items:center;gap:.8rem;padding:.6rem .8rem;border-radius:10px;background:rgba(139,92,246,.06);border:1px solid rgba(139,92,246,.1);transition:all .3s}
@@ -143,8 +162,48 @@
     const apiPlayersUrl = "{% url 'api_players' session.pin %}";
     const apiGameStatsUrl = "{% url 'api_game_stats' session.pin %}";
     const apiStateUrl = "{% url 'api_state' session.pin %}";
+    const apiAdvanceQuestionUrl = "{% url 'advance_question' session.pin %}";
     let gameStarted = "{{ session.status }}" !== "waiting";
     let gameFinished = "{{ session.status }}" === "finished";
+    let lastLeaderboardQuestion = null;
+    let leaderboardLoaded = false;
+
+    function copyLink(){navigator.clipboard.writeText(document.getElementById('join-link').textContent)}
+
+    function advanceQuestion(){
+        const btn = document.getElementById('gs-advance-btn');
+        btn.disabled = true;
+        btn.textContent = '⏳ Загрузка...';
+
+        // Получаем CSRF токен
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+        fetch(apiAdvanceQuestionUrl, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrftoken,
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('gs-next-question-prompt').style.display = 'none';
+                    // Сразу же обновим статистику игры
+                    fetchGameStats();
+                } else {
+                    alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+                    btn.disabled = false;
+                    btn.textContent = '⬆ Следующий вопрос';
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Ошибка сети');
+                btn.disabled = false;
+                btn.textContent = '⬆ Следующий вопрос';
+            });
+    }
 
     function copyLink(){navigator.clipboard.writeText(document.getElementById('join-link').textContent)}
 
@@ -185,23 +244,70 @@
             const pct = data.total_participants > 0 ? (data.answered_count / data.total_participants * 100) : 0;
             document.getElementById('gs-bar').style.width = pct + '%';
 
-            // Current question text
+            // Current question text and options
             if (data.status === 'finished') {
                 document.getElementById('gs-question-card').style.display = 'none';
             } else {
                 document.getElementById('gs-question-text').textContent = data.current_question_text || '';
+                const optsEl = document.getElementById('gs-options');
+                if (data.current_options && data.current_options.length > 0) {
+                    optsEl.classList.add('gs-options');
+                    optsEl.innerHTML = data.current_options.map(function(o, idx){
+                        const letter = String.fromCharCode(65 + (idx % 26));
+                        return '<div class="gs-option">'
+                            + '<div class="gs-option-letter">' + letter + '</div>'
+                            + '<div class="gs-option-text">' + o.text + '</div>'
+                        + '</div>';
+                    }).join('');
+                } else {
+                    optsEl.classList.remove('gs-options');
+                    optsEl.innerHTML = '';
+                }
+
+                // Показываем кнопку "Следующий вопрос":
+                // 1) Все ответили, или
+                // 2) Таймер вышел (time_remaining === 0) — неответившие получат 0 автоматически
+                const promptEl = document.getElementById('gs-next-question-prompt');
+                const reasonEl = document.getElementById('gs-advance-reason');
+                const allAnswered = data.answered_count === data.total_participants;
+                const timerExpired = data.time_remaining === 0;
+
+                if (allAnswered || timerExpired) {
+                    promptEl.style.display = '';
+                    document.getElementById('gs-advance-btn').disabled = false;
+                    document.getElementById('gs-advance-btn').textContent = '⬆ Следующий вопрос';
+                    if (allAnswered) {
+                        reasonEl.textContent = 'Все ответили! ✓';
+                        promptEl.style.background = 'rgba(34, 197, 94, 0.1)';
+                    } else {
+                        const unanswered = data.total_participants - data.answered_count;
+                        reasonEl.textContent = '⏰ Время вышло! ' + unanswered + ' игр. не ответили — им засчитается 0 очков.';
+                        promptEl.style.background = 'rgba(239, 68, 68, 0.1)';
+                    }
+                } else {
+                    promptEl.style.display = 'none';
+                }
             }
 
-            // Leaderboard
+            // Leaderboard updates only after the question is completed
             const lb = document.getElementById('gs-leaderboard');
-            lb.innerHTML = data.players.map((p, i) => `
-                <div class="game-lb-row ${p.is_answered ? 'answered' : ''}">
-                    <span class="game-lb-pos">${i+1}</span>
-                    <span class="game-lb-name">${p.username}</span>
-                    <span class="game-lb-score">${p.score}</span>
-                    <span class="game-lb-status ${p.is_answered ? 'done' : 'waiting'}">${p.is_answered ? '✓' : '⏳'}</span>
-                </div>
-            `).join('');
+            const shouldUpdateLeaderboard = !leaderboardLoaded
+                || data.status === 'finished'
+                || data.current_question !== lastLeaderboardQuestion
+                || data.answered_count === data.total_participants;
+
+            if (shouldUpdateLeaderboard) {
+                lb.innerHTML = data.players.map((p, i) => `
+                    <div class="game-lb-row ${p.is_answered ? 'answered' : ''}">
+                        <span class="game-lb-pos">${i+1}</span>
+                        <span class="game-lb-name">${p.username}</span>
+                        <span class="game-lb-score">${p.score}</span>
+                        <span class="game-lb-status ${p.is_answered ? 'done' : 'waiting'}">${p.is_answered ? '✓' : '⏳'}</span>
+                    </div>
+                `).join('');
+                leaderboardLoaded = true;
+                lastLeaderboardQuestion = data.current_question;
+            }
 
             // Question history (accumulates)
             const historyEl = document.getElementById('gs-history');
