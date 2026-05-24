@@ -113,10 +113,8 @@
 
             <div class="lobby-actions" id="gs-finished-actions" style="display:none;">
                 <a href="{% url 'session_results_teacher' session.pin %}" class="btn btn-primary" id="gs-results-link">📊 Подробные результаты</a>
-                <form method="post" action="{% url 'delete_session' session.pin %}" style="display:inline">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-danger" onclick="return confirm('Удалить сессию?')">🗑 Удалить сессию</button>
-                </form>
+                <a href="{% url 'my_quizzes' %}" class="btn btn-primary">Мои квизы</a>
+
             </div>
         </div>
     </div>
