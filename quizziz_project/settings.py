@@ -2,13 +2,14 @@
 Django settings for quizziz_project project.
 """
 
+import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = "dgdfddthry5675t76m8o-=9090070=+-+*g"
 
-DEBUG = True
+DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
 
 ALLOWED_HOSTS = ["0.0.0.0", "127.0.0.1", "188.127.251.236"]
 
@@ -81,6 +82,7 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = "/home/site1/app/static/"
+STATICFILES_DIRS = [BASE_DIR / "main" / "static"]
 
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"

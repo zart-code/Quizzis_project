@@ -5,8 +5,10 @@
 # pylint: disable=duplicate-code
 
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, re_path
 from django.shortcuts import render
+from django.conf import settings
+from django.views.static import serve
 from main.views import (
     main_page,
     login_page,
@@ -135,6 +137,7 @@ urlpatterns = [
     path("admin-panel/api/stats/", api_admin_stats_view, name="api_admin_stats"),
     path("admin-panel/api/users/", api_admin_users_view, name="api_admin_users"),
     path("admin-panel/api/quizzes/", api_admin_quizzes_view, name="api_admin_quizzes"),
+    re_path(r"^static/(?P<path>.*)$", serve, {"document_root": settings.BASE_DIR / "main" / "static"}),
 ]
 
 
