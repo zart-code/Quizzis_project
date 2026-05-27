@@ -79,6 +79,7 @@ def main_page(request):
         "highlight_nickname": (
             request.GET.get("highlight") == "1" and not request.user.is_authenticated
         ),
+        "show_kicked_modal": request.GET.get("kicked") == "1",
     }
     return render(request, "main_page.html", context)
 

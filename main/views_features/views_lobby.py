@@ -183,6 +183,7 @@ def api_players_view(request, pin):
 
     players = [
         {
+            "id": p.id,
             "username": p.get_display_name(),
         }
         for p in participants
@@ -195,6 +196,36 @@ def api_players_view(request, pin):
             "is_locked": session.is_locked,
         }
     )
+
+
+@login_required(login_url="login_page")
+@require_POST
+def kick_player_view(request, pin, participant_id):
+    """Кик игрока из лобби хостом."""
+    session = get_object_or_404(GameSession, pin=pin, host=request.user)
+    participant = get_object_or_404(GameParticipant, id=participant_id, session=session)
+    display_name = participant.get_display_name()
+    participant.delete()
+    logger.info(
+        "Хост %s выгнал игрока '%s' из лобби %s (IP: %s)",
+        request.user.username,
+        display_name,
+        pin,
+        request.META.get("REMOTE_ADDR"),
+    )
+    return JsonResponse({"success": True})
+
+
+def api_check_kicked_view(request, pin):
+    """API: проверяет, остался ли участник в лобби (для определения кика)."""
+    stored_participant_id = request.session.get(f"lobby_participant_{pin}")
+    if not stored_participant_id:
+        return JsonResponse({"kicked": True})
+    exists = GameParticipant.objects.filter(
+        id=stored_participant_id,
+        session__pin=pin,
+    ).exists()
+    return JsonResponse({"kicked": not exists})
 
 
 def join_lobby_view(request, pin):

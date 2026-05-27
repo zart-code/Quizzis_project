@@ -3,6 +3,56 @@
 {% block title %}Главная - Quizziz{% endblock %}
 
 {% block content %}
+
+{% if show_kicked_modal %}
+<div class="kicked-overlay" id="kicked-overlay">
+    <div class="kicked-modal">
+        <div class="kicked-icon">🚫</div>
+        <h2 class="kicked-title">Вы были выгнаны</h2>
+        <p class="kicked-text">Хост удалил вас из лобби.</p>
+        <button class="btn btn-primary kicked-btn" onclick="document.getElementById('kicked-overlay').style.display='none'">Закрыть</button>
+    </div>
+</div>
+<style>
+.kicked-overlay{
+    position:fixed;inset:0;
+    background:rgba(0,0,0,.7);
+    backdrop-filter:blur(6px);
+    display:flex;align-items:center;justify-content:center;
+    z-index:9999;
+    animation:fadeIn .25s ease;
+}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.kicked-modal{
+    background:linear-gradient(145deg,#1a1a2e,#16213e);
+    border:1px solid rgba(239,68,68,.35);
+    border-radius:20px;
+    padding:3rem 2.5rem;
+    text-align:center;
+    max-width:380px;
+    width:90%;
+    box-shadow:0 0 40px rgba(239,68,68,.2);
+    animation:slideUp .3s ease;
+}
+@keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+.kicked-icon{font-size:4rem;margin-bottom:1rem}
+.kicked-title{font-size:1.6rem;font-weight:700;color:#f87171;margin-bottom:.6rem}
+.kicked-text{color:var(--text-secondary,#9CA3AF);margin-bottom:2rem;font-size:1rem}
+.kicked-btn{display:inline-block;padding:.85rem 2.2rem;font-size:1rem}
+</style>
+<script>
+/* Убираем ?kicked=1 из адресной строки без перезагрузки */
+if (window.history.replaceState) {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('kicked');
+    window.history.replaceState({}, '', url.toString());
+}
+/* Закрытие по клику на оверлей */
+document.getElementById('kicked-overlay').addEventListener('click', function(e) {
+    if (e.target === this) this.style.display = 'none';
+});
+</script>
+{% endif %}
 <div class="hero">
     <div class="container">
         <h1 class="hero-title">Добро пожаловать в Quizziz!</h1>

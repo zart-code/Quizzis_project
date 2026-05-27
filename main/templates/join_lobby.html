@@ -43,12 +43,24 @@
 </style>
 
 <script>
-const apiUrl = "{% url 'api_state' session.pin %}";
+const apiStateUrl = "{% url 'api_state' session.pin %}";
+const apiCheckKickedUrl = "{% url 'api_check_kicked' session.pin %}";
 const playUrl = "/session/{{ session.pin }}/play/";
-setInterval(function(){
-    fetch(apiUrl).then(r=>r.json()).then(data=>{
-        if(data.status==='in_progress') window.location.href=playUrl;
+
+const pollInterval = setInterval(function(){
+    fetch(apiStateUrl).then(r=>r.json()).then(data=>{
+        if(data.status==='in_progress') {
+            clearInterval(pollInterval);
+            window.location.href = playUrl;
+        }
     });
-},1000);
+
+    fetch(apiCheckKickedUrl).then(r=>r.json()).then(data=>{
+        if(data.kicked) {
+            clearInterval(pollInterval);
+            window.location.href = '/?kicked=1';
+        }
+    });
+}, 1000);
 </script>
 {% endblock %}
