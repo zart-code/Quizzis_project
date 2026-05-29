@@ -58,6 +58,7 @@ from main.views_features.views_admin import (
     api_admin_stats_view,
     api_admin_users_view,
     api_admin_quizzes_view,
+    admin_change_user_role_view,
 )
 
 urlpatterns = [
@@ -107,6 +108,11 @@ urlpatterns = [
     path("quizzises/", quizzes_view, name="quizzes_view"),
     path("admin-panel/", admin_panel_view, name="admin_panel"),
     path("admin-panel/ban/<int:user_id>/", admin_ban_user_view, name="admin_ban_user"),
+    path(
+        "admin-panel/change-role/<int:user_id>/",
+        admin_change_user_role_view,
+        name="admin_change_user_role",
+    ),
     path(
         "admin-panel/unpublish-quiz/<int:quiz_id>/",
         admin_unpublish_quiz_view,

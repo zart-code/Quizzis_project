@@ -192,6 +192,84 @@
 .ap-btn-ok { color: #6EE7B7; border-color: rgba(16,185,129,.3); background: rgba(16,185,129,.08); }
 .ap-btn-ok:hover { background: rgba(16,185,129,.22); border-color: #10B981; transform: translateY(-1px); }
 
+.ap-role-dropdown {
+    position: relative;
+    display: inline-block;
+}
+.ap-role-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .35rem .75rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-weight: 600;
+    transition: transform .2s, background .2s, border-color .2s;
+}
+.ap-role-toggle:hover {
+    transform: translateY(-1px);
+}
+.ap-role-toggle:focus-visible {
+    outline: 2px solid rgba(139,92,246,.35);
+    outline-offset: 3px;
+}
+.ap-role-toggle--teacher {
+    background: rgba(251,191,36,.12);
+    border-color: rgba(245,158,11,.25);
+    color: #FCD34D;
+}
+.ap-role-toggle--student {
+    background: rgba(59,130,246,.12);
+    border-color: rgba(59,130,246,.25);
+    color: #93C5FD;
+}
+.ap-role-toggle--admin {
+    background: rgba(239,68,68,.12);
+    border-color: rgba(239,68,68,.25);
+    color: #FCA5A5;
+}
+.ap-role-text {
+    font-size: .88rem;
+    line-height: 1;
+}
+.ap-role-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: currentColor;
+    font-size: .9rem;
+}
+.ap-role-menu {
+    position: absolute;
+    top: calc(100% + .3rem);
+    left: 0;
+    min-width: 140px;
+    border-radius: 16px;
+    border: 1px solid rgba(139,92,246,.2);
+    background: rgba(15,15,28,.98);
+    box-shadow: 0 16px 40px rgba(0,0,0,.18);
+    z-index: 10;
+    overflow: hidden;
+}
+.ap-role-menu[hidden] {
+    display: none;
+}
+.ap-role-option {
+    width: 100%;
+    text-align: left;
+    border: none;
+    background: transparent;
+    padding: .7rem .9rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: .88rem;
+    transition: background .2s;
+}
+.ap-role-option:hover {
+    background: rgba(139,92,246,.12);
+}
+
 /* ─── Load more ─── */
 .ap-load-wrap {
     display: flex;
@@ -497,12 +575,30 @@
             <td><a href="{% url 'admin_user_profile' u.id %}" class="ap-link">{{ u.username }}</a></td>
             <td class="ap-muted">{{ u.email|default:"—" }}</td>
             <td>
-              {% if u.profile.role == 'admin' %}
-                <span class="ap-badge ap-badge-admin">Админ</span>
-              {% elif u.profile.role == 'teacher' %}
-                <span class="ap-badge ap-badge-teacher">Учитель</span>
+              {% if not u.profile.is_admin and u != request.user %}
+                <div class="ap-role-dropdown">
+                  <button type="button" class="ap-role-toggle {% if u.profile.role == 'teacher' %}ap-role-toggle--teacher{% else %}ap-role-toggle--student{% endif %}" aria-haspopup="true" aria-expanded="false">
+                    <span class="ap-role-text">
+                      {% if u.profile.role == 'teacher' %}Учитель{% else %}Ученик{% endif %}
+                    </span>
+                    <span class="ap-role-arrow">▾</span>
+                  </button>
+                  <div class="ap-role-menu" hidden>
+                    <form method="post" action="{% url 'admin_change_user_role' u.id %}">
+                      {% csrf_token %}
+                      <button type="submit" name="role" value="teacher" class="ap-role-option">Учитель</button>
+                      <button type="submit" name="role" value="student" class="ap-role-option">Ученик</button>
+                    </form>
+                  </div>
+                </div>
               {% else %}
-                <span class="ap-badge ap-badge-user">Ученик</span>
+                {% if u.profile.role == 'admin' %}
+                  <span class="ap-badge ap-badge-admin">Админ</span>
+                {% elif u.profile.role == 'teacher' %}
+                  <span class="ap-badge ap-badge-teacher">Учитель</span>
+                {% else %}
+                  <span class="ap-badge ap-badge-user">Ученик</span>
+                {% endif %}
               {% endif %}
             </td>
             <td>
@@ -779,6 +875,7 @@ const URL_STATS   = "{% url 'api_admin_stats' %}";
 const URL_USERS   = "{% url 'api_admin_users' %}";
 const URL_QUIZZES = "{% url 'api_admin_quizzes' %}";
 const URL_BAN     = "/admin-panel/ban/";     // + user_id + /
+const URL_CHANGE_ROLE = "/admin-panel/change-role/"; // + user_id + /
 const URL_PROFILE = "/admin-panel/user/";  // + user_id + /
 const URL_PLAY    = "/quiz/";               // + quiz_id + /play/
 const URL_UNPUB   = "/admin-panel/unpublish-quiz/"; // + quiz_id + /
@@ -803,6 +900,30 @@ function roleBadge(role) {
   return '<span class="ap-badge ap-badge-user">Ученик</span>';
 }
 
+function roleCellHtml(u) {
+  const isAdmin = u.profile__role === 'admin';
+  const isSelf = u.id === CURRENT_UID;
+  if (isAdmin || isSelf) {
+    return roleBadge(u.profile__role);
+  }
+  const roleClass = u.profile__role === 'teacher' ? 'ap-role-toggle--teacher' : 'ap-role-toggle--student';
+  const roleText = u.profile__role === 'teacher' ? 'Учитель' : 'Ученик';
+  return `
+    <div class="ap-role-dropdown">
+      <button type="button" class="ap-role-toggle ${roleClass}" aria-haspopup="true" aria-expanded="false">
+        <span class="ap-role-text">${roleText}</span>
+        <span class="ap-role-arrow">▾</span>
+      </button>
+      <div class="ap-role-menu" hidden>
+        <form method="post" action="${URL_CHANGE_ROLE}${u.id}/">
+          <input type="hidden" name="csrfmiddlewaretoken" value="${CSRF}">
+          <button type="submit" name="role" value="teacher" class="ap-role-option">Учитель</button>
+          <button type="submit" name="role" value="student" class="ap-role-option">Ученик</button>
+        </form>
+      </div>
+    </div>`;
+}
+
 // ── Обновить таблицу пользователей ──
 function updateUsers(users) {
   const tbody = document.getElementById('u-tbody');
@@ -823,7 +944,7 @@ function updateUsers(users) {
       <td class="ap-muted">${u.id}</td>
       <td><a href="${URL_PROFILE}${u.id}/" class="ap-link">${escapeHtml(u.username)}</a></td>
       <td class="ap-muted">${escapeHtml(u.email) || '—'}</td>
-      <td>${roleBadge(u.profile__role)}</td>
+      <td>${roleCellHtml(u)}</td>
       <td>${banned
         ? '<span class="ap-badge ap-badge-banned">Забанен</span>'
         : '<span class="ap-badge ap-badge-active">Активен</span>'}</td>
@@ -887,6 +1008,34 @@ async function poll() {
 // ── Запуск ──
 poll();                          // сразу при загрузке
 setInterval(poll, 3_000);      // затем каждые 5 секунд
+
+function closeAllRoleMenus() {
+  document.querySelectorAll('.ap-role-menu').forEach(menu => {
+    menu.hidden = true;
+  });
+  document.querySelectorAll('.ap-role-toggle').forEach(toggle => {
+    toggle.setAttribute('aria-expanded', 'false');
+  });
+}
+
+document.addEventListener('click', function(event) {
+  const toggle = event.target.closest('.ap-role-toggle');
+  if (toggle) {
+    event.preventDefault();
+    const dropdown = toggle.closest('.ap-role-dropdown');
+    const menu = dropdown.querySelector('.ap-role-menu');
+    const isOpen = !menu.hidden;
+    closeAllRoleMenus();
+    if (!isOpen) {
+      menu.hidden = false;
+      toggle.setAttribute('aria-expanded', 'true');
+    }
+    return;
+  }
+  if (!event.target.closest('.ap-role-dropdown')) {
+    closeAllRoleMenus();
+  }
+});
 
 // ── Модальное окно для комментариев ──
 function initCommentModals() {
