@@ -185,10 +185,6 @@ def admin_unpublish_quiz_view(request, quiz_id):
                 request.META.get("REMOTE_ADDR"),
             )
             messages.success(request, f"Квиз «{quiz.title}» возвращён в черновик.")
-            messages.success(
-                request,
-                f"Квиз «{quiz.title}» возвращён в черновик.",
-            )
         else:
             messages.info(
                 request,

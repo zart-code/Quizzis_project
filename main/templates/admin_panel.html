@@ -989,6 +989,31 @@ function updateQuizzes(quizzes) {
   }).join('') || '<tr class="ap-empty"><td colspan="7">Квизов пока нет</td></tr>';
 }
 
+// ── Сохранение позиции прокрутки при отправке форм — чтобы страница не прыгала вверх после изменения.
+const ADMIN_PANEL_SCROLL_KEY = 'adminPanelScroll';
+
+function restoreAdminScroll() {
+  const stored = sessionStorage.getItem(ADMIN_PANEL_SCROLL_KEY);
+  if (stored !== null) {
+    window.history.scrollRestoration = 'manual';
+    window.scrollTo(0, Number(stored) || 0);
+    sessionStorage.removeItem(ADMIN_PANEL_SCROLL_KEY);
+  }
+}
+
+function saveAdminScroll() {
+  sessionStorage.setItem(ADMIN_PANEL_SCROLL_KEY, String(window.scrollY || window.pageYOffset || 0));
+}
+
+document.addEventListener('submit', function(event) {
+  const form = event.target;
+  if (form && form.tagName === 'FORM' && form.method && form.method.toLowerCase() === 'post') {
+    saveAdminScroll();
+  }
+});
+
+window.addEventListener('pageshow', restoreAdminScroll);
+
 // ── Один цикл polling ──
 async function poll() {
   try {
