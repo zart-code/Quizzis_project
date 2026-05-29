@@ -82,7 +82,8 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
-STATIC_ROOT = "/home/site1/app/static/"
+STATIC_ROOT = BASE_DIR / 'static'
+
 STATICFILES_DIRS = [BASE_DIR / "main" / "static"]
 
 MEDIA_URL = "media/"
