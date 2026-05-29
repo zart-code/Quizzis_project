@@ -1,0 +1,24 @@
+name: Lint
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  pylint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install dependencies
+        run: |
+          pip install pylint pycodestyle
+          pip install -r requirements.txt
+      - name: Run pylint
+        run: pylint --fail-under=6 --ignore-paths="docs/*" **/*.py
+      - name: Run pycodestyle
+        run: pycodestyle --max-line-length=120 **/*.py
