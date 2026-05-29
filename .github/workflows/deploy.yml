@@ -1,37 +1,79 @@
-name: Deploy
+name: CI/CD Pipeline
 
 on:
-  workflow_run:
-    workflows: ["Lint", "Tests", "Docs"]   # имена должны совпадать с name в других файлах
-    types:
-      - completed
-    branches:
-      - master
+  push:
+    branches: [ master, main ]
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install
+        run: |
+          pip install pylint pycodestyle
+          pip install -r requirements.txt
+      - name: Pylint
+        run: pylint --fail-under=0 --ignore-paths="docs/*" **/*.py
+      - name: Pycodestyle
+        run: pycodestyle --max-line-length=120 **/*.py
+
+  test:
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install
+        run: pip install -r requirements.txt
+      - name: Django tests
+        run: python manage.py test
+
+  docs:
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install Sphinx
+        run: pip install sphinx sphinx-rtd-theme
+      - name: Build
+        run: |
+          cd docs
+          sphinx-build -b html source build
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs
+          path: docs/build/
+
   deploy:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    needs: [test, docs]
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
     environment:
       name: production
       url: http://161.104.33.94
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install SSH client & rsync
+      - name: Install SSH & rsync
         run: |
           sudo apt-get update
           sudo apt-get install -y openssh-client rsync
-
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
-
-      - name: Sync files via rsync
+      - name: Sync files
         run: |
           rsync -avz --delete \
             --exclude='.git/' \
@@ -46,8 +88,7 @@ jobs:
             --exclude='logs/' \
             --exclude='db.sqlite3' \
             ./ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/
-
-      - name: Run remote commands
+      - name: Remote commands
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
             cd ${{ secrets.DEPLOY_PATH }} &&
