@@ -11,8 +11,9 @@ SECRET_KEY = "dgdfddthry5675t76m8o-=9090070=+-+*g"
 
 DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = ["127.0.0.1",
-                 "161.104.33.94"]
+ALLOWED_HOSTS = ['127.0.0.1',
+                 '161.104.33.94',
+                 'quizzis.ru',]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -81,7 +82,7 @@ TIME_ZONE = "Europe/Moscow"
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / 'static'
 
 STATICFILES_DIRS = [BASE_DIR / "main" / "static"]
