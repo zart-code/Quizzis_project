@@ -13,7 +13,8 @@ DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
 
 ALLOWED_HOSTS = ['127.0.0.1',
                  '161.104.33.94',
-                 'quizzis.ru',]
+                 'quizzis.ru',
+                 'www.quizzis.ru',]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -90,7 +91,10 @@ STATICFILES_DIRS = [BASE_DIR / "main" / "static"]
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-CSRF_TRUSTED_ORIGINS = ["http://188.127.251.236:8081"]
+CSRF_TRUSTED_ORIGINS = ["https://quizzis.ru",
+                        "https://www.quizzis.ru",
+                        ]
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
