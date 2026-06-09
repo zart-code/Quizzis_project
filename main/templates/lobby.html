@@ -231,21 +231,21 @@
 
     function copyLink(){navigator.clipboard.writeText(document.getElementById('join-link').textContent)}
 
-    // Lobby polling (waiting state)
-    function fetchPlayers(){
+    // Загружаем начальный список игроков (HTTP fallback при загрузке)
+    function fetchPlayers() {
         if (gameStarted) return;
-        fetch(apiPlayersUrl).then(r=>r.json()).then(data=>{
-            document.getElementById('player-count').textContent=data.count;
-            const list=document.getElementById('players-list');
-            list.innerHTML=data.players.length===0
+        fetch(apiPlayersUrl).then(r => r.json()).then(data => {
+            document.getElementById('player-count').textContent = data.count;
+            const list = document.getElementById('players-list');
+            list.innerHTML = data.players.length === 0
                 ? '<li class="players-empty">Ожидание игроков...</li>'
-                : data.players.map(p=>`
+                : data.players.map(p => `
                     <li class="player-chip" data-id="${p.id}">
                         <span class="player-chip-name">👤 ${escapeHtml(p.username)}</span>
                         <button class="kick-btn" onclick="kickPlayer(${p.id}, '${escapeHtml(p.username)}')">✕ Выгнать</button>
                     </li>`).join('');
-            document.getElementById('start-btn').disabled=data.count===0;
-            document.getElementById('lock-status-badge').innerHTML=data.is_locked?'<span class="lbadge lbadge-danger">Закрыто</span>':'<span class="lbadge lbadge-success">Открыто</span>';
+            document.getElementById('start-btn').disabled = data.count === 0;
+            document.getElementById('lock-status-badge').innerHTML = data.is_locked ? '<span class="lbadge lbadge-danger">Закрыто</span>' : '<span class="lbadge lbadge-success">Открыто</span>';
         });
     }
 
@@ -259,24 +259,17 @@
         .then(r => r.json())
         .then(data => {
             if (data.success) {
-                const chip = document.querySelector(`.player-chip[data-id="${participantId}"]`);
-                if (chip) chip.remove();
-                const list = document.getElementById('players-list');
-                const remaining = list.querySelectorAll('.player-chip').length;
-                document.getElementById('player-count').textContent = remaining;
-                if (remaining === 0) {
-                    list.innerHTML = '<li class="players-empty">Ожидание игроков...</li>';
-                    document.getElementById('start-btn').disabled = true;
-                }
+                // Удаление произойдёт автоматически через WebSocket
+                console.log('Игрок выгнан:', username);
             }
         })
         .catch(err => console.error('Kick error:', err));
     }
 
     // Check if game started
-    function checkGameState(){
+    function checkGameState() {
         if (gameStarted) return;
-        fetch(apiStateUrl).then(r=>r.json()).then(data=>{
+        fetch(apiStateUrl).then(r => r.json()).then(data => {
             if (data.status === 'in_progress' || data.status === 'finished') {
                 gameStarted = true;
                 document.getElementById('lobby-waiting').style.display = 'none';
@@ -284,6 +277,35 @@
                 startGamePolling();
             }
         });
+    }
+
+    // --- WebSocket для лобби (ожидание) ---
+    if (window.LobbyWebSocket) {
+        const lobbyWs = new LobbyWebSocket(pin);
+
+        // Загружаем список игроков при загрузке (HTTP fallback)
+        fetchPlayers();
+
+        lobbyWs.onGameStarted = function() {
+            gameStarted = true;
+            document.getElementById('lobby-waiting').style.display = 'none';
+            document.getElementById('lobby-game').style.display = '';
+            startGamePolling();
+        };
+    }
+
+    // HTTP polling для состояния игры (пока не полный WebSocket)
+    let gameInterval = null;
+    function startGamePolling() {
+        fetchGameStats();
+        gameInterval = setInterval(fetchGameStats, 1000);
+    }
+
+    // Если игра уже началась при загрузке страницы
+    if (gameStarted) {
+        startGamePolling();
+    } else {
+        setInterval(checkGameState, 1500);
     }
 
     // Game stats polling
@@ -398,21 +420,6 @@
                 window.removeEventListener('beforeunload', beforeUnloadHandler);
             }
         });
-    }
-
-    let gameInterval = null;
-    function startGamePolling(){
-        fetchGameStats();
-        gameInterval = setInterval(fetchGameStats, 1000);
-    }
-
-    // Initial setup
-    if (gameStarted) {
-        startGamePolling();
-    } else {
-        fetchPlayers();
-        setInterval(fetchPlayers, 1000);
-        setInterval(checkGameState, 1500);
     }
 
     // Beforeunload — only while game is not finished

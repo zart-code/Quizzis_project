@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Ожидание — {{ session.quiz.title }}{% endblock %}
 
@@ -42,25 +43,46 @@
 .jl-pin-val{font-size:1.8rem;font-weight:700;letter-spacing:.2em;color:var(--primary-light)}
 </style>
 
+<script src="{% static 'js/websocket.js' %}"></script>
 <script>
+// Сохраняем ID участника для определения кика
+window.storedParticipantId = {{ participant.id }};
+
+// Подключаем WebSocket для real-time обновлений
+const lobbyWs = new LobbyWebSocket("{{ session.pin }}");
+
+// Обработчик кика через WebSocket
+lobbyWs.onPlayerKicked = function(playerId, playerName) {
+    if (String(playerId) === String(window.storedParticipantId)) {
+        window.location.href = '/?kicked=1';
+    }
+};
+
+// Обработчик начала игры через WebSocket
+lobbyWs.onGameStarted = function(pin) {
+    window.location.href = '/session/' + pin + '/play/';
+};
+
+// Fallback polling на случай если WebSocket недоступен
 const apiStateUrl = "{% url 'api_state' session.pin %}";
 const apiCheckKickedUrl = "{% url 'api_check_kicked' session.pin %}";
 const playUrl = "/session/{{ session.pin }}/play/";
 
-const pollInterval = setInterval(function(){
+setTimeout(function fallbackPoll() {
+    if (lobbyWs.ws && lobbyWs.ws.readyState === WebSocket.OPEN) return;
     fetch(apiStateUrl).then(r=>r.json()).then(data=>{
         if(data.status==='in_progress') {
-            clearInterval(pollInterval);
             window.location.href = playUrl;
+            return;
         }
-    });
-
-    fetch(apiCheckKickedUrl).then(r=>r.json()).then(data=>{
-        if(data.kicked) {
-            clearInterval(pollInterval);
-            window.location.href = '/?kicked=1';
-        }
-    });
-}, 1000);
+        fetch(apiCheckKickedUrl).then(r=>r.json()).then(kickData=>{
+            if(kickData.kicked) {
+                window.location.href = '/?kicked=1';
+                return;
+            }
+            setTimeout(fallbackPoll, 2000);
+        });
+    }).catch(()=> setTimeout(fallbackPoll, 2000));
+}, 2000);
 </script>
 {% endblock %}
