@@ -73,21 +73,23 @@
                                     aria-label="Посмотреть жалобы">👁</button>
                             </span>
                             {% endif %}
-                            <a href="{% url 'edit_quiz' quiz.id %}"
-                               class="mq-edit-btn"
-                               title="Редактировать квиз"
-                               aria-label="Редактировать квиз">
-                                ✎
-                            </a>
-                            <form method="post" action="{% url 'delete_quiz' quiz.id %}" style="display:inline; margin:0;" onsubmit="return confirm('Удалить квиз «{{ quiz.title }}»? Это действие нельзя отменить.');">
-                                {% csrf_token %}
-                                <button type="submit"
-                                        class="mq-delete-btn"
-                                        title="Удалить квиз"
-                                        aria-label="Удалить квиз">
-                                    🗑
-                                </button>
-                            </form>
+                            <div class="mq-title-actions">
+                                <a href="{% url 'edit_quiz' quiz.id %}"
+                                   class="mq-edit-btn"
+                                   title="Редактировать квиз"
+                                   aria-label="Редактировать квиз">
+                                    ✎
+                                </a>
+                                <form method="post" action="{% url 'delete_quiz' quiz.id %}" style="display:inline; margin:0;" onsubmit="return confirm('Удалить квиз «{{ quiz.title }}»? Это действие нельзя отменить.');">
+                                    {% csrf_token %}
+                                    <button type="submit"
+                                            class="mq-delete-btn"
+                                            title="Удалить квиз"
+                                            aria-label="Удалить квиз">
+                                        🗑
+                                    </button>
+                                </form>
+                            </div>
                         </div>
 
                         {% if quiz.accepted_reports %}
@@ -243,6 +245,12 @@
         align-items: center;
         justify-content: space-between;
         gap: 0.6rem;
+    }
+    .mq-title-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        flex-shrink: 0;
     }
     .mq-edit-btn {
         display: inline-flex;
