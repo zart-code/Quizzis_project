@@ -74,12 +74,50 @@ def main_page(request):
         request.user.username if request.user.is_authenticated else "Anonymous",
         request.META.get("REMOTE_ADDR"),
     )
+
+    # Популярные квизы для секции "Популярное сейчас"
+    current_revision_filter = Q(
+        results__completed=True,
+        results__revision=F("current_revision"),
+    )
+
+    popular_quizzes = (
+        Quiz.objects.filter(status=Quiz.ACTIVE, is_deleted=False)
+        .select_related("creator", "current_revision")
+        .annotate(
+            passed_count=Count(
+                "results",
+                filter=current_revision_filter,
+                distinct=True,
+            ),
+            avg_score_percent=Avg(
+                "results__score_percent",
+                filter=current_revision_filter,
+            ),
+            avg_score_points=Avg(
+                "results__score",
+                filter=current_revision_filter,
+            ),
+            avg_max_points=Avg(
+                "results__max_score",
+                filter=current_revision_filter,
+            ),
+        )
+        .order_by("-passed_count", "-created_at")[:3]
+    )
+
+    # Вычисляем максимальное количество прохождений для шкалы популярности
+    max_passed = max((q.passed_count for q in popular_quizzes), default=1) or 1
+    for quiz in popular_quizzes:
+        quiz.popularity_percent = int(quiz.passed_count / max_passed * 100)
+
     context = {
         "join_pin_prefill": request.GET.get("pin", ""),
         "highlight_nickname": (
             request.GET.get("highlight") == "1" and not request.user.is_authenticated
         ),
         "show_kicked_modal": request.GET.get("kicked") == "1",
+        "popular_quizzes": popular_quizzes,
     }
     return render(request, "main_page.html", context)
 
