@@ -8,7 +8,6 @@ import logging
 from channels.generic.websocket import WebsocketConsumer
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
-from django.contrib.auth.models import User
 from main.models import GameSession, GameParticipant
 
 logger = logging.getLogger(__name__)
