@@ -17,12 +17,14 @@ ALLOWED_HOSTS = ['127.0.0.1',
                  'www.quizzis.ru',]
 
 INSTALLED_APPS = [
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "channels",
     "main",
 ]
 
@@ -97,6 +99,22 @@ CSRF_TRUSTED_ORIGINS = ["https://quizzis.ru",
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# ============================================
+# НАСТРОЙКИ WEBSOCKET (CHANNELS)
+# ============================================
+ASGI_APPLICATION = "quizziz_project.asgi.application"
+
+# Channel layers (Redis для production, In-memory для разработки/тестов)
+# В продакшене заменить на реальный Redis: "hosts": [('127.0.0.1', 6379)]
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
 
 # Директория для логов
 LOG_DIR = BASE_DIR / "logs"

@@ -4,3 +4,8 @@ pycodestyle==2.13.0
 pylint==3.3.6
 coverage==7.8.0
 black
+channels==4.3.2
+channels-redis==4.3.0
+daphne==4.2.2
+redis==8.0.0
+msgpack==1.1.2
