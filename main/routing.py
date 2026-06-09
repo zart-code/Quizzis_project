@@ -7,15 +7,16 @@ WebSocket URL routing для Django Channels.
 """
 
 from django.urls import re_path
-from . import consumers
+from .consumers.lobby_consumer import LobbyConsumer
+from .consumers.game_consumer import GameConsumer
 
 websocket_urlpatterns = [
     re_path(
         r"ws/lobby/(?P<pin>[0-9]{6})/$",
-        consumers.lobby_consumer.LobbyConsumer.as_asgi(),
+        LobbyConsumer.as_asgi(),
     ),
     re_path(
         r"ws/game/(?P<pin>[0-9]{6})/$",
-        consumers.game_consumer.GameConsumer.as_asgi(),
+        GameConsumer.as_asgi(),
     ),
 ]

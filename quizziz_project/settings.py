@@ -105,14 +105,17 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # ============================================
 ASGI_APPLICATION = "quizziz_project.asgi.application"
 
-# Channel layers (Redis для production, In-memory для разработки/тестов)
-# В продакшене заменить на реальный Redis: "hosts": [('127.0.0.1', 6379)]
+# Channel layers (In-memory для разработки/тестов)
+# В продакшене заменить на Redis:
+# CHANNEL_LAYERS = {
+#     "default": {
+#         "BACKEND": "channels_redis.core.RedisChannelLayer",
+#         "CONFIG": {"hosts": [("127.0.0.1", 6379)]},
+#     },
+# }
 CHANNEL_LAYERS = {
     "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
-        },
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
     },
 }
 
