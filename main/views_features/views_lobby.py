@@ -92,6 +92,15 @@ from main.services.quiz_revisions import (
     get_session_questions,
 )
 from main.services.quiz_scoring import score_question
+from main.services.websocket_events import (
+    broadcast_player_joined,
+    broadcast_player_kicked,
+    broadcast_lobby_locked,
+    broadcast_game_started,
+    broadcast_session_deleted,
+    broadcast_question_advanced,
+    broadcast_player_answered,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -149,6 +158,10 @@ def toggle_lock_view(request, pin):
     session = get_object_or_404(GameSession, pin=pin, host=request.user)
     session.is_locked = not session.is_locked
     session.save()
+
+    # Отправляем WebSocket-событие об изменении статуса лобби
+    broadcast_lobby_locked(pin, session.is_locked)
+
     logger.info(
         "Пользователь %s %s лобби %s (PIN: %s) (IP: %s)",
         request.user.username,
@@ -163,7 +176,12 @@ def toggle_lock_view(request, pin):
 @login_required(login_url="login_page")
 @require_POST
 def delete_session_view(request, pin):
+    """Удаление игровой сессии хостом."""
     session = get_object_or_404(GameSession, pin=pin, host=request.user)
+
+    # Отправляем WebSocket-событие об удалении сессии
+    broadcast_session_deleted(pin)
+
     quiz_title = session.quiz.title
     session.delete()
     logger.info(
@@ -205,6 +223,10 @@ def kick_player_view(request, pin, participant_id):
     session = get_object_or_404(GameSession, pin=pin, host=request.user)
     participant = get_object_or_404(GameParticipant, id=participant_id, session=session)
     display_name = participant.get_display_name()
+
+    # Отправляем WebSocket-событие об исключении игрока
+    broadcast_player_kicked(pin, participant_id, display_name)
+
     participant.delete()
     logger.info(
         "Хост %s выгнал игрока '%s' из лобби %s (IP: %s)",
@@ -298,6 +320,13 @@ def join_lobby_view(request, pin):
         participant.display_name = resolve_display_name_from_user(current_user)
         participant.save()
 
+        # Отправляем WebSocket-событие о подключении нового игрока
+        player_data = {
+            "id": participant.id,
+            "username": participant.get_display_name(),
+        }
+        broadcast_player_joined(pin, player_data)
+
     # Сохраняем ID участника в HTTP-сессии, чтобы после удаления гостя
     # можно было показать результаты
     request.session[f"lobby_participant_{pin}"] = participant.id
@@ -330,6 +359,10 @@ def start_game_view(request, pin):
     session.status = GameSession.IN_PROGRESS
     session.current_question_started_at = timezone.now()
     session.save()
+
+    # Отправляем WebSocket-событие о начале игры
+    broadcast_game_started(pin)
+
     logger.info(
         "Пользователь %s начал игру в лобби %s (квиз «%s», участников: %d) (IP: %s)",
         request.user.username,
@@ -625,6 +658,9 @@ def session_play_view(request, pin):
 
             GameAnswer.objects.create(**game_answer_data)
 
+            # Отправляем WebSocket-событие хосту о том, что игрок ответил
+            broadcast_player_answered(pin, participant.get_display_name(), is_correct)
+
             logger.info(
                 "Игрок %s в лобби %s (квиз «%s») ответил на вопрос %d. Верно: %s, баллов: %d (IP: %s)",
                 request.user.username,
@@ -755,6 +791,114 @@ def advance_question_view(request, pin):
         session.current_question_started_at = timezone.now()
 
     session.save()
+
+    # Собираем полную статистику для отправки через WebSocket
+    questions = get_session_questions(session)
+    total_questions = len(questions)
+    total_participants = session.participants.count()
+    answered_count = session.participants.filter(is_answered=True).count()
+
+    current_q = min(session.current_question, total_questions - 1)
+    current_question_text = ""
+    if 0 <= current_q < total_questions:
+        current_question_text = questions[current_q].text
+
+    participants = session.participants.select_related("user").order_by("-score")
+    players = [
+        {
+            "username": p.get_display_name(),
+            "score": p.score,
+            "is_answered": p.is_answered,
+        }
+        for p in participants
+    ]
+
+    # Build history of answers per question
+    question_history = []
+    for i, q in enumerate(questions):
+        if i > session.current_question:
+            break
+
+        answer_lookup = {"session": session}
+        if session.revision_id:
+            answer_lookup["revision_question"] = q
+        else:
+            answer_lookup["question"] = q
+
+        answers = GameAnswer.objects.filter(**answer_lookup).select_related(
+            "participant__user"
+        )
+        q_data = {
+            "number": i + 1,
+            "text": q.text,
+            "answers": [
+                {
+                    "username": a.participant.get_display_name(),
+                    "is_correct": a.is_correct,
+                    "points": a.points,
+                }
+                for a in answers
+            ],
+        }
+        question_history.append(q_data)
+
+    # Get current question answers
+    current_question_answers = []
+    if 0 <= current_q < total_questions:
+        current_question_obj = questions[current_q]
+        answer_lookup = {"session": session}
+        if session.revision_id:
+            answer_lookup["revision_question"] = current_question_obj
+        else:
+            answer_lookup["question"] = current_question_obj
+
+        current_answers = GameAnswer.objects.filter(**answer_lookup).select_related(
+            "participant__user"
+        ).order_by("-points", "participant__user__username")
+
+        current_question_answers = [
+            {
+                "username": a.participant.get_display_name(),
+                "is_correct": a.is_correct,
+                "points": a.points,
+            }
+            for a in current_answers
+        ]
+
+    # Current options (text only, do not reveal correctness)
+    current_options = []
+    if 0 <= current_q < total_questions:
+        current_options = [
+            {"id": ao.id, "text": ao.text}
+            for ao in questions[current_q].answers.all()
+        ]
+
+    time_remaining = 0
+    if session.current_question_started_at and 0 <= current_q < total_questions:
+        time_remaining = max(0, questions[current_q].time_limit - int(
+            (timezone.now() - session.current_question_started_at).total_seconds()
+        ))
+
+    # Отправляем WebSocket-событие о смене вопроса / завершении игры
+    from main.services.websocket_events import broadcast_game_state_update
+    game_state = {
+        "status": session.status,
+        "current_question": min(current_q + 1, total_questions),
+        "total_questions": total_questions,
+        "answered_count": answered_count,
+        "total_participants": total_participants,
+        "players": players,
+        "current_question_text": current_question_text,
+        "current_options": current_options,
+        "question_history": question_history,
+        "ready_for_next_question": session.ready_for_next_question,
+        "current_question_answers": current_question_answers,
+        "time_remaining": time_remaining,
+    }
+    broadcast_game_state_update(pin, game_state)
+
+    # Также отправляем упрощенное событие для игроков
+    broadcast_question_advanced(pin, session.current_question, session.status)
 
     logger.info(
         "Учитель %s перешёл к вопросу %d в лобби %s (IP: %s)",
