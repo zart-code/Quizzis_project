@@ -10,7 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Count, Case, When, Value, IntegerField, F
+from django.db.models import Count, Case, When, Value, IntegerField, F, Q
 from django.utils import timezone
 from main.models import Quiz, Profile, QuizReport
 
@@ -36,21 +36,23 @@ def admin_panel_view(request):
     """Главная страница панели администратора"""
 
     total_users = User.objects.count()
-    total_quizzes = Quiz.objects.count()
+    total_quizzes = Quiz.objects.filter(is_deleted=False).count()
     total_banned_users = Profile.objects.filter(is_banned=True).count()
     total_admins = Profile.objects.filter(role=Profile.ADMIN).count()
     total_pending_reports = QuizReport.objects.filter(
         status=QuizReport.PENDING,
+        quiz__is_deleted=False,
     ).count()
 
     users = (
-        User.objects.annotate(quiz_count=Count("created_quizzes"))
+        User.objects.annotate(quiz_count=Count("created_quizzes", filter=Q(created_quizzes__is_deleted=False)))
         .select_related("profile")
         .order_by("id")
     )
 
     quizzes = (
-        Quiz.objects.select_related("creator")
+        Quiz.objects.filter(is_deleted=False)
+        .select_related("creator")
         .annotate(
             question_count=Case(
                 When(
@@ -63,7 +65,9 @@ def admin_panel_view(request):
         )
         .order_by("-created_at")
     )
-    reports = QuizReport.objects.select_related(
+    reports = QuizReport.objects.filter(
+        quiz__is_deleted=False,
+    ).select_related(
         "quiz",
         "quiz__creator",
         "reporter",
@@ -110,11 +114,15 @@ def admin_ban_user_view(request, user_id):
 
 @admin_required
 def admin_delete_quiz_view(request, quiz_id):
-    """Удалить квиз"""
+    """Удалить квиз (мягкое удаление)"""
     if request.method == "POST":
         quiz = get_object_or_404(Quiz, id=quiz_id)
         title = quiz.title
-        quiz.delete()
+        with transaction.atomic():
+            quiz.is_deleted = True
+            quiz.status = Quiz.DRAFT
+            quiz.save(update_fields=["is_deleted", "status"])
+
         logger.info(
             "Администратор %s удалил квиз «%s» (ID: %d) (IP: %s)",
             request.user.username,
@@ -122,11 +130,6 @@ def admin_delete_quiz_view(request, quiz_id):
             quiz_id,
             request.META.get("REMOTE_ADDR"),
         )
-        with transaction.atomic():
-            quiz.sessions.all().delete()
-            quiz.results.all().delete()
-            quiz.delete()
-
         messages.success(request, f"Квиз «{title}» удалён.")
     return redirect("admin_panel")
 
@@ -135,7 +138,7 @@ def admin_delete_quiz_view(request, quiz_id):
 def admin_unpublish_quiz_view(request, quiz_id):
     """Вернуть квиз в черновик"""
     if request.method == "POST":
-        quiz = get_object_or_404(Quiz, id=quiz_id)
+        quiz = get_object_or_404(Quiz, id=quiz_id, is_deleted=False)
         if quiz.status != Quiz.DRAFT:
             quiz.status = Quiz.DRAFT
             quiz.save(update_fields=["status"])
@@ -220,11 +223,12 @@ def api_admin_stats_view(request):
     """API: текущая статистика для авто-обновления карточек"""
     data = {
         "total_users": User.objects.count(),
-        "total_quizzes": Quiz.objects.count(),
+        "total_quizzes": Quiz.objects.filter(is_deleted=False).count(),
         "total_admins": Profile.objects.filter(role=Profile.ADMIN).count(),
         "total_banned_users": Profile.objects.filter(is_banned=True).count(),
         "total_pending_reports": QuizReport.objects.filter(
             status=QuizReport.PENDING,
+            quiz__is_deleted=False,
         ).count(),
     }
     return JsonResponse(data)
@@ -257,7 +261,8 @@ def api_admin_users_view(request):
 def api_admin_quizzes_view(request):
     """API: список квизов для авто-обновления таблицы"""
     quizzes = (
-        Quiz.objects.select_related("creator")
+        Quiz.objects.filter(is_deleted=False)
+        .select_related("creator")
         .annotate(
             question_count=Case(
                 When(

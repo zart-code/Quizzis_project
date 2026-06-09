@@ -147,7 +147,7 @@ def quizzes_view(request):
     )
 
     quizzes = (
-        Quiz.objects.filter(status=Quiz.ACTIVE)
+        Quiz.objects.filter(status=Quiz.ACTIVE, is_deleted=False)
         .select_related("creator", "current_revision")
         .annotate(
             passed_count=Count(

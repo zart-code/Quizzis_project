@@ -105,7 +105,7 @@ def my_quizzes_view(request):
 
     search_query = request.GET.get("search", "").strip()
 
-    quizzes = Quiz.objects.filter(creator=request.user).select_related(
+    quizzes = Quiz.objects.filter(creator=request.user, is_deleted=False).select_related(
         "current_revision"
     )
     quizzes = quizzes.order_by("-created_at")
@@ -145,7 +145,7 @@ def my_quizzes_view(request):
 @login_required
 @require_POST
 def toggle_quiz_status_view(request, quiz_id):
-    quiz = get_object_or_404(Quiz, id=quiz_id, creator=request.user)
+    quiz = get_object_or_404(Quiz, id=quiz_id, creator=request.user, is_deleted=False)
 
     old_status = quiz.status
     if quiz.status == Quiz.DRAFT:
@@ -168,7 +168,7 @@ def toggle_quiz_status_view(request, quiz_id):
 @login_required
 def report_quiz_view(request, quiz_id):
     """Создание жалобы на квиз."""
-    quiz = get_object_or_404(Quiz, id=quiz_id)
+    quiz = get_object_or_404(Quiz, id=quiz_id, is_deleted=False)
     next_url = request.POST.get("next") or request.GET.get("next") or ""
 
     if quiz.creator == request.user:
@@ -218,7 +218,7 @@ def report_quiz_view(request, quiz_id):
 
 
 def play_quiz_view(request, quiz_id):
-    quiz = get_object_or_404(Quiz, id=quiz_id)
+    quiz = get_object_or_404(Quiz, id=quiz_id, is_deleted=False)
 
     # Для незарегистрированных пользователей не создаём гостевой аккаунт —
     # статистика прохождений ведётся только для авторизованных
@@ -453,7 +453,7 @@ def edit_quiz_view(request, quiz_id):
         )
         return redirect("main_page")
 
-    quiz = get_object_or_404(Quiz, id=quiz_id, creator=request.user)
+    quiz = get_object_or_404(Quiz, id=quiz_id, creator=request.user, is_deleted=False)
 
     if request.method == "POST":
         title = request.POST.get("title", "").strip()
