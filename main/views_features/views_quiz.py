@@ -166,6 +166,25 @@ def toggle_quiz_status_view(request, quiz_id):
 
 
 @login_required
+@require_POST
+def delete_quiz_view(request, quiz_id):
+    """Мягкое удаление квиза владельцем."""
+    quiz = get_object_or_404(Quiz, id=quiz_id, creator=request.user, is_deleted=False)
+    quiz.is_deleted = True
+    quiz.status = Quiz.DRAFT
+    quiz.save(update_fields=["is_deleted", "status"])
+    logger.info(
+        "Пользователь %s удалил свой квиз «%s» (ID: %d) (IP: %s)",
+        request.user.username,
+        quiz.title,
+        quiz.id,
+        request.META.get("REMOTE_ADDR"),
+    )
+    messages.success(request, f"Квиз «{quiz.title}» удалён.")
+    return redirect("my_quizzes")
+
+
+@login_required
 def report_quiz_view(request, quiz_id):
     """Создание жалобы на квиз."""
     quiz = get_object_or_404(Quiz, id=quiz_id, is_deleted=False)
