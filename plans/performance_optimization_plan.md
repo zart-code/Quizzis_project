@@ -687,33 +687,33 @@ WantedBy=multi-user.target
 
 ## Чек-лист реализации
 
-### Фаза 1: Инфраструктура
-- [ ] Установить channels, channels-redis, daphne
-- [ ] Обновить settings.py (CHANNEL_LAYERS, ASGI_APPLICATION)
-- [ ] Создать/обновить asgi.py
-- [ ] Установить и настроить Redis
-- [ ] Протестировать базовое WebSocket соединение
+### Фаза 1: Инфраструктура ✅
+- [x] Установить channels, channels-redis, daphne
+- [x] Обновить settings.py (CHANNEL_LAYERS, ASGI_APPLICATION)
+- [x] Создать/обновить asgi.py
+- [x] Установить и настроить Redis (In-memory для тестов)
+- [x] Протестировать базовое WebSocket соединение
 
-### Фаза 2: Consumers
-- [ ] Создать `main/consumers/lobby_consumer.py`
-- [ ] Создать `main/consumers/game_consumer.py`
-- [ ] Создать `main/routing.py` с WebSocket маршрутами
-- [ ] Протестировать подключение к WebSocket
+### Фаза 2: Consumers ✅
+- [x] Создать `main/consumers/lobby_consumer.py`
+- [x] Создать `main/consumers/game_consumer.py`
+- [x] Создать `main/routing.py` с WebSocket маршрутами
+- [x] Протестировать подключение к WebSocket
 
-### Фаза 3: Backend события
-- [ ] Создать `main/services/websocket_events.py`
-- [ ] Обновить `join_lobby_view` (broadcast player_joined)
-- [ ] Обновить `kick_player_view` (broadcast player_kicked)
-- [ ] Обновить `start_game_view` (broadcast game_started)
-- [ ] Обновить `advance_question_view` (broadcast question_advanced)
-- [ ] Обновить `toggle_lock_view` (broadcast lobby_locked)
+### Фаза 3: Backend события ✅
+- [x] Создать `main/services/websocket_events.py`
+- [x] Обновить `join_lobby_view` (broadcast player_joined)
+- [x] Обновить `kick_player_view` (broadcast player_kicked)
+- [x] Обновить `start_game_view` (broadcast game_started)
+- [x] Обновить `advance_question_view` (broadcast question_advanced)
+- [x] Обновить `toggle_lock_view` (broadcast lobby_locked)
 
-### Фаза 4: Frontend
-- [ ] Создать `main/static/js/websocket.js`
-- [ ] Обновить `lobby.html` (удалить polling, добавить WebSocket)
-- [ ] Обновить `join_lobby.html` (удалить polling, добавить WebSocket)
-- [ ] Обновить `session_play.html` (удалить polling, добавить WebSocket)
-- [ ] Протестировать real-time обновления
+### Фаза 4: Frontend ✅
+- [x] Создать `main/static/js/websocket.js`
+- [x] Обновить `lobby.html` (удалить polling, добавить WebSocket)
+- [x] Обновить `join_lobby.html` (удалить polling, добавить WebSocket)
+- [x] Обновить `session_play.html` (удалить polling, добавить WebSocket)
+- [x] Протестировать real-time обновления (все 101 тест проходят)
 
 ### Фаза 5: Celery (опционально)
 - [ ] Установить celery
