@@ -11,6 +11,27 @@
             <p class="cq-subtitle">{% if is_edit %}Обновите вопросы и сохраните изменения{% else %}Добавьте вопросы и запустите игру{% endif %}</p>
         </div>
 
+        <div class="cq-ai-banner" id="ai-generate-btn">
+            <span class="cq-ai-banner-icon">✨</span>
+            <div class="cq-ai-banner-text">
+                <strong>Сгенерировать квиз с помощью AI</strong>
+                <span>Просто укажите тему, и мы создадим всё за вас.</span>
+            </div>
+        </div>
+
+        <div class="cq-sidebar-import">
+            <div class="cq-import-mini" id="json-dropzone">
+                <input type="file" id="json-file-input" accept=".json" hidden>
+                <div class="cq-import-mini-content" id="json-drop-content">
+                    <span class="cq-import-mini-icon">📂</span>
+                    <div class="cq-import-mini-text">
+                        <strong>Импорт из JSON</strong>
+                        <span>Перетащите или нажмите</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <form method="post" id="quiz-form">
             {% csrf_token %}
             <div class="card cq-title-card">
@@ -49,4 +70,187 @@
     );
 </script>
 {% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dropzone = document.getElementById('json-dropzone');
+    const fileInput = document.getElementById('json-file-input');
+    const dropContent = document.getElementById('json-drop-content');
+
+    if (!dropzone) return;
+
+    // Предотвращаем дефолтное поведение браузера (открытие файла) на всей странице
+    document.addEventListener('dragover', function(e) {
+        e.preventDefault();
+    });
+    document.addEventListener('drop', function(e) {
+        e.preventDefault();
+    });
+
+    // Клик по всему блоку открывает выбор файла
+    dropzone.addEventListener('click', function() {
+        fileInput.click();
+    });
+
+    fileInput.addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+            handleJsonFile(e.target.files[0]);
+        }
+    });
+
+    dropzone.addEventListener('dragenter', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.add('cq-import-dropzone--active');
+    });
+
+    dropzone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.add('cq-import-dropzone--active');
+    });
+
+    dropzone.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        // Проверяем, что мы действительно покинули зону, а не перешли на дочерний элемент
+        if (!dropzone.contains(e.relatedTarget)) {
+            dropzone.classList.remove('cq-import-dropzone--active');
+        }
+    });
+
+    dropzone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.remove('cq-import-dropzone--active');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleJsonFile(files[0]);
+        }
+    });
+
+    function handleJsonFile(file) {
+        if (!file.name.endsWith('.json')) {
+            showNotification('Пожалуйста, выберите файл формата .json', 'error');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                populateFormFromJson(data);
+                dropContent.innerHTML = '<span class="cq-import-mini-icon">✅</span><div class="cq-import-mini-text"><strong>Загружено</strong><span>' + escapeHtml(file.name) + '</span></div>';
+            } catch (err) {
+                showNotification('Ошибка чтения JSON: ' + err.message, 'error');
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    function mapType(jsonType) {
+        switch (jsonType) {
+            case 'single_choice': return 'single';
+            case 'multiple_choice': return 'multiple';
+            case 'number': return 'number';
+            case 'text': return 'text';
+            default: return jsonType;
+        }
+    }
+
+    function findClosestTime(value) {
+        const allowed = [15, 20, 30, 45, 60];
+        let closest = allowed[0];
+        let minDiff = Math.abs(value - allowed[0]);
+        for (let i = 1; i < allowed.length; i++) {
+            const diff = Math.abs(value - allowed[i]);
+            if (diff < minDiff) {
+                minDiff = diff;
+                closest = allowed[i];
+            }
+        }
+        return closest;
+    }
+
+    function populateFormFromJson(data) {
+        // Установить название
+        const titleInput = document.getElementById('quiz-title');
+        if (titleInput && data.title) {
+            titleInput.value = data.title;
+        }
+
+        // Очистить существующие вопросы
+        const container = document.getElementById('questions-container');
+        container.innerHTML = '';
+        count = 0;
+
+        if (!Array.isArray(data.questions) || data.questions.length === 0) {
+            showNotification('В файле нет вопросов', 'error');
+            return;
+        }
+
+        data.questions.forEach(function(q) {
+            count += 1;
+            const i = count;
+            makeQuestion(i);
+
+            const type = mapType(q.type);
+
+            // Установить тип
+            const typeSelect = document.getElementById('q' + i + '_type');
+            if (typeSelect) {
+                typeSelect.value = type;
+                updateAnswers(i);
+            }
+
+            // Установить текст вопроса
+            const textInput = document.querySelector('input[name="q' + i + '_text"]');
+            if (textInput && q.text) {
+                textInput.value = q.text;
+            }
+
+            // Установить коэффициент
+            const coeffInput = document.querySelector('input[name="q' + i + '_coefficient"]');
+            if (coeffInput && q.coefficient !== undefined) {
+                coeffInput.value = q.coefficient;
+            }
+
+            // Установить варианты ответов
+            if ((type === 'single' || type === 'multiple') && Array.isArray(q.options)) {
+                q.options.forEach(function(opt, idx) {
+                    const ansInput = document.querySelector('input[name="q' + i + '_ans' + idx + '"]');
+                    if (ansInput && opt.text) {
+                        ansInput.value = opt.text;
+                    }
+                    if (opt.isCorrect) {
+                        const correctInput = document.querySelector('input[name="q' + i + '_correct"][value="' + idx + '"]');
+                        if (correctInput) {
+                            correctInput.checked = true;
+                        }
+                    }
+                });
+            }
+
+            // Установить правильное число
+            if (type === 'number' && q.correctAnswer !== undefined) {
+                const numInput = document.querySelector('input[name="q' + i + '_correct_number"]');
+                if (numInput) {
+                    numInput.value = q.correctAnswer;
+                }
+            }
+
+            // Установить время
+            if (q.timeLimit) {
+                const timeValue = findClosestTime(q.timeLimit);
+                const timeInput = document.querySelector('input[name="q' + i + '_time"][value="' + timeValue + '"]');
+                if (timeInput) {
+                    timeInput.checked = true;
+                }
+            }
+        });
+
+        showNotification('Квиз загружен из JSON. Проверьте данные и нажмите "Сохранить".', 'success');
+    }
+});
+</script>
 {% endblock %}
