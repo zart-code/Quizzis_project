@@ -16,7 +16,7 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 OPENROUTER_API_KEY = getattr(settings, "OPENROUTER_API_KEY", "")
-OPENROUTER_MODEL = "meta-llama/llama-3.3-70b-instruct:free"
+OPENROUTER_MODEL = "openai/gpt-4.1-nano"
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 QUESTIONS_SYSTEM_PROMPT = """Ты — генератор вопросов для квизов. Твоя задача — придумать список вопросов по заданной теме.
@@ -55,6 +55,7 @@ QUIZ_SYSTEM_PROMPT = """Ты — генератор квизов. Тебе да�
 11. Каждый раз думай какой лучше взять тип type вопроса, оценивай количество каждого типа вопроса в квизе в общем, сложность квиза, уместность
 12. Количество одного типа вопроса не должно превышать 50% всех вопросов
 13. Сам оценивай сколько времни давать на овтет исодя из длины и сложности вопроса
+14. В названии квиза нельзя писать "квиз" или "викторина" и так далее
 
 Формат:
 {
