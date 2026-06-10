@@ -109,6 +109,44 @@ def admin_ban_user_view(request, user_id):
 
 
 @admin_required
+def admin_change_user_role_view(request, user_id):
+    """Изменить роль пользователя (учитель/ученик)."""
+    if request.method == "POST":
+        target = get_object_or_404(User, id=user_id)
+        if target == request.user:
+            messages.error(request, "Нельзя менять свою роль.")
+            return redirect("admin_panel")
+
+        profile, _ = Profile.objects.get_or_create(user=target)
+        if profile.is_admin or profile.role == Profile.ADMIN:
+            messages.error(request, "Нельзя менять роль администратора.")
+            return redirect("admin_panel")
+
+        new_role = request.POST.get("role")
+        if new_role not in [Profile.TEACHER, Profile.STUDENT]:
+            messages.error(request, "Неверная роль.")
+            return redirect("admin_panel")
+
+        profile.role = new_role
+        profile.is_admin = False
+        profile.save(update_fields=["role", "is_admin"])
+
+        logger.info(
+            "Администратор %s изменил роль пользователя %s (ID: %d) на %s (IP: %s)",
+            request.user.username,
+            target.username,
+            target.id,
+            new_role,
+            request.META.get("REMOTE_ADDR"),
+        )
+        messages.success(
+            request,
+            f"Роль пользователя {target.username} изменена на {'Учитель' if new_role == Profile.TEACHER else 'Ученик'}."
+        )
+    return redirect("admin_panel")
+
+
+@admin_required
 def admin_delete_quiz_view(request, quiz_id):
     """Удалить квиз"""
     if request.method == "POST":
@@ -147,10 +185,6 @@ def admin_unpublish_quiz_view(request, quiz_id):
                 request.META.get("REMOTE_ADDR"),
             )
             messages.success(request, f"Квиз «{quiz.title}» возвращён в черновик.")
-            messages.success(
-                request,
-                f"Квиз «{quiz.title}» возвращён в черновик.",
-            )
         else:
             messages.info(
                 request,
