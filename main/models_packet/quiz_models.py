@@ -89,6 +89,10 @@ class Quiz(models.Model):
         related_name="+",
         verbose_name="Текущая ревизия",
     )
+    is_deleted = models.BooleanField(
+        default=False,
+        verbose_name="Удалён",
+    )
 
     class Meta:
         """

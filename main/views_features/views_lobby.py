@@ -99,7 +99,7 @@ logger = logging.getLogger(__name__)
 @login_required(login_url="login_page")
 def create_lobby_view(request, quiz_id):
     """Создание лобби по текущей ревизии квиза."""
-    quiz = get_object_or_404(Quiz, id=quiz_id, creator=request.user)
+    quiz = get_object_or_404(Quiz, id=quiz_id, creator=request.user, is_deleted=False)
 
     if quiz.status == Quiz.DRAFT:
         return redirect("my_quizzes")
@@ -672,7 +672,7 @@ def session_play_view(request, pin):
 @login_required
 def quiz_sessions_list_view(request, quiz_id):
     """Список всех сессий квиза для учителя (история прохождений)"""
-    quiz = get_object_or_404(Quiz, id=quiz_id, creator=request.user)
+    quiz = get_object_or_404(Quiz, id=quiz_id, creator=request.user, is_deleted=False)
     sessions = quiz.sessions.all().order_by("-created_at")
     return render(
         request,

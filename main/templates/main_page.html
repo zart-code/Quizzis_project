@@ -126,25 +126,220 @@ document.getElementById('kicked-overlay').addEventListener('click', function(e) 
 </div>
 
 <div class="container">
-    <section class="features">
-        <h2 class="section-title">Возможности платформы</h2>
-        <div class="features-grid">
-            <div class="feature-card" style="border-color: #FF6B6B;">
-                <div class="feature-icon">✏️</div>
-                <h3>Создание квизов</h3>
-                <p>Легко создавайте собственные квизы с различными типами вопросов</p>
+    <section class="popular-now">
+        <h2 class="popular-now-title">🔥 Популярное сейчас</h2>
+        {% if popular_quizzes %}
+        <div class="popular-grid">
+            {% for quiz in popular_quizzes %}
+            <div class="popular-card">
+                <div class="popular-card-top">
+                    <div class="popular-card-icon">{{ quiz.title|make_list|first }}</div>
+                    <div class="popular-card-info">
+                        <h3 class="popular-card-name">{{ quiz.title }}</h3>
+                        <span class="popular-card-games">{{ quiz.passed_count }} игр</span>
+                    </div>
+                </div>
+                <div class="popular-card-popularity">
+                    <span class="popular-card-popularity-label">Популярность</span>
+                    <div class="popular-card-bar">
+                        <div class="popular-card-bar-fill" style="width: {{ quiz.popularity_percent }}%"></div>
+                    </div>
+                </div>
+                <div class="mq-card-actions">
+                    <button type="button"
+                            class="mq-btn mq-btn-history js-info-toggle"
+                            data-quiz-id="pop-quiz-info-{{ quiz.id }}">
+                        <span>ℹ</span> Информация
+                    </button>
+                    <a href="{% url 'play_quiz' quiz.id %}" class="mq-btn mq-btn-play">
+                        <span>▶</span> Пройти
+                    </a>
+                </div>
+                <div class="quiz-info-content-template" id="pop-quiz-info-{{ quiz.id }}">
+                    <div class="quiz-info-popup-title">Информация о квизе</div>
+                    <div class="quiz-info-quiz-title">{{ quiz.title }}</div>
+                    <div class="quiz-info-grid">
+                        <div class="quiz-info-row">
+                            <span class="quiz-info-label">Автор</span>
+                            <span class="quiz-info-value">{{ quiz.creator }}</span>
+                        </div>
+                        <div class="quiz-info-row">
+                            <span class="quiz-info-label">Количество вопросов</span>
+                            <span class="quiz-info-value">{{ quiz.total_questions }}</span>
+                        </div>
+                        <div class="quiz-info-row">
+                            <span class="quiz-info-label">Уже прошли</span>
+                            <span class="quiz-info-value">{{ quiz.passed_count }}</span>
+                        </div>
+                        <div class="quiz-info-row">
+                            <span class="quiz-info-label">Средний результат</span>
+                            <span class="quiz-info-value">
+                                {% if quiz.avg_score_percent != None %}
+                                    {{ quiz.avg_score_percent|floatformat:1 }}%
+                                {% else %}
+                                    Нет данных
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="quiz-info-row">
+                            <span class="quiz-info-label">Средний балл</span>
+                            <span class="quiz-info-value">
+                                {% if quiz.avg_score_points != None and quiz.avg_max_points != None %}
+                                    {{ quiz.avg_score_points|floatformat:1 }} / {{ quiz.avg_max_points|floatformat:1 }}
+                                {% else %}
+                                    Нет данных
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="quiz-info-row">
+                            <span class="quiz-info-label">Дата создания</span>
+                            <span class="quiz-info-value">{{ quiz.created_at|date:"d.m.Y H:i" }}</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="feature-card" style="border-color: #4ECDC4;">
-                <div class="feature-icon">🎮</div>
-                <h3>Интерактивность</h3>
-                <p>Проходите квизы в красочном интерактивном интерфейсе</p>
-            </div>
-            <div class="feature-card" style="border-color: #FFE66D;">
-                <div class="feature-icon">📊</div>
-                <h3>Статистика</h3>
-                <p>Отслеживайте прохождения, оценки других пользователей и статистику ваших квизов</p>
-            </div>
+            {% endfor %}
         </div>
+        {% else %}
+        <p style="text-align:center; color: var(--text-secondary);">Пока нет доступных квизов</p>
+        {% endif %}
     </section>
 </div>
+
+<!-- Модальное окно информации о квизе -->
+<div class="quiz-info-modal-backdrop" id="quizInfoBackdrop">
+    <div class="quiz-info-modal" role="dialog" aria-modal="true">
+        <button type="button" class="quiz-info-close-btn" id="quizInfoCloseBtn">✕</button>
+        <div id="quizInfoModalBody"></div>
+    </div>
+</div>
+
+<style>
+/* Секция "Популярное сейчас" */
+.popular-now {
+    margin-bottom: 3rem;
+    padding-top: 1rem;
+}
+.popular-now-title {
+    text-align: center;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+}
+.popular-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+.popular-card {
+    background: var(--bg-card);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: 16px;
+    padding: 1.4rem;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+.popular-card:hover {
+    border-color: rgba(139, 92, 246, 0.5);
+    box-shadow: var(--shadow-md);
+}
+.popular-card-top {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.2rem;
+}
+.popular-card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    text-transform: uppercase;
+}
+.popular-card-info {
+    min-width: 0;
+}
+.popular-card-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.popular-card-games {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+.popular-card-popularity {
+    margin-bottom: 1.2rem;
+}
+.popular-card-popularity-label {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-bottom: 0.4rem;
+    display: block;
+}
+.popular-card-bar {
+    height: 6px;
+    background: rgba(139, 92, 246, 0.15);
+    border-radius: 3px;
+    overflow: hidden;
+}
+.popular-card-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    transition: width 0.6s ease;
+    min-width: 4%;
+}
+@media (max-width: 900px) {
+    .popular-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+    .popular-grid { grid-template-columns: 1fr; }
+}
+</style>
+
+<script>
+(function() {
+    var backdrop = document.getElementById('quizInfoBackdrop');
+    var modalBody = document.getElementById('quizInfoModalBody');
+    var closeBtn = document.getElementById('quizInfoCloseBtn');
+    if (!backdrop || !modalBody) return;
+
+    function closeModal() {
+        backdrop.classList.remove('is-open');
+        document.body.style.overflow = '';
+    }
+
+    document.querySelectorAll('.js-info-toggle').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            var template = document.getElementById(btn.dataset.quizId);
+            if (!template) return;
+            modalBody.innerHTML = template.innerHTML;
+            backdrop.classList.add('is-open');
+            document.body.style.overflow = 'hidden';
+        });
+    });
+
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    backdrop.addEventListener('click', function(e) {
+        if (e.target === backdrop) closeModal();
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeModal();
+    });
+})();
+</script>
 {% endblock %}

@@ -26,7 +26,7 @@ def profile_view(request, user_id=None):
         user = request.user
         is_admin_view = False
 
-    total_quizzes = Quiz.objects.count()
+    total_quizzes = Quiz.objects.filter(is_deleted=False).count()
     completed_quizzes = (
         QuizResult.objects.filter(user=user, completed=True)
         .values("quiz")
