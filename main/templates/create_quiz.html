@@ -73,6 +73,15 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Кнопка "Сгенерировать квиз с помощью AI"
+    const aiBtn = document.getElementById('ai-generate-btn');
+    if (aiBtn) {
+        aiBtn.style.cursor = 'pointer';
+        aiBtn.addEventListener('click', function() {
+            window.location.href = '{% url "ai_generate_page" %}';
+        });
+    }
+
     const dropzone = document.getElementById('json-dropzone');
     const fileInput = document.getElementById('json-file-input');
     const dropContent = document.getElementById('json-drop-content');

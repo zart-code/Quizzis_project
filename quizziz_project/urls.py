@@ -61,6 +61,12 @@ from main.views_features.views_admin import (
     api_admin_quizzes_view,
     admin_change_user_role_view,
 )
+from main.views_features.views_ai import (
+    ai_generate_page_view,
+    ai_generate_questions_view,
+    ai_generate_quiz_view,
+    ai_save_quiz_view,
+)
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -153,6 +159,11 @@ urlpatterns = [
     path("admin-panel/api/stats/", api_admin_stats_view, name="api_admin_stats"),
     path("admin-panel/api/users/", api_admin_users_view, name="api_admin_users"),
     path("admin-panel/api/quizzes/", api_admin_quizzes_view, name="api_admin_quizzes"),
+    # ИИ-генерация квизов
+    path("quiz/ai-generate/", ai_generate_page_view, name="ai_generate_page"),
+    path("quiz/ai-generate/questions/", ai_generate_questions_view, name="ai_generate_questions"),
+    path("quiz/ai-generate/quiz/", ai_generate_quiz_view, name="ai_generate_quiz"),
+    path("quiz/ai-generate/save/", ai_save_quiz_view, name="ai_save_quiz"),
     re_path(r"^static/(?P<path>.*)$", serve, {"document_root": settings.BASE_DIR / "main" / "static"}),
 ]
 

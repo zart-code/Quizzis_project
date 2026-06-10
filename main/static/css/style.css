@@ -2309,3 +2309,316 @@ body {
         transform: translateY(-2px);
     }
 }
+
+
+/* ===== Страница AI-генерации квиза ===== */
+.aig-wrapper {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 2rem 0 4rem;
+}
+
+.aig-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+.aig-title {
+    font-size: 2.4rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #A78BFA 0%, #EC4899 50%, #F59E0B 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+}
+
+.aig-subtitle {
+    color: var(--text-secondary);
+    font-size: 1rem;
+}
+
+.aig-form-card {
+    background: rgba(26, 26, 46, 0.85);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 24px;
+    padding: 2.2rem;
+    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.2);
+}
+
+.aig-field {
+    margin-bottom: 1.5rem;
+}
+
+.aig-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+.aig-difficulty {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.4rem;
+}
+
+.aig-submit-row {
+    text-align: center;
+    margin-top: 2rem;
+}
+
+.aig-submit-row .btn {
+    min-width: 240px;
+}
+
+.aig-submit-row .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* Loading */
+.aig-loading {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.2rem;
+    padding: 3rem 2rem;
+    margin-top: 2rem;
+    background: rgba(26, 26, 46, 0.6);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: 20px;
+}
+
+.aig-loading.is-visible {
+    display: flex;
+}
+
+.aig-loading-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba(139, 92, 246, 0.2);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: aigSpin 0.8s linear infinite;
+}
+
+@keyframes aigSpin {
+    to { transform: rotate(360deg); }
+}
+
+.aig-loading-text {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    animation: aigPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes aigPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Error */
+.aig-error {
+    display: none;
+    margin-top: 1.5rem;
+    padding: 1.2rem 1.6rem;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    border-radius: 14px;
+    color: #FCA5A5;
+    font-size: 0.95rem;
+}
+
+.aig-error.is-visible {
+    display: block;
+}
+
+/* Result */
+.aig-result {
+    display: none;
+    margin-top: 2rem;
+    background: rgba(26, 26, 46, 0.85);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 24px;
+    padding: 2rem;
+    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.15);
+    animation: aigFadeIn 0.4s ease;
+}
+
+.aig-result.is-visible {
+    display: block;
+}
+
+@keyframes aigFadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.aig-result-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.aig-result-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--primary-light);
+    margin: 0;
+}
+
+.aig-result-actions {
+    display: flex;
+    gap: 0.6rem;
+}
+
+.aig-json-output {
+    background: rgba(10, 10, 25, 0.8);
+    border: 1px solid rgba(139, 92, 246, 0.15);
+    border-radius: 14px;
+    padding: 1.5rem;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: #A78BFA;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.aig-back-row {
+    text-align: center;
+    margin-top: 2rem;
+}
+
+@media (max-width: 600px) {
+    .aig-wrapper {
+        padding: 1rem 0 3rem;
+    }
+
+    .aig-title {
+        font-size: 1.8rem;
+    }
+
+    .aig-form-card {
+        padding: 1.5rem;
+    }
+
+    .aig-row {
+        grid-template-columns: 1fr;
+    }
+
+    .aig-result-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .aig-result-actions {
+        justify-content: stretch;
+    }
+
+    .aig-result-actions .mq-btn {
+        flex: 1;
+    }
+}
+
+
+/* ===== AI генерация: шаги и редактор вопросов ===== */
+.aig-step-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.35rem 1rem;
+    border-radius: 20px;
+    margin-bottom: 1.2rem;
+    letter-spacing: 0.03em;
+}
+
+.aig-step-hint {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+}
+
+.aig-questions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    margin-bottom: 1.5rem;
+}
+
+.aig-question-item {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    background: rgba(15, 15, 35, 0.5);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: 14px;
+    padding: 0.6rem 1rem;
+    transition: all 0.2s;
+}
+
+.aig-question-item:hover {
+    border-color: rgba(139, 92, 246, 0.4);
+    background: rgba(139, 92, 246, 0.05);
+}
+
+.aig-question-num {
+    min-width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(139, 92, 246, 0.2);
+    color: var(--primary-light);
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.aig-question-input {
+    flex: 1;
+    border: none !important;
+    background: transparent !important;
+    padding: 0.5rem !important;
+    font-size: 0.95rem;
+}
+
+.aig-question-input:focus {
+    box-shadow: none !important;
+}
+
+.aig-question-remove {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    color: #EF4444;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    transition: all 0.2s;
+}
+
+.aig-question-remove:hover {
+    background: rgba(239, 68, 68, 0.25);
+    transform: scale(1.1);
+}
+
+.aig-add-row {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}

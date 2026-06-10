@@ -98,6 +98,11 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# ============================================================
+# OPENROUTER API (генерация квизов)
+# ============================================================
+OPENROUTER_API_KEY = "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"
+
 # Директория для логов
 LOG_DIR = BASE_DIR / "logs"
 LOG_DIR.mkdir(exist_ok=True)

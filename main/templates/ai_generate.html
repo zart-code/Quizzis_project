@@ -1,0 +1,445 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Генерация квиза AI — Quizziz{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="aig-wrapper">
+        <div class="aig-header">
+            <h1 class="aig-title">✨ Генерация квиза с помощью AI</h1>
+            <p class="aig-subtitle">Укажите тему — AI предложит квиз</p>
+            <p class="aig-subtitle">(AI может ошибаться, проверяйте всё)</p>
+        </div>
+
+        <!-- ШАГ 1: Ввод темы -->
+        <div class="aig-form-card card" id="step-1">
+            <div class="aig-step-badge">Шаг 1 — Выберите тему</div>
+            <form id="ai-form">
+                <div class="aig-field">
+                    <label class="cq-label" for="topic">🎯 Тема квиза</label>
+                    <input type="text" id="topic" name="topic" class="q-input"
+                           placeholder="Опишите максимально подробно тему"
+                           required>
+                </div>
+
+                <div class="aig-row">
+                    <div class="aig-field">
+                        <label class="cq-label" for="num_questions">📝 Количество вопросов</label>
+                        <input type="number" id="num_questions" name="num_questions"
+                               class="q-input" value="5" min="1" max="20">
+                    </div>
+
+                    <div class="aig-field">
+                        <label class="cq-label">⚡ Сложность</label>
+                        <div class="aig-difficulty">
+                            <input type="radio" name="difficulty" value="easy" id="diff-easy" class="time-opt">
+                            <label for="diff-easy">Лёгкая</label>
+
+                            <input type="radio" name="difficulty" value="medium" id="diff-medium" class="time-opt" checked>
+                            <label for="diff-medium">Средняя</label>
+
+                            <input type="radio" name="difficulty" value="hard" id="diff-hard" class="time-opt">
+                            <label for="diff-hard">Сложная</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="aig-submit-row">
+                    <button type="submit" id="generate-questions-btn" class="btn btn-primary btn-large">
+                        <span id="btn-text-1">🤖 Сгенерировать вопросы</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Загрузка шага 1 -->
+        <div class="aig-loading" id="loading-1">
+            <div class="aig-loading-spinner"></div>
+            <p class="aig-loading-text">Генерация вопросов... Несколько секунд</p>
+        </div>
+
+        <!-- ШАГ 2: Редактирование вопросов -->
+        <div class="aig-form-card card" id="step-2">
+            <div class="aig-step-badge">Шаг 2 — Отредактируйте вопросы</div>
+            <p class="aig-step-hint">Измените, удалите или добавьте вопросы. Затем нажмите «Сгенерировать квиз».</p>
+
+            <div class="aig-field">
+                <label class="cq-label" for="quiz-title-input">📚 Название квиза</label>
+                <input type="text" id="quiz-title-input" class="q-input" placeholder="Название квиза">
+            </div>
+
+            <div id="questions-list" class="aig-questions-list"></div>
+
+            <div class="aig-add-row">
+                <button type="button" id="add-question-btn-step2" class="btn btn-secondary">+ Добавить вопрос</button>
+            </div>
+
+            <div class="aig-submit-row">
+                <button type="button" id="generate-quiz-btn" class="btn btn-primary btn-large">
+                    <span id="btn-text-2">🚀 Сгенерировать квиз</span>
+                </button>
+                <button type="button" id="back-to-step1-btn" class="btn btn-secondary" style="margin-left: 1rem;">← Назад</button>
+            </div>
+        </div>
+
+        <!-- Загрузка шага 2 -->
+        <div class="aig-loading" id="loading-2">
+            <div class="aig-loading-spinner"></div>
+            <p class="aig-loading-text">Генерация квиза с ответами... Ещё чуть-чуть</p>
+        </div>
+
+        <!-- Ошибка -->
+        <div class="aig-error" id="error"></div>
+
+        <!-- ШАГ 3: Форма редактирования (как при создании квиза) -->
+        <div id="step-3" style="display: none;">
+            <div class="aig-step-badge" style="margin-bottom: 1.5rem;">Шаг 3 — Проверьте и сохраните</div>
+
+            <form method="post" id="ai-quiz-form" action="{% url 'ai_save_quiz' %}">
+                {% csrf_token %}
+                <div class="card cq-title-card">
+                    <label class="cq-label" for="ai-quiz-title">📚 Название квиза</label>
+                    <input type="text" id="ai-quiz-title" name="title" class="form-control"
+                           placeholder="Введите название квиза..." required>
+                </div>
+
+                <div id="questions-container"></div>
+
+                <div class="cq-add-row">
+                    <button type="button" id="add-question-btn" class="btn btn-secondary">+ Добавить вопрос</button>
+                </div>
+
+                <div class="cq-submit-row">
+                    <button type="submit" class="btn btn-primary btn-large">💾 Сохранить квиз</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="aig-back-row">
+            <a href="{% url 'create_quiz' %}" class="btn btn-secondary">← Назад к созданию квиза</a>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const step1 = document.getElementById('step-1');
+    const step2 = document.getElementById('step-2');
+    const step3 = document.getElementById('step-3');
+    const loading1 = document.getElementById('loading-1');
+    const loading2 = document.getElementById('loading-2');
+    const errorEl = document.getElementById('error');
+    const questionsList = document.getElementById('questions-list');
+
+    // Начальное состояние
+    step2.style.display = 'none';
+    step3.style.display = 'none';
+
+    function showError(msg) {
+        errorEl.textContent = '❌ ' + msg;
+        errorEl.classList.add('is-visible');
+    }
+
+    function hideError() {
+        errorEl.classList.remove('is-visible');
+    }
+
+    function escapeAttr(str) {
+        return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function renderQuestions(questions) {
+        questionsList.innerHTML = '';
+        questions.forEach(function(text, index) {
+            addQuestionItem(text, index + 1);
+        });
+    }
+
+    function addQuestionItem(text, num) {
+        const item = document.createElement('div');
+        item.className = 'aig-question-item';
+        item.innerHTML =
+            '<span class="aig-question-num">' + num + '</span>' +
+            '<input type="text" class="q-input aig-question-input" value="' + escapeAttr(text) + '">' +
+            '<button type="button" class="aig-question-remove" title="Удалить">✕</button>';
+
+        item.querySelector('.aig-question-remove').addEventListener('click', function() {
+            item.remove();
+            renumberStep2Questions();
+        });
+
+        questionsList.appendChild(item);
+    }
+
+    function renumberStep2Questions() {
+        const items = questionsList.querySelectorAll('.aig-question-item');
+        items.forEach(function(item, i) {
+            item.querySelector('.aig-question-num').textContent = i + 1;
+        });
+    }
+
+    function getQuestions() {
+        const inputs = questionsList.querySelectorAll('.aig-question-input');
+        const questions = [];
+        inputs.forEach(function(input) {
+            const val = input.value.trim();
+            if (val) questions.push(val);
+        });
+        return questions;
+    }
+
+    // Маппинг типов из JSON-формата в формат формы
+    function mapType(jsonType) {
+        switch (jsonType) {
+            case 'single_choice': return 'single';
+            case 'multiple_choice': return 'multiple';
+            case 'number': return 'number';
+            case 'text': return 'text';
+            default: return jsonType;
+        }
+    }
+
+    function findClosestTime(value) {
+        const allowed = [15, 20, 30, 45, 60];
+        let closest = allowed[0];
+        let minDiff = Math.abs(value - allowed[0]);
+        for (let i = 1; i < allowed.length; i++) {
+            const diff = Math.abs(value - allowed[i]);
+            if (diff < minDiff) {
+                minDiff = diff;
+                closest = allowed[i];
+            }
+        }
+        return closest;
+    }
+
+    // Заполняет форму создания квиза данными из сгенерированного JSON
+    function populateQuizForm(data) {
+        // Устанавливаем название
+        document.getElementById('ai-quiz-title').value = data.title || '';
+
+        // Очищаем контейнер вопросов
+        const container = document.getElementById('questions-container');
+        container.innerHTML = '';
+        count = 0;
+
+        if (!data.questions || data.questions.length === 0) return;
+
+        data.questions.forEach(function(q) {
+            count += 1;
+            const i = count;
+            makeQuestion(i);
+
+            const type = mapType(q.type);
+
+            // Тип вопроса
+            const typeSelect = document.getElementById('q' + i + '_type');
+            if (typeSelect) {
+                typeSelect.value = type;
+                updateAnswers(i);
+            }
+
+            // Текст вопроса
+            const textInput = document.querySelector('input[name="q' + i + '_text"]');
+            if (textInput && q.text) {
+                textInput.value = q.text;
+            }
+
+            // Коэффициент
+            const coeffInput = document.querySelector('input[name="q' + i + '_coefficient"]');
+            if (coeffInput && q.coefficient !== undefined) {
+                coeffInput.value = q.coefficient;
+            }
+
+            // Варианты ответов
+            if ((type === 'single' || type === 'multiple') && Array.isArray(q.options)) {
+                q.options.forEach(function(opt, idx) {
+                    const ansInput = document.querySelector('input[name="q' + i + '_ans' + idx + '"]');
+                    if (ansInput && opt.text) {
+                        ansInput.value = opt.text;
+                    }
+                    if (opt.isCorrect) {
+                        const correctInput = document.querySelector('input[name="q' + i + '_correct"][value="' + idx + '"]');
+                        if (correctInput) {
+                            correctInput.checked = true;
+                        }
+                    }
+                });
+            }
+
+            // Числовой ответ
+            if (type === 'number' && q.correctAnswer !== undefined) {
+                const numInput = document.querySelector('input[name="q' + i + '_correct_number"]');
+                if (numInput) {
+                    numInput.value = q.correctAnswer;
+                }
+            }
+
+            // Время
+            if (q.timeLimit) {
+                const timeValue = findClosestTime(q.timeLimit);
+                const timeInput = document.querySelector('input[name="q' + i + '_time"][value="' + timeValue + '"]');
+                if (timeInput) {
+                    timeInput.checked = true;
+                }
+            }
+        });
+    }
+
+    // ШАГ 1: Генерация вопросов
+    document.getElementById('ai-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        hideError();
+
+        const topic = document.getElementById('topic').value.trim();
+        const numQuestions = parseInt(document.getElementById('num_questions').value);
+        const difficulty = document.querySelector('input[name="difficulty"]:checked').value;
+
+        if (!topic) return;
+
+        loading1.classList.add('is-visible');
+        step2.style.display = 'none';
+        step3.style.display = 'none';
+
+        // Блокируем шаг 1 на время генерации
+        document.getElementById('topic').disabled = true;
+        document.getElementById('num_questions').disabled = true;
+        document.querySelectorAll('input[name="difficulty"]').forEach(function(r) { r.disabled = true; });
+        document.getElementById('generate-questions-btn').disabled = true;
+        document.getElementById('btn-text-1').textContent = '⏳ Генерация...';
+
+        try {
+            const response = await fetch('{% url "ai_generate_questions" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}',
+                },
+                body: JSON.stringify({
+                    topic: topic,
+                    num_questions: numQuestions,
+                    difficulty: difficulty,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                showError(data.error || 'Произошла ошибка.');
+                // Разблокируем при ошибке API
+                document.getElementById('topic').disabled = false;
+                document.getElementById('num_questions').disabled = false;
+                document.querySelectorAll('input[name="difficulty"]').forEach(function(r) { r.disabled = false; });
+                document.getElementById('generate-questions-btn').disabled = false;
+                document.getElementById('btn-text-1').textContent = '🤖 Сгенерировать вопросы';
+                return;
+            }
+
+            // Показываем шаг 2
+            document.getElementById('quiz-title-input').value = data.title || topic;
+            renderQuestions(data.questions);
+            step2.style.display = 'block';
+
+            // Блокируем шаг 1 — ничего нельзя менять
+            document.getElementById('topic').disabled = true;
+            document.getElementById('num_questions').disabled = true;
+            document.querySelectorAll('input[name="difficulty"]').forEach(function(r) { r.disabled = true; });
+            document.getElementById('generate-questions-btn').disabled = true;
+            document.getElementById('btn-text-1').textContent = '✅ Вопросы сгенерированы';
+
+        } catch (err) {
+            showError('Ошибка сети: ' + err.message);
+            // Разблокируем при ошибке
+            document.getElementById('topic').disabled = false;
+            document.getElementById('num_questions').disabled = false;
+            document.querySelectorAll('input[name="difficulty"]').forEach(function(r) { r.disabled = false; });
+            document.getElementById('generate-questions-btn').disabled = false;
+            document.getElementById('btn-text-1').textContent = '🤖 Сгенерировать вопросы';
+        } finally {
+            loading1.classList.remove('is-visible');
+        }
+    });
+
+    // Кнопка "Добавить вопрос" на шаге 2
+    document.getElementById('add-question-btn-step2').addEventListener('click', function() {
+        const count = questionsList.querySelectorAll('.aig-question-item').length;
+        addQuestionItem('', count + 1);
+        const lastInput = questionsList.querySelector('.aig-question-item:last-child .aig-question-input');
+        if (lastInput) lastInput.focus();
+    });
+
+    // Кнопка "Назад"
+    document.getElementById('back-to-step1-btn').addEventListener('click', function() {
+        step2.style.display = 'none';
+        step3.style.display = 'none';
+        hideError();
+
+        // Разблокируем шаг 1
+        document.getElementById('topic').disabled = false;
+        document.getElementById('num_questions').disabled = false;
+        document.querySelectorAll('input[name="difficulty"]').forEach(function(r) { r.disabled = false; });
+        document.getElementById('generate-questions-btn').disabled = false;
+        document.getElementById('btn-text-1').textContent = '🤖 Сгенерировать вопросы';
+    });
+
+    // ШАГ 2: Генерация полного квиза
+    document.getElementById('generate-quiz-btn').addEventListener('click', async function() {
+        hideError();
+
+        const title = document.getElementById('quiz-title-input').value.trim();
+        const questions = getQuestions();
+
+        if (!title) {
+            showError('Введите название квиза.');
+            return;
+        }
+
+        if (questions.length === 0) {
+            showError('Добавьте хотя бы один вопрос.');
+            return;
+        }
+
+        loading2.classList.add('is-visible');
+        step3.style.display = 'none';
+        document.getElementById('generate-quiz-btn').disabled = true;
+        document.getElementById('btn-text-2').textContent = '⏳ Генерация...';
+
+        try {
+            const response = await fetch('{% url "ai_generate_quiz" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}',
+                },
+                body: JSON.stringify({
+                    title: title,
+                    questions: questions,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                showError(data.error || 'Произошла ошибка.');
+                return;
+            }
+
+            // Прячем шаги 1 и 2, показываем форму создания (шаг 3)
+            step1.style.display = 'none';
+            step2.style.display = 'none';
+            step3.style.display = 'block';
+
+            populateQuizForm(data);
+
+        } catch (err) {
+            showError('Ошибка сети: ' + err.message);
+        } finally {
+            loading2.classList.remove('is-visible');
+            document.getElementById('generate-quiz-btn').disabled = false;
+            document.getElementById('btn-text-2').textContent = '🚀 Сгенерировать квиз';
+        }
+    });
+})();
+</script>
+{% endblock %}
