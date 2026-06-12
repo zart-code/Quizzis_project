@@ -1,0 +1,18 @@
+[Unit]
+Description=Daphne ASGI server for Quizzis (HTTP + WebSocket)
+After=network.target redis-server.service
+Requires=redis-server.service
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/path/to/Quizzis_project
+Environment=DJANGO_SETTINGS_MODULE=quizziz_project.settings
+Environment=QUIZZIS_REDIS_URL=redis://127.0.0.1:6379/0
+# -u: unix-параметры не нужны; слушаем localhost, nginx проксирует наружу.
+ExecStart=/path/to/venv/bin/daphne -b 127.0.0.1 -p 8001 quizziz_project.asgi:application
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

@@ -92,6 +92,7 @@ from main.services.quiz_revisions import (
     get_session_questions,
 )
 from main.services.quiz_scoring import score_question
+from main.services import realtime
 
 logger = logging.getLogger(__name__)
 
@@ -149,6 +150,7 @@ def toggle_lock_view(request, pin):
     session = get_object_or_404(GameSession, pin=pin, host=request.user)
     session.is_locked = not session.is_locked
     session.save()
+    realtime.broadcast_lobby_changed(pin)
     logger.info(
         "Пользователь %s %s лобби %s (PIN: %s) (IP: %s)",
         request.user.username,
@@ -177,28 +179,6 @@ def delete_session_view(request, pin):
 
 
 @login_required(login_url="login_page")
-def api_players_view(request, pin):
-    session = get_object_or_404(GameSession, pin=pin, host=request.user)
-    participants = session.participants.select_related("user").all()
-
-    players = [
-        {
-            "id": p.id,
-            "username": p.get_display_name(),
-        }
-        for p in participants
-    ]
-
-    return JsonResponse(
-        {
-            "players": players,
-            "count": len(players),
-            "is_locked": session.is_locked,
-        }
-    )
-
-
-@login_required(login_url="login_page")
 @require_POST
 def kick_player_view(request, pin, participant_id):
     """Кик игрока из лобби хостом."""
@@ -206,6 +186,7 @@ def kick_player_view(request, pin, participant_id):
     participant = get_object_or_404(GameParticipant, id=participant_id, session=session)
     display_name = participant.get_display_name()
     participant.delete()
+    realtime.broadcast_player_kicked(pin, participant_id)
     logger.info(
         "Хост %s выгнал игрока '%s' из лобби %s (IP: %s)",
         request.user.username,
@@ -214,18 +195,6 @@ def kick_player_view(request, pin, participant_id):
         request.META.get("REMOTE_ADDR"),
     )
     return JsonResponse({"success": True})
-
-
-def api_check_kicked_view(request, pin):
-    """API: проверяет, остался ли участник в лобби (для определения кика)."""
-    stored_participant_id = request.session.get(f"lobby_participant_{pin}")
-    if not stored_participant_id:
-        return JsonResponse({"kicked": True})
-    exists = GameParticipant.objects.filter(
-        id=stored_participant_id,
-        session__pin=pin,
-    ).exists()
-    return JsonResponse({"kicked": not exists})
 
 
 def join_lobby_view(request, pin):
@@ -302,6 +271,9 @@ def join_lobby_view(request, pin):
     # можно было показать результаты
     request.session[f"lobby_participant_{pin}"] = participant.id
 
+    if created:
+        realtime.broadcast_lobby_changed(pin)
+
     logger.info(
         "Игрок %s присоединился к лобби %s (квиз «%s», хост: %s) (IP: %s)",
         request.user.username,
@@ -330,6 +302,7 @@ def start_game_view(request, pin):
     session.status = GameSession.IN_PROGRESS
     session.current_question_started_at = timezone.now()
     session.save()
+    realtime.broadcast_game_started(pin)
     logger.info(
         "Пользователь %s начал игру в лобби %s (квиз «%s», участников: %d) (IP: %s)",
         request.user.username,
@@ -339,132 +312,6 @@ def start_game_view(request, pin):
         request.META.get("REMOTE_ADDR"),
     )
     return redirect("lobby", pin=pin)
-
-
-def api_state_view(request, pin):
-    session = get_object_or_404(GameSession, pin=pin)
-    return JsonResponse(
-        {
-            "status": session.status,
-        }
-    )
-
-
-@login_required(login_url="login_page")
-def api_game_stats_view(request, pin):
-    """API: статистика игры в реальном времени для хоста."""
-    session = get_object_or_404(GameSession, pin=pin, host=request.user)
-    questions = get_session_questions(session)
-    total_questions = len(questions)
-    total_participants = session.participants.count()
-    answered_count = session.participants.filter(is_answered=True).count()
-
-    current_q = min(session.current_question, total_questions - 1)
-    current_question_text = ""
-    if 0 <= current_q < total_questions:
-        current_question_text = questions[current_q].text
-
-    participants = session.participants.select_related("user").order_by("-score")
-    players = [
-        {
-            "username": p.get_display_name(),
-            "score": p.score,
-            "is_answered": p.is_answered,
-        }
-        for p in participants
-    ]
-
-    # Build history of answers per question. Include the current question
-    # when the session is finished or when the teacher marked it ready
-    # for the next question (i.e. all players have answered).
-    question_history = []
-    for i, q in enumerate(questions):
-        # Stop if we've passed the current question.
-        if i > session.current_question:
-            break
-        # If this is the current question and the session is still in
-        # progress, skip it unless it's ready for next question.
-        if (
-            i == session.current_question
-            and session.status != GameSession.FINISHED
-            and not session.ready_for_next_question
-        ):
-            break
-
-        answer_lookup = {"session": session}
-        if session.revision_id:
-            answer_lookup["revision_question"] = q
-        else:
-            answer_lookup["question"] = q
-
-        answers = GameAnswer.objects.filter(**answer_lookup).select_related(
-            "participant__user"
-        )
-        q_data = {
-            "number": i + 1,
-            "text": q.text,
-            "answers": [
-                {
-                    "username": a.participant.get_display_name(),
-                    "is_correct": a.is_correct,
-                    "points": a.points,
-                }
-                for a in answers
-            ],
-        }
-        question_history.append(q_data)
-
-    # Get current question answers (for teacher review when all answered)
-    current_question_answers = []
-    if 0 <= current_q < total_questions:
-        current_question_obj = questions[current_q]
-        answer_lookup = {"session": session}
-        if session.revision_id:
-            answer_lookup["revision_question"] = current_question_obj
-        else:
-            answer_lookup["question"] = current_question_obj
-
-        current_answers = GameAnswer.objects.filter(**answer_lookup).select_related(
-            "participant__user"
-        ).order_by("-points", "participant__user__username")
-
-        current_question_answers = [
-            {
-                "username": a.participant.get_display_name(),
-                "is_correct": a.is_correct,
-                "points": a.points,
-            }
-            for a in current_answers
-        ]
-
-    return JsonResponse(
-        {
-            "status": session.status,
-            "current_question": min(current_q + 1, total_questions),
-            "total_questions": total_questions,
-            "current_question_text": current_question_text,
-            "answered_count": answered_count,
-            "total_participants": total_participants,
-            "players": players,
-            "question_history": question_history,
-            # current question's available options (text only, do not reveal correctness)
-            "current_options": (
-                [
-                    {"id": ao.id, "text": ao.text}
-                    for ao in (questions[current_q].answers.all() if 0 <= current_q < total_questions else [])
-                ]
-            ),
-            "ready_for_next_question": session.ready_for_next_question,
-            "current_question_answers": current_question_answers,
-            "time_remaining": (
-                max(0, questions[current_q].time_limit - int(
-                    (timezone.now() - session.current_question_started_at).total_seconds()
-                ))
-                if session.current_question_started_at and 0 <= current_q < total_questions
-                else 0
-            ),
-        }
-    )
 
 
 def session_play_view(request, pin):
@@ -648,6 +495,9 @@ def session_play_view(request, pin):
                 if session.status == GameSession.FINISHED:
                     cleanup_guest_users(session)
 
+            # Уведомляем хоста об изменении статистики (новый ответ)
+            realtime.broadcast_stats_changed(pin)
+
         return redirect("session_play", pin=pin)
 
     response = render(
@@ -756,6 +606,8 @@ def advance_question_view(request, pin):
 
     session.save()
 
+    realtime.broadcast_question_advanced(pin)
+
     logger.info(
         "Учитель %s перешёл к вопросу %d в лобби %s (IP: %s)",
         request.user.username,
@@ -767,42 +619,6 @@ def advance_question_view(request, pin):
     return JsonResponse({
         "success": True,
         "current_question": session.current_question,
-    })
-
-
-def get_current_question_view(request, pin):
-    """API: получить текущий номер вопроса в сессии.
-
-    Дополнительно возвращает has_answered — есть ли у текущего
-    игрока реальный ответ на текущий вопрос. Если нет — значит
-    вопрос уже переключился, а игрок завис на экране ожидания,
-    и надо немедленно перезагрузить страницу.
-    """
-    session = get_object_or_404(GameSession, pin=pin)
-
-    # Определяем участника по сохранённому ID в HTTP-сессии
-    has_answered = True  # по умолчанию: не показываем вопрос
-    stored_participant_id = request.session.get(f"lobby_participant_{pin}")
-    if stored_participant_id:
-        participant = GameParticipant.objects.filter(
-            id=stored_participant_id, session=session
-        ).first()
-        if participant:
-            questions = get_session_questions(session)
-            current_q_index = session.current_question
-            if 0 <= current_q_index < len(questions):
-                current_question = questions[current_q_index]
-                answer_check = {"session": session, "participant": participant}
-                if session.revision_id:
-                    answer_check["revision_question"] = current_question
-                else:
-                    answer_check["question"] = current_question
-                has_answered = GameAnswer.objects.filter(**answer_check).exists()
-
-    return JsonResponse({
-        "current_question": session.current_question,
-        "status": session.status,
-        "has_answered": has_answered,
     })
 
 

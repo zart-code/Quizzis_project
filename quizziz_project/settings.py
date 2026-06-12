@@ -17,6 +17,10 @@ ALLOWED_HOSTS = ['127.0.0.1',
                  'www.quizzis.ru',]
 
 INSTALLED_APPS = [
+    # Daphne must come first so it overrides the runserver command with the
+    # ASGI development server (needed for WebSocket support).
+    "daphne",
+    "channels",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -55,6 +59,43 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "quizziz_project.wsgi.application"
+ASGI_APPLICATION = "quizziz_project.asgi.application"
+
+# ============================================================
+# CHANNELS / WEBSOCKET (real-time лобби и игровые сессии)
+# ============================================================
+# По умолчанию используется Redis. Если переменная окружения
+# QUIZZIS_REDIS_URL не задана, а сервер запущен в DEBUG-режиме без
+# Redis — автоматически откатываемся на in-memory слой, чтобы проект
+# работал «из коробки» в разработке и тестах.
+REDIS_URL = os.environ.get("QUIZZIS_REDIS_URL", "redis://127.0.0.1:6379/0")
+
+# In-memory слой включается явно (QUIZZIS_INMEMORY_CHANNELS=1) либо
+# автоматически при запуске тестов — чтобы не требовать поднятого Redis.
+import sys  # noqa: E402
+
+_RUNNING_TESTS = "test" in sys.argv
+USE_INMEMORY_CHANNELS = (
+    os.environ.get("QUIZZIS_INMEMORY_CHANNELS", "") == "1" or _RUNNING_TESTS
+)
+
+if USE_INMEMORY_CHANNELS:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels.layers.InMemoryChannelLayer",
+        },
+    }
+else:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [REDIS_URL],
+                "capacity": 1500,
+                "expiry": 10,
+            },
+        },
+    }
 
 DATABASES = {
     "default": {

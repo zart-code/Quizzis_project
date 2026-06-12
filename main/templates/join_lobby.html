@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Ожидание — {{ session.quiz.title }}{% endblock %}
 
@@ -43,24 +44,39 @@
 </style>
 
 <script>
-const apiStateUrl = "{% url 'api_state' session.pin %}";
-const apiCheckKickedUrl = "{% url 'api_check_kicked' session.pin %}";
 const playUrl = "/session/{{ session.pin }}/play/";
+</script>
+{% endblock %}
 
-const pollInterval = setInterval(function(){
-    fetch(apiStateUrl).then(r=>r.json()).then(data=>{
-        if(data.status==='in_progress') {
-            clearInterval(pollInterval);
-            window.location.href = playUrl;
-        }
-    });
+{% block extra_js %}
+<script src="{% static 'js/lobby_ws.js' %}"></script>
+<script>
+const ws = new LobbyWebSocket("{{ session.pin }}");
 
-    fetch(apiCheckKickedUrl).then(r=>r.json()).then(data=>{
-        if(data.kicked) {
-            clearInterval(pollInterval);
-            window.location.href = '/?kicked=1';
-        }
-    });
-}, 1000);
+// Игрок ждёт старта игры. Сервер присылает player_state на каждое
+// изменение сессии (старт игры, кик).
+ws.on('player_state', function(data){
+    if (data.kicked) {
+        ws.close();
+        window.location.href = '/?kicked=1';
+        return;
+    }
+    if (data.status === 'in_progress') {
+        ws.close();
+        window.location.href = playUrl;
+    }
+});
+
+// Явное событие старта игры (на случай гонки снимков).
+ws.on('game_started', function(){
+    ws.close();
+    window.location.href = playUrl;
+});
+
+// Явное событие кика.
+ws.on('kicked', function(){
+    ws.close();
+    window.location.href = '/?kicked=1';
+});
 </script>
 {% endblock %}
