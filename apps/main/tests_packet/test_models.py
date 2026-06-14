@@ -1,35 +1,49 @@
 """Тесты для моделей приложения main"""
 
-# pylint: disable=no-member
+# pylint: disable=no-member,missing-class-docstring,missing-function-docstring
 
 from django.test import TestCase
-from apps.quiz.models import Quiz, QuizRevision, QuizResult, Answer
+from django.contrib.auth.models import User
+from apps.quiz.models import Quiz, QuizRevision, QuizResult, Answer, Question
 
 
 class TestAnswer(TestCase):
     """Тесты для модели Answer (вариант ответа на вопрос)."""
 
-    fixtures = ["db.json"]
+    def setUp(self):
+        # Создаём минимально необходимое окружение
+        self.user = User.objects.create_user(username="testuser", password="testpass")
+        self.quiz = Quiz.objects.create(
+            title="Sample Quiz", creator=self.user, status=Quiz.ACTIVE
+        )
+        self.question = Question.objects.create(quiz=self.quiz, text="Sample question")
+        self.correct = Answer.objects.create(
+            question=self.question, text="Correct", is_correct=True
+        )
+        self.wrong = Answer.objects.create(
+            question=self.question, text="Wrong", is_correct=False
+        )
 
     def test_answer_correctness_flag(self):
         """Флаг is_correct корректно отражает правильность варианта ответа."""
-        correct = Answer.objects.get(pk=1)
-        wrong = Answer.objects.get(pk=2)
-        self.assertTrue(correct.is_correct)
-        self.assertFalse(wrong.is_correct)
+        self.assertTrue(self.correct.is_correct)
+        self.assertFalse(self.wrong.is_correct)
 
 
 class TestQuizRevision(TestCase):
     """Тесты для модели QuizRevision (версия квиза)."""
 
-    fixtures = ["db.json"]
+    def setUp(self):
+        self.user = User.objects.create_user(username="testuser", password="testpass")
+        self.quiz = Quiz.objects.create(
+            title="Test Quiz", creator=self.user, status=Quiz.ACTIVE
+        )
 
     def test_creation_and_ordering(self):
         """Ревизии одного квиза упорядочиваются по убыванию номера версии."""
-        quiz = Quiz.objects.get(pk=1)
-        rev1 = QuizRevision.objects.create(quiz=quiz, version=1, title="v1")
-        rev2 = QuizRevision.objects.create(quiz=quiz, version=2, title="v2")
-        revisions = quiz.revisions.order_by("-version")
+        rev1 = QuizRevision.objects.create(quiz=self.quiz, version=1, title="v1")
+        rev2 = QuizRevision.objects.create(quiz=self.quiz, version=2, title="v2")
+        revisions = self.quiz.revisions.order_by("-version")
         self.assertEqual(list(revisions), [rev2, rev1])
 
 

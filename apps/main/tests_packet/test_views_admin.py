@@ -11,8 +11,6 @@ from apps.quiz.models import Quiz
 class AdminPanelViewsTest(TestCase):
     """Набор тестов для представлений админ-панели: просмотр панели, бан пользователя, снятие с публикации квиза."""
 
-    fixtures = ["db.json"]
-
     def setUp(self):
         self.client = Client()
         self.admin = User.objects.create_superuser(
@@ -20,7 +18,14 @@ class AdminPanelViewsTest(TestCase):
         )
         self.admin.profile.is_admin = True
         self.admin.profile.save()
-        self.teacher = User.objects.get(pk=2)
+
+        # Явно создаём учителя, который раньше подгружался из фикстуры с pk=2
+        self.teacher = User.objects.create_user(
+            username="teacher", email="teacher@ex.com", password="teacherpass"
+        )
+        # Профиль для teacher будет создан автоматически (сигналом), если он есть в проекте.
+        # Дополнительных действий не требуется.
+
         # Создаём активный квиз для тестов
         self.active_quiz = Quiz.objects.create(
             title="Active Quiz for Admin",

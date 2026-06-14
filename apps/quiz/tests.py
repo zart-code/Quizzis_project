@@ -173,13 +173,17 @@ class QuizReportTests(TestCase):
 class ScoringStrategiesTest(TestCase):
     """Набор тестов для стратегий подсчёта баллов и фабрики."""
 
-    fixtures = ["db.json"]
-
     def setUp(self):
         """Создание тестовых вопросов и вариантов ответов для всех типов."""
+        # Создаём пользователя и квиз, к которому будут привязаны вопросы
+        self.user = User.objects.create_user(username="quizcreator", password="testpass")
+        self.quiz = Quiz.objects.create(
+            title="Test Quiz", creator=self.user, status=Quiz.ACTIVE
+        )
+
         # Single choice question
         self.q_single = Question.objects.create(
-            quiz_id=1, text="Single?", question_type="single", coefficient=1, order=1
+            quiz=self.quiz, text="Single?", question_type="single", coefficient=1, order=1
         )
         self.ans_correct = Answer.objects.create(
             question=self.q_single, text="Right", is_correct=True
@@ -190,7 +194,7 @@ class ScoringStrategiesTest(TestCase):
 
         # Multiple choice question
         self.q_multiple = Question.objects.create(
-            quiz_id=1,
+            quiz=self.quiz,
             text="Multiple?",
             question_type="multiple",
             coefficient=2,
@@ -208,7 +212,7 @@ class ScoringStrategiesTest(TestCase):
 
         # Number question
         self.q_number = Question.objects.create(
-            quiz_id=1,
+            quiz=self.quiz,
             text="Number?",
             question_type="number",
             coefficient=1,
@@ -218,7 +222,7 @@ class ScoringStrategiesTest(TestCase):
 
         # Text question
         self.q_text = Question.objects.create(
-            quiz_id=1, text="Text?", question_type="text", coefficient=1, order=4
+            quiz=self.quiz, text="Text?", question_type="text", coefficient=1, order=4
         )
 
     def test_single_choice_correct(self):
@@ -348,11 +352,20 @@ class MockRequest:
 class TestRevisions(TestCase):
     """Набор тестов для функций управления ревизиями квизов."""
 
-    fixtures = ["db.json"]
-
     def setUp(self):
-        """Подготовка тестового окружения: получаем квиз из фикстур."""
-        self.quiz = Quiz.objects.get(pk=1)
+        """Подготовка тестового окружения: создаём квиз с одним вопросом."""
+        self.user = User.objects.create_user(username="creator", password="testpass")
+        self.quiz = Quiz.objects.create(
+            title="dsadda", creator=self.user, status=Quiz.ACTIVE
+        )
+        # Добавляем один вопрос, как было в фикстуре
+        self.initial_question = Question.objects.create(
+            quiz=self.quiz,
+            text="Sample question",
+            question_type="single",
+            coefficient=1,
+            order=1,
+        )
 
     def test_get_current_revision_none(self):
         """Проверка: у квиза без текущей ревизии возвращается None."""
@@ -369,6 +382,7 @@ class TestRevisions(TestCase):
         """Если у квиза нет текущей ревизии, вопросы берутся напрямую из модели Question."""
         questions = get_quiz_questions(self.quiz)
         self.assertEqual(len(questions), 1)
+        self.assertEqual(questions[0].text, "Sample question")
 
     def test_get_quiz_questions_with_revision(self):
         """Если есть текущая ревизия, вопросы извлекаются из неё (RevisionQuestion)."""

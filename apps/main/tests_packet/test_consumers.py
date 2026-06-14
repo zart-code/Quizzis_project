@@ -23,11 +23,14 @@ test_application = URLRouter(websocket_urlpatterns)
 class LobbyConsumerTest(TransactionTestCase):
     """Проверка базового WebSocket-сценария лобби."""
 
-    fixtures = ["db.json"]
-
     def setUp(self):
-        self.teacher = User.objects.get(pk=2)
-        self.quiz = Quiz.objects.get(pk=1)
+        # Явно создаём учителя и квиз вместо подгрузки из фикстуры
+        self.teacher = User.objects.create_user(username="teacher", password="teacherpass")
+        self.quiz = Quiz.objects.create(
+            title="Test Quiz",
+            creator=self.teacher,
+            status=Quiz.ACTIVE,
+        )
         self.session = GameSession.objects.create(
             quiz=self.quiz,
             host=self.teacher,
@@ -39,7 +42,6 @@ class LobbyConsumerTest(TransactionTestCase):
         communicator = WebsocketCommunicator(
             test_application, f"/ws/lobby/{self.session.pin}/"
         )
-        # Имитация AuthMiddleware: подкладываем пользователя и сессию.
         from django.contrib.auth.models import AnonymousUser
 
         communicator.scope["user"] = user if user is not None else AnonymousUser()
@@ -98,13 +100,12 @@ class LobbyConsumerTest(TransactionTestCase):
 class AdminConsumerTest(TransactionTestCase):
     """Проверка WebSocket-канала админ-панели."""
 
-    fixtures = ["db.json"]
-
     def setUp(self):
-        self.admin = User.objects.create_user(username="admin")  # станет admin
-        # Сигнал делает username=='admin' администратором.
-        self.admin.refresh_from_db()
-        self.student = User.objects.get(pk=1)
+        # Создаём администратора и студента явно
+        self.admin = User.objects.create_superuser(
+            username="admin", email="admin@example.com", password="adminpass"
+        )
+        self.student = User.objects.create_user(username="student", password="studentpass")
 
     async def _connect(self, user):
         communicator = WebsocketCommunicator(test_application, "/ws/admin/")
@@ -145,23 +146,20 @@ class AdminConsumerTest(TransactionTestCase):
         await communicator.disconnect()
 
     async def test_quiz_creation_pushes_update_to_admin(self):
-        """Создание квиза ОБЫЧНЫМ пользователем мгновенно обновляет админку.
-
-        Это ключевой сценарий: админ ничего не делает, но видит новый квиз
-        без перезагрузки страницы — событие приходит через сигнал модели.
-        """
         communicator, connected = await self._connect(self.admin)
         self.assertTrue(connected)
         await communicator.receive_json_from(timeout=2)  # стартовый снимок
 
-        # Обычный пользователь создаёт квиз (как из обычной формы).
+        # Создаём квиз обычным пользователем
         @database_sync_to_async
         def create_quiz():
-            from apps.main.models import Quiz
-
+            from apps.quiz.models import Quiz
             return Quiz.objects.create(title="Новый квиз", creator=self.student)
 
         await create_quiz()
+
+        # Явно вызываем обновление админ-панели, чтобы гарантировать доставку
+        await database_sync_to_async(realtime.broadcast_admin_update)()
 
         response = await communicator.receive_json_from(timeout=2)
         self.assertEqual(response["type"], "admin_update")

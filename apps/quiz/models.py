@@ -9,6 +9,13 @@ from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
 
+def generate_pin():
+    """
+    Генератор случайного ключа сессии
+    """
+    return "".join(random.choices(string.digits, k=6))
+
+
 class Category(models.Model):
     """
     Категория для группировки викторин.
@@ -635,13 +642,6 @@ class RevisionAnswer(models.Model):
 
     def __str__(self):
         return self.text
-
-
-def generate_pin():
-    """
-    Генератор случайного ключа сессии
-    """
-    return "".join(random.choices(string.digits, k=6))
 
 
 class GameAnswer(models.Model):

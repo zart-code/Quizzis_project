@@ -250,7 +250,7 @@ def build_admin_stats() -> dict:
     """Сводная статистика для карточек админ-панели."""
     from django.contrib.auth.models import User
 
-    from apps.registration import Profile
+    from apps.registration.models import Profile
 
     return {
         "total_users": User.objects.count(),
@@ -297,7 +297,7 @@ def build_admin_quizzes() -> list:
     """Список квизов для таблицы админ-панели."""
     from django.db.models import Case, Count, F, IntegerField, When
 
-    from apps.main.models import Quiz
+    from apps.quiz.models import Quiz
 
     quizzes = (
         Quiz.objects.filter(is_deleted=False)

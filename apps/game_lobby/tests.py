@@ -1,48 +1,34 @@
 from apps.registration.models import Profile
-
 from django.contrib.auth.models import User
 from django.test import TestCase
+from apps.quiz.models import Quiz, QuizRevision, GameSession, GameParticipant, Question
 
-from apps.quiz.models import Quiz, QuizRevision, GameSession, GameParticipant
 
-
-# Create your tests here.
 class TestProfile(TestCase):
     """Тесты для модели Profile и связанных сигналов."""
 
-    fixtures = ["db.json"]
-
     def test_profile_creation_signal_for_new_user(self):
-        """
-        Проверка: при создании нового пользователя автоматически создаётся профиль
-        с ролью STUDENT (если имя не 'admin').
-        """
         user = User.objects.create(username="newuser")
         self.assertTrue(hasattr(user, "profile"))
         self.assertEqual(user.profile.role, Profile.STUDENT)
 
     def test_admin_profile_auto_created_as_admin(self):
-        """
-        Проверка: пользователь с именем 'admin' получает профиль с ролью ADMIN.
-        """
         admin = User.objects.create(username="admin")
         self.assertEqual(admin.profile.role, Profile.ADMIN)
         self.assertTrue(admin.profile.is_admin)
 
     def test_save_signal_corrects_role_for_admin_username(self):
-        """
-        Проверка: при сохранении пользователя с именем 'admin' его профиль
-        принудительно становится ADMIN (даже если была изменена роль).
-        """
-        admin_user = (
-            User.objects.get(username="admin")
-            if User.objects.filter(username="admin").exists()
-            else User.objects.create(username="admin")
-        )
+        admin_user = User.objects.create(username="admin")
+        # Убедимся, что роль изначально ADMIN
+        self.assertEqual(admin_user.profile.role, Profile.ADMIN)
+
+        # Меняем роль вручную
         admin_user.profile.role = Profile.STUDENT
         admin_user.profile.is_admin = False
         admin_user.profile.save()
-        admin_user.save()  # сигнал сработает при сохранении пользователя
+
+        # Сохранение пользователя должно восстановить ADMIN
+        admin_user.save()
         admin_user.refresh_from_db()
         self.assertEqual(admin_user.profile.role, Profile.ADMIN)
         self.assertTrue(admin_user.profile.is_admin)
@@ -51,77 +37,83 @@ class TestProfile(TestCase):
 class TestQuiz(TestCase):
     """Тесты для модели Quiz и её методов."""
 
-    fixtures = ["db.json"]
+    def setUp(self):
+        self.creator = User.objects.create_user(username="creator", password="testpass")
+        self.quiz = Quiz.objects.create(
+            title="Test Quiz", creator=self.creator, status=Quiz.ACTIVE
+        )
+        # Один вопрос типа multiple с coefficient=1 → total_max_score = 4*1 = 4
+        self.question = Question.objects.create(
+            quiz=self.quiz,
+            text="Sample question",
+            question_type="multiple",
+            coefficient=1,
+            order=1,
+        )
 
     def test_total_questions_no_revision(self):
-        """Метод total_questions() возвращает количество вопросов текущей ревизии."""
-        quiz = Quiz.objects.get(pk=1)
-        self.assertEqual(quiz.total_questions(), 1)
+        self.assertEqual(self.quiz.total_questions(), 1)
 
     def test_total_questions_with_revision(self):
-        """Если у квиза есть текущая ревизия, total_questions() берёт question_count из неё."""
-        quiz = Quiz.objects.get(pk=1)
         rev = QuizRevision.objects.create(
-            quiz=quiz, version=1, title="v1", question_count=3, max_score=12
+            quiz=self.quiz, version=1, title="v1", question_count=3, max_score=12
         )
-        quiz.current_revision = rev
-        quiz.save()
-        self.assertEqual(quiz.total_questions(), 3)
+        self.quiz.current_revision = rev
+        self.quiz.save()
+        self.assertEqual(self.quiz.total_questions(), 3)
 
     def test_total_max_score_no_revision(self):
-        """Метод total_max_score() считает сумму коэффициентов вопросов, умноженных на 4."""
-        quiz = Quiz.objects.get(pk=1)
-        # question type 'multiple' coefficient=1 -> 4*1=4
-        self.assertEqual(quiz.total_max_score(), 4)
+        self.assertEqual(self.quiz.total_max_score(), 4)
 
     def test_total_max_score_with_revision(self):
-        """Если есть текущая ревизия, total_max_score() берёт max_score из неё."""
-        quiz = Quiz.objects.get(pk=1)
         rev = QuizRevision.objects.create(
-            quiz=quiz, version=1, title="v1", max_score=20
+            quiz=self.quiz, version=1, title="v1", max_score=20
         )
-        quiz.current_revision = rev
-        quiz.save()
-        self.assertEqual(quiz.total_max_score(), 20)
+        self.quiz.current_revision = rev
+        self.quiz.save()
+        self.assertEqual(self.quiz.total_max_score(), 20)
 
     def test_str_method(self):
-        """Строковое представление квиза — его заголовок."""
-        quiz = Quiz.objects.get(pk=1)
-        self.assertEqual(str(quiz), quiz.title)
+        self.assertEqual(str(self.quiz), self.quiz.title)
 
 
 class TestGameSession(TestCase):
-    """Тесты для модели GameSession (игровая сессия)."""
+    """Тесты для модели GameSession."""
 
-    fixtures = ["db.json"]
+    def setUp(self):
+        self.host = User.objects.create_user(username="host", password="testpass")
+        self.quiz = Quiz.objects.create(
+            title="Session Quiz", creator=self.host, status=Quiz.ACTIVE
+        )
+        self.session = GameSession.objects.create(quiz=self.quiz, host=self.host)
 
     def test_pin_generated_on_creation(self):
-        """При создании игровой сессии генерируется 6-значный PIN-код."""
-        session = GameSession.objects.create(quiz_id=1, host_id=1)
-        self.assertIsNotNone(session.pin)
-        self.assertEqual(len(session.pin), 6)
-        self.assertTrue(session.pin.isdigit())
+        self.assertIsNotNone(self.session.pin)
+        self.assertEqual(len(self.session.pin), 6)
+        self.assertTrue(self.session.pin.isdigit())
 
     def test_default_status_is_waiting(self):
-        """По умолчанию статус сессии — 'waiting' (ожидание игроков)."""
-        session = GameSession.objects.create(quiz_id=1, host_id=1)
-        self.assertEqual(session.status, GameSession.WAITING)
+        self.assertEqual(self.session.status, GameSession.WAITING)
 
     def test_str_contains_pin(self):
-        """Строковое представление сессии содержит её PIN-код."""
-        session = GameSession.objects.get(pk=1)
-        self.assertIn(session.pin, str(session))
+        self.assertIn(self.session.pin, str(self.session))
 
 
 class TestGameParticipant(TestCase):
-    """Тесты для модели GameParticipant (участник игровой сессии)."""
+    """Тесты для модели GameParticipant."""
 
-    fixtures = ["db.json"]
+    def setUp(self):
+        self.user = User.objects.create_user(username="player", password="testpass")
+        self.host = User.objects.create_user(username="host2", password="testpass")
+        self.quiz = Quiz.objects.create(
+            title="Participant Quiz", creator=self.host, status=Quiz.ACTIVE
+        )
+        self.session = GameSession.objects.create(quiz=self.quiz, host=self.host)
 
     def test_default_values(self):
-        """Проверка значений по умолчанию: score=0, is_answered=False, joined_at заполняется."""
-        session = GameSession.objects.get(pk=1)
-        participant = GameParticipant.objects.create(session=session, user_id=1)
+        participant = GameParticipant.objects.create(
+            session=self.session, user=self.user
+        )
         self.assertEqual(participant.score, 0)
         self.assertFalse(participant.is_answered)
         self.assertIsNotNone(participant.joined_at)

@@ -5,17 +5,20 @@ from django.test import TestCase, Client
 from django.urls import reverse
 
 
-# Create your tests here.
 class ProfileViewsTest(TestCase):
     """Набор тестов для всех представлений, связанных с профилем пользователя."""
-
-    fixtures = ["db.json"]
 
     def setUp(self):
         """Настройка тестового окружения: создание клиента и пользователей разных ролей."""
         self.client = Client()
-        self.student = User.objects.get(pk=1)
-        self.teacher = User.objects.get(pk=2)
+        # Явно создаём студента и учителя (раньше подгружались из фикстуры с pk=1 и pk=2)
+        self.student = User.objects.create_user(
+            username="student", password="studentpass"
+        )
+        self.teacher = User.objects.create_user(
+            username="teacher", password="teacherpass"
+        )
+        # Администратор создаётся как и раньше
         self.admin = User.objects.create_superuser(
             username="admin", email="a@a.com", password="adminpass"
         )
