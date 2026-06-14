@@ -40,6 +40,7 @@ from main.views_features.views_lobby import (
     join_lobby_view,
     start_game_view,
     session_play_view,
+    submit_answer_view,
     session_results_teacher_view,
     quiz_sessions_list_view,
     advance_question_view,
@@ -94,6 +95,7 @@ urlpatterns = [
     path("lobby/<str:pin>/start/", start_game_view, name="start_game"),
     path("lobby/<str:pin>/api/advance-question/", advance_question_view, name="advance_question"),
     path("session/<str:pin>/play/", session_play_view, name="session_play"),
+    path("session/<str:pin>/answer/", submit_answer_view, name="submit_answer"),
     path(
         "quiz/<int:quiz_id>/sessions/",
         quiz_sessions_list_view,

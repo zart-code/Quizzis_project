@@ -9,141 +9,12 @@
         <div class="sp-header">
             <div class="sp-quiz-title">{{ session.quiz.title }}</div>
             <div class="sp-progress-row">
-                <span class="sp-progress-text">Вопрос {{ index|add:1 }} из {{ total }}</span>
+                <span class="sp-progress-text">Вопрос <span id="sp-q-num">{{ index|add:1 }}</span> из <span id="sp-q-total">{{ total }}</span></span>
             </div>
         </div>
 
-        {% if answered %}
-        <div class="card sp-waiting-card">
-            <div class="sp-waiting-icon">⏳</div>
-            <h2 class="sp-waiting-title">Ответ принят!</h2>
-            <p class="sp-waiting-sub">Ожидайте, учитель переключит на следующий вопрос...</p>
-            <div class="sp-waiting-dots"><span></span><span></span><span></span></div>
-        </div>
-        <script>
-        // Ожидаем переключения вопроса учителем через WebSocket.
-        const currentQuestion = {{ index }};
-
-        function setupWaitingWs(){
-            const ws = new LobbyWebSocket("{{ session.pin }}");
-            ws.on('player_state', function(data){
-                // Вопрос сменился или игра завершена — перезагружаем страницу.
-                if (data.current_question !== currentQuestion || data.status === 'finished') {
-                    ws.close();
-                    window.location.reload();
-                }
-            });
-            ws.on('question_advanced', function(){
-                ws.close();
-                window.location.reload();
-            });
-        }
-
-        if (window.LobbyWebSocket) {
-            setupWaitingWs();
-        } else {
-            window.addEventListener('DOMContentLoaded', setupWaitingWs);
-        }
-        </script>
-        {% else %}
-        <div class="card sp-question-card">
-            {% if question.time_limit %}
-            <div class="sp-timer-row">
-                <div class="sp-timer-bar-bg"><div class="sp-timer-bar" id="timer-bar"></div></div>
-                <span class="sp-timer-num" id="timer">{{ remaining_seconds }}</span>
-            </div>
-            {% endif %}
-            <h2 class="sp-question-text">{{ question.text }}</h2>
-
-            <form method="post" id="answer-form">
-                {% csrf_token %}
-                <input type="hidden" name="timed_out" value="0" id="timed-out-field">
-
-                {% if question.question_type == 'single' %}
-                <div class="sp-answers-grid">
-                    {% for answer in question.answers.all %}
-                    <label class="sp-answer-label">
-                        <span class="sp-answer-letter"></span>
-                        <input type="radio" name="answer" value="{{ answer.id }}" required class="sp-radio">
-                        <span class="sp-answer-text">{{ answer.text }}</span>
-                    </label>
-                    {% endfor %}
-                </div>
-                {% elif question.question_type == 'multiple' %}
-                <div class="sp-answers-grid">
-                    {% for answer in question.answers.all %}
-                    <label class="sp-answer-label">
-                        <span class="sp-answer-letter"></span>
-                        <input type="checkbox" name="answer" value="{{ answer.id }}" class="sp-check">
-                        <span class="sp-answer-text">{{ answer.text }}</span>
-                    </label>
-                    {% endfor %}
-                </div>
-                {% elif question.question_type == 'number' %}
-                <div class="sp-input-row">
-                    <input type="number" step="any" name="answer_number" class="form-control" placeholder="Введите число..." required>
-                </div>
-                {% elif question.question_type == 'text' %}
-                <div class="sp-input-row">
-                    <input type="text" name="answer_text" class="form-control" placeholder="Введите ответ...">
-                    <p class="sp-hint">💬 Проверяется вручную</p>
-                </div>
-                {% endif %}
-
-                <div class="sp-submit-row">
-                    <button type="submit" class="btn btn-primary btn-large">✅ Ответить</button>
-                </div>
-            </form>
-        </div>
-
-        <script>
-        document.addEventListener('DOMContentLoaded',function(){
-            // Fill ABCD letters
-            var letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-            document.querySelectorAll('.sp-answer-letter').forEach(function(el,i){el.textContent=letters[i]||'';});
-
-            const totalTime={{ question.time_limit }};
-            const timeLimit={{ remaining_seconds }};
-            const timerEl=document.getElementById('timer');
-            const bar=document.getElementById('timer-bar');
-            const form=document.getElementById('answer-form');
-            const timedOut=document.getElementById('timed-out-field');
-            let remaining=timeLimit;
-            if(bar) bar.style.width=(remaining/totalTime*100)+'%';
-
-            // Warn player before leaving the game
-            function beforeUnloadHandler(e){
-                e.preventDefault();
-                e.returnValue='Вы точно хотите выйти? Сейчас идет игра!';
-            }
-            window.addEventListener('beforeunload',beforeUnloadHandler);
-
-            const interval=setInterval(function(){
-                remaining--;
-                if(timerEl) timerEl.textContent=remaining;
-                if(bar) bar.style.width=(remaining/totalTime*100)+'%';
-                if(remaining<=5 && bar) bar.style.background='linear-gradient(90deg,#EF4444,#F59E0B)';
-                if(remaining<=0){
-                    clearInterval(interval);
-                    // Отключаем beforeunload ДО отправки при timeout
-                    window.removeEventListener('beforeunload',beforeUnloadHandler);
-                    timedOut.value='1';
-                    form.submit();
-                }
-            },1000);
-
-            form.addEventListener('submit',function(){
-                clearInterval(interval);
-                window.removeEventListener('beforeunload',beforeUnloadHandler);
-            });
-
-            // Handle back/forward cache restoration (bfcache)
-            window.addEventListener('pageshow',function(e){
-                if(e.persisted){window.location.reload();}
-            });
-        });
-        </script>
-        {% endif %}
+        <!-- Сюда отрисовывается вопрос или экран ожидания (меняется на месте) -->
+        <div id="sp-content"></div>
     </div>
 </div>
 
@@ -185,4 +56,213 @@
 
 {% block extra_js %}
 <script src="{% static 'js/lobby_ws.js' %}"></script>
+<script>
+(function(){
+    "use strict";
+
+    const PIN = "{{ session.pin }}";
+    const SUBMIT_URL = "{{ submit_url }}";
+    const RESULTS_URL = "/session/{{ session.pin }}/play/";
+    const CSRF = "{{ csrf_token }}";
+    const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    // Начальное состояние (с сервера при первой загрузке страницы).
+    const INITIAL = {
+        index: {{ index }},
+        answered: {{ answered|yesno:"true,false" }},
+        time_remaining: {{ remaining_seconds }},
+    };
+
+    const content = document.getElementById('sp-content');
+    const qNumEl = document.getElementById('sp-q-num');
+    const qTotalEl = document.getElementById('sp-q-total');
+
+    let currentIndex = INITIAL.index;   // какой вопрос сейчас на экране
+    let answered = INITIAL.answered;    // ответил ли игрок на текущий
+    let timerId = null;                 // id таймера обратного отсчёта
+    let navigatingAway = false;         // уходим на страницу результатов
+
+    // Не пускаем игрока случайно закрыть вкладку во время игры.
+    function beforeUnloadHandler(e){
+        if (navigatingAway) return;
+        e.preventDefault();
+        e.returnValue = 'Вы точно хотите выйти? Сейчас идёт игра!';
+    }
+    window.addEventListener('beforeunload', beforeUnloadHandler);
+
+    function clearTimer(){
+        if (timerId){ clearInterval(timerId); timerId = null; }
+    }
+
+    // ── Экран ожидания (ответ принят, ждём учителя) ──
+    function renderWaiting(){
+        clearTimer();
+        content.innerHTML =
+            '<div class="card sp-waiting-card">' +
+              '<div class="sp-waiting-icon">⏳</div>' +
+              '<h2 class="sp-waiting-title">Ответ принят!</h2>' +
+              '<p class="sp-waiting-sub">Ожидайте, учитель переключит на следующий вопрос...</p>' +
+              '<div class="sp-waiting-dots"><span></span><span></span><span></span></div>' +
+            '</div>';
+    }
+
+    // ── Экран вопроса ──
+    function renderQuestion(q, timeRemaining){
+        clearTimer();
+        qNumEl.textContent = q.number;
+
+        let answersHtml = '';
+        if (q.type === 'single' || q.type === 'multiple') {
+            const inputType = q.type === 'single' ? 'radio' : 'checkbox';
+            const inputClass = q.type === 'single' ? 'sp-radio' : 'sp-check';
+            answersHtml = '<div class="sp-answers-grid">' +
+                q.options.map(function(opt, i){
+                    return '<label class="sp-answer-label">' +
+                        '<span class="sp-answer-letter">' + (LETTERS[i] || '') + '</span>' +
+                        '<input type="' + inputType + '" name="answer" value="' + opt.id + '" class="' + inputClass + '"' +
+                            (q.type === 'single' ? ' required' : '') + '>' +
+                        '<span class="sp-answer-text">' + escapeHtml(opt.text) + '</span>' +
+                    '</label>';
+                }).join('') +
+            '</div>';
+        } else if (q.type === 'number') {
+            answersHtml = '<div class="sp-input-row">' +
+                '<input type="number" step="any" name="answer_number" class="form-control" placeholder="Введите число..." required>' +
+            '</div>';
+        } else if (q.type === 'text') {
+            answersHtml = '<div class="sp-input-row">' +
+                '<input type="text" name="answer_text" class="form-control" placeholder="Введите ответ...">' +
+                '<p class="sp-hint">💬 Проверяется вручную</p>' +
+            '</div>';
+        }
+
+        const timerHtml = q.time_limit
+            ? '<div class="sp-timer-row">' +
+                '<div class="sp-timer-bar-bg"><div class="sp-timer-bar" id="timer-bar"></div></div>' +
+                '<span class="sp-timer-num" id="timer">' + timeRemaining + '</span>' +
+              '</div>'
+            : '';
+
+        content.innerHTML =
+            '<div class="card sp-question-card">' +
+                timerHtml +
+                '<h2 class="sp-question-text">' + escapeHtml(q.text) + '</h2>' +
+                '<form id="answer-form">' +
+                    '<input type="hidden" name="timed_out" value="0" id="timed-out-field">' +
+                    answersHtml +
+                    '<div class="sp-submit-row">' +
+                        '<button type="submit" class="btn btn-primary btn-large">✅ Ответить</button>' +
+                    '</div>' +
+                '</form>' +
+            '</div>';
+
+        const form = document.getElementById('answer-form');
+        form.addEventListener('submit', function(e){
+            e.preventDefault();
+            submitAnswer(form, false);
+        });
+
+        // Таймер обратного отсчёта (локальный, ничего не опрашивает).
+        if (q.time_limit) {
+            const totalTime = q.time_limit;
+            const timerEl = document.getElementById('timer');
+            const bar = document.getElementById('timer-bar');
+            let remaining = timeRemaining;
+            if (bar) bar.style.width = (remaining / totalTime * 100) + '%';
+            timerId = setInterval(function(){
+                remaining--;
+                if (timerEl) timerEl.textContent = remaining;
+                if (bar) bar.style.width = Math.max(0, remaining / totalTime * 100) + '%';
+                if (remaining <= 5 && bar) bar.style.background = 'linear-gradient(90deg,#EF4444,#F59E0B)';
+                if (remaining <= 0){
+                    clearTimer();
+                    document.getElementById('timed-out-field').value = '1';
+                    submitAnswer(form, true);
+                }
+            }, 1000);
+        }
+    }
+
+    // ── Отправка ответа через fetch (без перезагрузки) ──
+    function submitAnswer(form, timedOut){
+        if (answered) return;
+        answered = true;          // блокируем повторную отправку
+        clearTimer();
+
+        const data = new FormData(form);
+        if (timedOut) data.set('timed_out', '1');
+
+        fetch(SUBMIT_URL, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': CSRF },
+            body: data
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            renderWaiting();
+        })
+        .catch(function(err){
+            console.error('Ошибка отправки ответа:', err);
+            // Разрешаем повторить при сетевой ошибке.
+            answered = false;
+        });
+    }
+
+    // ── Применяем состояние, пришедшее по WebSocket ──
+    function applyState(data){
+        if (data.kicked){
+            navigatingAway = true;
+            window.removeEventListener('beforeunload', beforeUnloadHandler);
+            window.location.href = '/?kicked=1';
+            return;
+        }
+
+        if (data.total_questions) qTotalEl.textContent = data.total_questions;
+
+        // Игра завершена — переходим на страницу результатов (одна навигация).
+        if (data.status === 'finished'){
+            navigatingAway = true;
+            window.removeEventListener('beforeunload', beforeUnloadHandler);
+            window.location.href = RESULTS_URL;
+            return;
+        }
+
+        if (data.status !== 'in_progress' || !data.question){
+            return;
+        }
+
+        // Вопрос сменился ИЛИ это первый рендер.
+        if (data.question.index !== currentIndex){
+            currentIndex = data.question.index;
+            answered = data.has_answered;
+        } else {
+            answered = data.has_answered;
+        }
+
+        if (answered){
+            renderWaiting();
+        } else {
+            renderQuestion(data.question, data.time_remaining);
+        }
+    }
+
+    // ── Одно WebSocket-соединение на всю игру ──
+    const ws = new LobbyWebSocket(PIN);
+    ws.on('player_state', applyState);
+    // Учитель переключил вопрос — сервер пришлёт свежий player_state,
+    // но на всякий случай запрашиваем синхронизацию.
+    ws.on('question_advanced', function(){ ws.sync(); });
+    ws.on('game_started', function(){ ws.sync(); });
+    ws.on('kicked', function(){
+        navigatingAway = true;
+        window.removeEventListener('beforeunload', beforeUnloadHandler);
+        window.location.href = '/?kicked=1';
+    });
+
+    // Если страницу восстановили из bfcache — пересинхронизируемся.
+    window.addEventListener('pageshow', function(e){
+        if (e.persisted) ws.sync();
+    });
+})();
+</script>
 {% endblock %}

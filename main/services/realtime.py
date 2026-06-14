@@ -141,14 +141,22 @@ def build_game_stats(session: GameSession) -> dict:
 
 
 def build_player_state(session: GameSession, participant_id: int | None) -> dict:
-    """Состояние сессии глазами игрока.
+    """Состояние сессии глазами игрока (для единого экрана игры).
 
     `kicked` — участника больше нет в лобби (его выгнали или сессию
     пересоздали). `has_answered` — есть ли реальный ответ игрока на
-    текущий вопрос (если нет, значит вопрос уже переключился).
+    текущий вопрос. `question` — данные текущего вопроса, чтобы игрок
+    мог отрисовать его без перезагрузки страницы.
     """
     kicked = True
-    has_answered = True
+    has_answered = False
+    score = 0
+    question_payload = None
+    time_remaining = 0
+
+    questions = get_session_questions(session)
+    total_questions = len(questions)
+    idx = session.current_question
 
     participant = None
     if participant_id:
@@ -156,9 +164,8 @@ def build_player_state(session: GameSession, participant_id: int | None) -> dict
 
     if participant is not None:
         kicked = False
-        questions = get_session_questions(session)
-        idx = session.current_question
-        if 0 <= idx < len(questions):
+        score = participant.score
+        if 0 <= idx < total_questions:
             current_question = questions[idx]
             answer_check = {"session": session, "participant": participant}
             if session.revision_id:
@@ -167,11 +174,39 @@ def build_player_state(session: GameSession, participant_id: int | None) -> dict
                 answer_check["question"] = current_question
             has_answered = GameAnswer.objects.filter(**answer_check).exists()
 
+    # Данные текущего вопроса (только если игра идёт и вопрос существует).
+    if (
+        session.status == GameSession.IN_PROGRESS
+        and 0 <= idx < total_questions
+    ):
+        q = questions[idx]
+        question_payload = {
+            "index": idx,
+            "number": idx + 1,
+            "text": q.text,
+            "type": q.question_type,
+            "time_limit": q.time_limit,
+            "options": [
+                {"id": a.id, "text": a.text} for a in q.answers.all()
+            ],
+        }
+        if session.current_question_started_at:
+            elapsed = int(
+                (timezone.now() - session.current_question_started_at).total_seconds()
+            )
+            time_remaining = max(0, q.time_limit - elapsed)
+        else:
+            time_remaining = q.time_limit
+
     return {
         "status": session.status,
         "current_question": session.current_question,
+        "total_questions": total_questions,
         "kicked": kicked,
         "has_answered": has_answered,
+        "score": score,
+        "question": question_payload,
+        "time_remaining": time_remaining,
     }
 
 
