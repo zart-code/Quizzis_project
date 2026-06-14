@@ -1,6 +1,6 @@
 from django import forms
 
-from apps.main.models import QuizReport
+from apps.quiz.models import QuizReport
 
 
 class QuizReportForm(forms.ModelForm):

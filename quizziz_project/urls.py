@@ -20,29 +20,11 @@ from apps.main.views_features.views_profile import (
     profile_history_view,
     edit_profile_view,
 )
-from apps.main.views_features.views_quiz import (
-    create_quiz_view,
-    my_quizzes_view,
-    toggle_quiz_status_view,
-    delete_quiz_view,
-    play_quiz_view,
-    edit_quiz_view,
-    report_quiz_view,
-)
-from apps.main.views_features.views_lobby import (
-    create_lobby_view,
-    lobby_view,
-    toggle_lock_view,
-    delete_session_view,
-    kick_player_view,
-    join_lobby_view,
-    start_game_view,
-    session_play_view,
-    submit_answer_view,
-    session_results_teacher_view,
-    quiz_sessions_list_view,
-    advance_question_view,
-)
+from apps.quiz.views import create_quiz_view, my_quizzes_view, toggle_quiz_status_view, delete_quiz_view, \
+    report_quiz_view, play_quiz_view, edit_quiz_view
+from apps.game_lobby.views import create_lobby_view, lobby_view, toggle_lock_view, delete_session_view, \
+    kick_player_view, join_lobby_view, start_game_view, session_play_view, submit_answer_view, quiz_sessions_list_view, \
+    advance_question_view, session_results_teacher_view
 from apps.main.views_features.views_admin import (
     admin_panel_view,
     admin_ban_user_view,

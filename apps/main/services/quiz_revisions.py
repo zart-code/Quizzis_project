@@ -1,11 +1,6 @@
 from django.db import transaction
 from django.db.models import Max
-from apps.main.models import (
-    Question,
-    QuizRevision,
-    RevisionAnswer,
-    RevisionQuestion,
-)
+from apps.quiz.models import QuizRevision, Question, RevisionQuestion, RevisionAnswer
 
 
 def get_current_revision(quiz):

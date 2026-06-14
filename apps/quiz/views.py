@@ -1,25 +1,21 @@
-"""Views для квизов"""
-
 import logging
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from apps.main.forms_features.forms_reports import QuizReportForm
-from apps.main.models import Quiz, QuizReport, QuizResult
-from apps.registration.models import Profile
-from django.views.decorators.http import require_POST
-from django.utils import timezone
-from apps.main.services.quiz_revisions import (
-    build_quiz_form_payload,
-    build_quiz_payload_for_edit,
-    collect_question_payloads_from_post,
-    create_revision_from_payloads,
-    get_current_revision,
-    get_quiz_max_score,
-    get_quiz_questions,
-)
-from apps.main.services.quiz_scoring import score_question
 
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.utils import timezone
+from django.views.decorators.http import require_POST
+
+from apps.quiz.models import Quiz, QuizReport, QuizResult, GameSession, GameParticipant
+from apps.main.services.quiz_revisions import collect_question_payloads_from_post, build_quiz_form_payload, \
+    create_revision_from_payloads, get_quiz_questions, get_current_revision, get_quiz_max_score, \
+    build_quiz_payload_for_edit
+from apps.main.services.quiz_scoring import score_question
+from apps.quiz.forms_reports import QuizReportForm
+from apps.registration.models import Profile
+
+# Create your views here.
 logger = logging.getLogger(__name__)
 
 
@@ -288,7 +284,6 @@ def play_quiz_view(request, quiz_id):
             guest_user_id = request.session.get("guest_user_id")
             if guest_user_id:
                 from django.contrib.auth.models import User
-                from apps.main.models import GameParticipant, GameSession
 
                 try:
                     guest_user = User.objects.get(pk=guest_user_id)

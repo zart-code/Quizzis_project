@@ -17,7 +17,7 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.utils import timezone
 
-from apps.main.models import GameAnswer, GameSession
+from apps.quiz.models import Quiz, QuizReport, GameSession, GameAnswer
 from apps.main.services.quiz_revisions import (
     get_session_questions,
 )
@@ -259,7 +259,6 @@ def build_admin_stats() -> dict:
     """Сводная статистика для карточек админ-панели."""
     from django.contrib.auth.models import User
 
-    from apps.main.models import Quiz, QuizReport
     from apps.registration import Profile
 
     return {

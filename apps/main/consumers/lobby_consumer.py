@@ -14,7 +14,7 @@ from __future__ import annotations
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
-from apps.main.models import GameSession
+from apps.quiz.models import GameSession
 from apps.main.services import realtime
 
 

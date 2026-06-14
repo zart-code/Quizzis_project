@@ -5,6 +5,9 @@ import django.db.models.deletion
 from django.conf import settings
 from django.db import migrations, models
 
+from apps.game_lobby import models
+from apps.quiz import models
+
 
 class Migration(migrations.Migration):
 
@@ -124,7 +127,7 @@ class Migration(migrations.Migration):
                 (
                     "pin",
                     models.CharField(
-                        default=apps.main.models_packet.game_models.generate_pin,
+                        default=models.generate_pin,
                         max_length=6,
                         unique=True,
                         verbose_name="PIN-код",

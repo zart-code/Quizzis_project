@@ -7,7 +7,8 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Avg, Count, Q
-from apps.main.models import Achievement, Quiz, QuizResult, UserAchievement
+from apps.main.models import Achievement, UserAchievement
+from apps.quiz.models import Quiz, QuizResult
 
 logger = logging.getLogger(__name__)
 

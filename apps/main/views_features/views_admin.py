@@ -11,7 +11,7 @@ from django.contrib import messages
 from django.db import transaction
 from django.db.models import Count, Case, When, IntegerField, F, Q
 from django.utils import timezone
-from apps.main.models import Quiz, QuizReport
+from apps.quiz.models import Quiz, QuizReport
 from apps.registration.models import Profile
 
 logger = logging.getLogger(__name__)
