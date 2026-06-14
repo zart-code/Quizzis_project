@@ -11,10 +11,12 @@ SECRET_KEY = "dgdfddthry5675t76m8o-=9090070=+-+*g"
 
 DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = ['127.0.0.1',
-                 '161.104.33.94',
-                 'quizzis.ru',
-                 'www.quizzis.ru',]
+ALLOWED_HOSTS = [
+    "127.0.0.1",
+    "161.104.33.94",
+    "quizzis.ru",
+    "www.quizzis.ru",
+]
 
 INSTALLED_APPS = [
     # Daphne must come first so it overrides the runserver command with the
@@ -128,24 +130,27 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / 'static'
+STATIC_ROOT = BASE_DIR / "static"
 
 STATICFILES_DIRS = [BASE_DIR / "main" / "static"]
 
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-CSRF_TRUSTED_ORIGINS = ["https://quizzis.ru",
-                        "https://www.quizzis.ru",
-                        ]
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+CSRF_TRUSTED_ORIGINS = [
+    "https://quizzis.ru",
+    "https://www.quizzis.ru",
+]
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # ============================================================
 # OPENROUTER API (генерация квизов)
 # ============================================================
-OPENROUTER_API_KEY = "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"
+OPENROUTER_API_KEY = (
+    "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"
+)
 
 # Директория для логов
 LOG_DIR = BASE_DIR / "logs"

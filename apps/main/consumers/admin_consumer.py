@@ -30,9 +30,7 @@ class AdminConsumer(AsyncJsonWebsocketConsumer):
         await self.send_json(await self._snapshot())
 
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(
-            realtime.ADMIN_GROUP, self.channel_name
-        )
+        await self.channel_layer.group_discard(realtime.ADMIN_GROUP, self.channel_name)
 
     async def receive_json(self, content, **kwargs):
         if content.get("action") == "sync":

@@ -111,15 +111,17 @@ def _call_openrouter(system_prompt: str, user_prompt: str) -> dict:
             "error": "API ключ OpenRouter не настроен. Добавьте OPENROUTER_API_KEY в settings.py",
         }
 
-    payload = json.dumps({
-        "model": OPENROUTER_MODEL,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-        "temperature": 0.7,
-        "response_format": {"type": "json_object"},
-    }).encode("utf-8")
+    payload = json.dumps(
+        {
+            "model": OPENROUTER_MODEL,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            "temperature": 0.7,
+            "response_format": {"type": "json_object"},
+        }
+    ).encode("utf-8")
 
     req = urllib.request.Request(
         OPENROUTER_URL,
@@ -247,9 +249,7 @@ def generate_quiz_from_questions(
     questions: list[str],
 ) -> dict:
     """Шаг 2: По списку вопросов генерирует полный JSON квиза с ответами."""
-    questions_list = "\n".join(
-        f"{i}. {q}" for i, q in enumerate(questions, start=1)
-    )
+    questions_list = "\n".join(f"{i}. {q}" for i, q in enumerate(questions, start=1))
 
     user_prompt = (
         f"Название квиза: «{title}»\n\n"
@@ -334,17 +334,21 @@ def _validate_and_normalize(quiz_data: dict, fallback_title: str) -> dict:
             for j, opt_id in enumerate(option_ids):
                 if j < len(raw_options):
                     opt = raw_options[j]
-                    options.append({
-                        "id": opt_id,
-                        "text": str(opt.get("text", f"Вариант {opt_id}")),
-                        "isCorrect": bool(opt.get("isCorrect", False)),
-                    })
+                    options.append(
+                        {
+                            "id": opt_id,
+                            "text": str(opt.get("text", f"Вариант {opt_id}")),
+                            "isCorrect": bool(opt.get("isCorrect", False)),
+                        }
+                    )
                 else:
-                    options.append({
-                        "id": opt_id,
-                        "text": f"Вариант {opt_id}",
-                        "isCorrect": False,
-                    })
+                    options.append(
+                        {
+                            "id": opt_id,
+                            "text": f"Вариант {opt_id}",
+                            "isCorrect": False,
+                        }
+                    )
 
             if not any(o["isCorrect"] for o in options):
                 options[0]["isCorrect"] = True

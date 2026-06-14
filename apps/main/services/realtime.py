@@ -40,10 +40,7 @@ ADMIN_GROUP = "admin_panel"
 def build_player_list(session: GameSession) -> dict:
     """Список игроков для экрана ожидания хоста."""
     participants = session.participants.select_related("user").all()
-    players = [
-        {"id": p.id, "username": p.get_display_name()}
-        for p in participants
-    ]
+    players = [{"id": p.id, "username": p.get_display_name()} for p in participants]
     return {
         "players": players,
         "count": len(players),
@@ -113,8 +110,7 @@ def build_game_stats(session: GameSession) -> dict:
     current_options = []
     if 0 <= current_q < total_questions:
         current_options = [
-            {"id": ao.id, "text": ao.text}
-            for ao in questions[current_q].answers.all()
+            {"id": ao.id, "text": ao.text} for ao in questions[current_q].answers.all()
         ]
 
     time_remaining = 0
@@ -174,10 +170,7 @@ def build_player_state(session: GameSession, participant_id: int | None) -> dict
             has_answered = GameAnswer.objects.filter(**answer_check).exists()
 
     # Данные текущего вопроса (только если игра идёт и вопрос существует).
-    if (
-        session.status == GameSession.IN_PROGRESS
-        and 0 <= idx < total_questions
-    ):
+    if session.status == GameSession.IN_PROGRESS and 0 <= idx < total_questions:
         q = questions[idx]
         question_payload = {
             "index": idx,
@@ -185,9 +178,7 @@ def build_player_state(session: GameSession, participant_id: int | None) -> dict
             "text": q.text,
             "type": q.question_type,
             "time_limit": q.time_limit,
-            "options": [
-                {"id": a.id, "text": a.text} for a in q.answers.all()
-            ],
+            "options": [{"id": a.id, "text": a.text} for a in q.answers.all()],
         }
         if session.current_question_started_at:
             elapsed = int(
@@ -362,8 +353,6 @@ def broadcast_admin_update() -> None:
     if channel_layer is None:
         return
     try:
-        async_to_sync(channel_layer.group_send)(
-            ADMIN_GROUP, {"type": "admin_changed"}
-        )
+        async_to_sync(channel_layer.group_send)(ADMIN_GROUP, {"type": "admin_changed"})
     except Exception:  # noqa: BLE001
         pass

@@ -20,11 +20,29 @@ from apps.main.views_features.views_profile import (
     profile_history_view,
     edit_profile_view,
 )
-from apps.quiz.views import create_quiz_view, my_quizzes_view, toggle_quiz_status_view, delete_quiz_view, \
-    report_quiz_view, play_quiz_view, edit_quiz_view
-from apps.game_lobby.views import create_lobby_view, lobby_view, toggle_lock_view, delete_session_view, \
-    kick_player_view, join_lobby_view, start_game_view, session_play_view, submit_answer_view, quiz_sessions_list_view, \
-    advance_question_view, session_results_teacher_view
+from apps.quiz.views import (
+    create_quiz_view,
+    my_quizzes_view,
+    toggle_quiz_status_view,
+    delete_quiz_view,
+    report_quiz_view,
+    play_quiz_view,
+    edit_quiz_view,
+)
+from apps.game_lobby.views import (
+    create_lobby_view,
+    lobby_view,
+    toggle_lock_view,
+    delete_session_view,
+    kick_player_view,
+    join_lobby_view,
+    start_game_view,
+    session_play_view,
+    submit_answer_view,
+    quiz_sessions_list_view,
+    advance_question_view,
+    session_results_teacher_view,
+)
 from apps.main.views_features.views_admin import (
     admin_panel_view,
     admin_ban_user_view,
@@ -69,11 +87,19 @@ urlpatterns = [
     path("lobby/<str:pin>/", lobby_view, name="lobby"),
     path("lobby/<str:pin>/lock/", toggle_lock_view, name="toggle_lock"),
     path("lobby/<str:pin>/delete/", delete_session_view, name="delete_session"),
-    path("lobby/<str:pin>/api/kick/<int:participant_id>/", kick_player_view, name="kick_player"),
+    path(
+        "lobby/<str:pin>/api/kick/<int:participant_id>/",
+        kick_player_view,
+        name="kick_player",
+    ),
     path("join/", join_by_code, name="join_by_code"),
     path("join/<str:pin>/", join_lobby_view, name="join_lobby"),
     path("lobby/<str:pin>/start/", start_game_view, name="start_game"),
-    path("lobby/<str:pin>/api/advance-question/", advance_question_view, name="advance_question"),
+    path(
+        "lobby/<str:pin>/api/advance-question/",
+        advance_question_view,
+        name="advance_question",
+    ),
     path("session/<str:pin>/play/", session_play_view, name="session_play"),
     path("session/<str:pin>/answer/", submit_answer_view, name="submit_answer"),
     path(
@@ -127,10 +153,18 @@ urlpatterns = [
     ),
     # ИИ-генерация квизов
     path("quiz/ai-generate/", ai_generate_page_view, name="ai_generate_page"),
-    path("quiz/ai-generate/questions/", ai_generate_questions_view, name="ai_generate_questions"),
+    path(
+        "quiz/ai-generate/questions/",
+        ai_generate_questions_view,
+        name="ai_generate_questions",
+    ),
     path("quiz/ai-generate/quiz/", ai_generate_quiz_view, name="ai_generate_quiz"),
     path("quiz/ai-generate/save/", ai_save_quiz_view, name="ai_save_quiz"),
-    re_path(r"^static/(?P<path>.*)$", serve, {"document_root": settings.BASE_DIR / "main" / "static"}),
+    re_path(
+        r"^static/(?P<path>.*)$",
+        serve,
+        {"document_root": settings.BASE_DIR / "main" / "static"},
+    ),
 ]
 
 

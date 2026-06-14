@@ -45,7 +45,11 @@ def admin_panel_view(request):
     ).count()
 
     users = (
-        User.objects.annotate(quiz_count=Count("created_quizzes", filter=Q(created_quizzes__is_deleted=False)))
+        User.objects.annotate(
+            quiz_count=Count(
+                "created_quizzes", filter=Q(created_quizzes__is_deleted=False)
+            )
+        )
         .select_related("profile")
         .order_by("id")
     )
@@ -65,14 +69,18 @@ def admin_panel_view(request):
         )
         .order_by("-created_at")
     )
-    reports = QuizReport.objects.filter(
-        quiz__is_deleted=False,
-    ).select_related(
-        "quiz",
-        "quiz__creator",
-        "reporter",
-        "reviewed_by",
-    ).order_by("-created_at")[:20]
+    reports = (
+        QuizReport.objects.filter(
+            quiz__is_deleted=False,
+        )
+        .select_related(
+            "quiz",
+            "quiz__creator",
+            "reporter",
+            "reviewed_by",
+        )
+        .order_by("-created_at")[:20]
+    )
 
     context = {
         "total_users": total_users,
@@ -145,7 +153,7 @@ def admin_change_user_role_view(request, user_id):
         )
         messages.success(
             request,
-            f"Роль пользователя {target.username} изменена на {'Учитель' if new_role == Profile.TEACHER else 'Ученик'}."
+            f"Роль пользователя {target.username} изменена на {'Учитель' if new_role == Profile.TEACHER else 'Ученик'}.",
         )
     return redirect("admin_panel")
 

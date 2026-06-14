@@ -11,8 +11,15 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from apps.main.services import realtime
-from apps.main.services.guest_cleanup import resolve_display_name_from_user, cleanup_guest_users
-from apps.main.services.quiz_revisions import get_current_revision, get_session_questions, get_session_max_score
+from apps.main.services.guest_cleanup import (
+    resolve_display_name_from_user,
+    cleanup_guest_users,
+)
+from apps.main.services.quiz_revisions import (
+    get_current_revision,
+    get_session_questions,
+    get_session_max_score,
+)
 from apps.main.services.quiz_scoring import score_question
 from apps.quiz.models import Quiz, QuizResult, GameSession, GameParticipant, GameAnswer
 
@@ -457,7 +464,9 @@ def submit_answer_view(request, pin):
             id=stored_participant_id, session=session
         ).first()
     if participant is None:
-        return JsonResponse({"success": False, "error": "Участник не найден"}, status=403)
+        return JsonResponse(
+            {"success": False, "error": "Участник не найден"}, status=403
+        )
 
     if session.status != GameSession.IN_PROGRESS:
         return JsonResponse({"success": False, "error": "Игра не активна"}, status=400)
@@ -465,7 +474,9 @@ def submit_answer_view(request, pin):
     questions = get_session_questions(session)
     total = len(questions)
     if not (0 <= session.current_question < total):
-        return JsonResponse({"success": False, "error": "Нет активного вопроса"}, status=400)
+        return JsonResponse(
+            {"success": False, "error": "Нет активного вопроса"}, status=400
+        )
 
     question = questions[session.current_question]
     question_started_at = session.current_question_started_at or timezone.now()
@@ -555,10 +566,14 @@ def advance_question_view(request, pin):
     session = get_object_or_404(GameSession, pin=pin, host=request.user)
 
     if request.method != "POST":
-        return JsonResponse({"success": False, "error": "Метод не разрешён"}, status=405)
+        return JsonResponse(
+            {"success": False, "error": "Метод не разрешён"}, status=405
+        )
 
     if session.status == GameSession.FINISHED:
-        return JsonResponse({"success": False, "error": "Игра уже завершена"}, status=400)
+        return JsonResponse(
+            {"success": False, "error": "Игра уже завершена"}, status=400
+        )
 
     questions = get_session_questions(session)
     total_questions = len(questions)
@@ -626,10 +641,12 @@ def advance_question_view(request, pin):
         request.META.get("REMOTE_ADDR"),
     )
 
-    return JsonResponse({
-        "success": True,
-        "current_question": session.current_question,
-    })
+    return JsonResponse(
+        {
+            "success": True,
+            "current_question": session.current_question,
+        }
+    )
 
 
 @login_required(login_url="login_page")

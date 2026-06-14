@@ -77,9 +77,7 @@ class LobbyConsumerTest(TransactionTestCase):
         await communicator.receive_json_from(timeout=2)
 
         # Публикуем событие старта игры (как это делает start_game_view).
-        await database_sync_to_async(realtime.broadcast_game_started)(
-            self.session.pin
-        )
+        await database_sync_to_async(realtime.broadcast_game_started)(self.session.pin)
 
         response = await communicator.receive_json_from(timeout=2)
         self.assertEqual(response["type"], "game_started")

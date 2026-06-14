@@ -4,14 +4,28 @@
 Тесты для сервиса управления ревизиями квизов (quiz_revisions.py).
 """
 
-
 from django.http import QueryDict
 
-from apps.main.services.quiz_revisions import get_current_revision, get_quiz_questions, create_revision_from_payloads, \
-    build_revision_payload, collect_question_payloads_from_post, calculate_revision_totals, build_quiz_form_payload, \
-    build_quiz_payload_for_edit
-from apps.main.services.quiz_scoring import SingleChoiceScoringStrategy, MultipleChoiceScoringStrategy, \
-    NumberScoringStrategy, TextScoringStrategy, QuestionScoringFactory, build_submission_value, score_question
+from apps.main.services.quiz_revisions import (
+    get_current_revision,
+    get_quiz_questions,
+    create_revision_from_payloads,
+    build_revision_payload,
+    collect_question_payloads_from_post,
+    calculate_revision_totals,
+    build_quiz_form_payload,
+    build_quiz_payload_for_edit,
+)
+from apps.main.services.quiz_scoring import (
+    SingleChoiceScoringStrategy,
+    MultipleChoiceScoringStrategy,
+    NumberScoringStrategy,
+    TextScoringStrategy,
+    QuestionScoringFactory,
+    build_submission_value,
+    score_question,
+)
+
 # pylint: disable=no-member,missing-class-docstring,missing-function-docstring
 
 from apps.registration.models import Profile
