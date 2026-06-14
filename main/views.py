@@ -3,14 +3,68 @@
 # pylint: disable=no-member
 
 import logging
+from django.contrib.auth import login
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.db.models import Count, Avg, Q, F
+from .forms import CustomUserCreationForm, StyledAuthenticationForm
 from main.models_packet.quiz_models import Quiz
 from main.views_features.views_lobby import _get_request_user
 
 # Настройка логгера
 logger = logging.getLogger(__name__)
+
+
+# pylint: disable=too-many-arguments,too-many-positional-arguments
+def _handle_form(
+    request,
+    form_class,
+    template_name,
+    success_url,
+    extra_form_kwargs=None,
+    needs_request=False,
+):
+    """Создание и проверка валидности формы"""
+    if extra_form_kwargs is None:
+        extra_form_kwargs = {}
+
+    if request.method == "POST":
+        if needs_request:
+            form = form_class(request, data=request.POST)
+        else:
+            form = form_class(request.POST)
+
+        if form.is_valid():
+            if form_class == CustomUserCreationForm:
+                user = form.save()
+                login(request, user)
+                logger.info(
+                    "Успешная регистрация пользователя: %s (IP: %s)",
+                    user.username,
+                    request.META.get("REMOTE_ADDR"),
+                )
+            elif form_class == StyledAuthenticationForm:
+                user = form.get_user()
+                login(request, user)
+                logger.info(
+                    "Успешный вход пользователя: %s (IP: %s)",
+                    user.username,
+                    request.META.get("REMOTE_ADDR"),
+                )
+            return redirect(success_url)
+        else:
+            # Логируем ошибки валидации формы
+            logger.warning(
+                "Ошибка валидации формы %s: %s (IP: %s)",
+                form_class.__name__,
+                form.errors,
+                request.META.get("REMOTE_ADDR"),
+            )
+    else:
+        # GET-запрос: создаём пустую (несвязанную) форму
+        form = form_class(**extra_form_kwargs)
+
+    return render(request, template_name, {"form": form})
 
 
 def main_page(request):
