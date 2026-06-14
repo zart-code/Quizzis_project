@@ -1,27 +1,32 @@
 """Тесты для представлений профиля (views_profile.py)."""
 
-
 from django.contrib.auth.models import User
 from django.test import TestCase, Client
 from django.urls import reverse
 
 
-# Create your tests here.
 class ProfileViewsTest(TestCase):
     """Набор тестов для всех представлений, связанных с профилем пользователя."""
 
-    fixtures = ["db.json"]
-
-    def setUp(self):
-        """Настройка тестового окружения: создание клиента и пользователей разных ролей."""
-        self.client = Client()
-        self.student = User.objects.get(pk=1)
-        self.teacher = User.objects.get(pk=2)
-        self.admin = User.objects.create_superuser(
+    @classmethod
+    def setUpTestData(cls):
+        """Создаёт базовых пользователей, доступных во всех тестах."""
+        cls.student = User.objects.create_user(
+            username="student", password="testpass123"
+        )
+        cls.teacher = User.objects.create_user(
+            username="teacher", password="testpass123"
+        )
+        cls.admin = User.objects.create_superuser(
             username="admin", email="a@a.com", password="adminpass"
         )
-        self.admin.profile.is_admin = True
-        self.admin.profile.save()
+        # Дополнительный флаг профиля (если используется в коде)
+        cls.admin.profile.is_admin = True
+        cls.admin.profile.save()
+
+    def setUp(self):
+        """Создаёт клиент перед каждым тестом."""
+        self.client = Client()
 
     def test_profile_view_own(self):
         """Проверка: авторизованный пользователь видит свой собственный профиль."""

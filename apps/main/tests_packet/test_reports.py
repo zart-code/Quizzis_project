@@ -7,8 +7,8 @@ from django.test import Client, TestCase
 from django.urls import reverse
 
 from apps.main.forms_features.forms_reports import QuizReportForm
-from apps.quiz_game.models import Quiz, QuizRevision, QuizReport
-from apps.registration import Profile
+from apps.quiz.models import Quiz, QuizRevision, QuizReport
+from apps.registration.models import Profile
 
 
 class QuizReportTests(TestCase):

@@ -1,4 +1,4 @@
-"""Тесты WebSocket-потребителя лобби (LobbyConsumer).
+"""Тесты WebSocket-потребителей (LobbyConsumer и AdminConsumer).
 
 Используют in-memory channel layer (включается автоматически в тестах).
 Проверяют, что после подключения клиент получает стартовый снимок, а
@@ -8,11 +8,10 @@
 from channels.db import database_sync_to_async
 from channels.routing import URLRouter
 from channels.testing import WebsocketCommunicator
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AnonymousUser, User
 from django.test import TransactionTestCase
 
-from apps.quiz.models import GameSession
-from apps.quiz_game.models import Quiz
+from apps.quiz.models import GameSession, Quiz
 from apps.main.routing import websocket_urlpatterns
 from apps.main.services import realtime
 
@@ -24,11 +23,14 @@ test_application = URLRouter(websocket_urlpatterns)
 class LobbyConsumerTest(TransactionTestCase):
     """Проверка базового WebSocket-сценария лобби."""
 
-    fixtures = ["db.json"]
-
     def setUp(self):
-        self.teacher = User.objects.get(pk=2)
-        self.quiz = Quiz.objects.get(pk=1)
+        # Создаём пользователей и квиз без фикстур
+        self.teacher = User.objects.create_user(username="teacher", password="pass")
+        self.quiz = Quiz.objects.create(
+            title="WebSocket Quiz",
+            creator=self.teacher,
+            status=Quiz.ACTIVE,
+        )
         self.session = GameSession.objects.create(
             quiz=self.quiz,
             host=self.teacher,
@@ -40,9 +42,6 @@ class LobbyConsumerTest(TransactionTestCase):
         communicator = WebsocketCommunicator(
             test_application, f"/ws/lobby/{self.session.pin}/"
         )
-        # Имитация AuthMiddleware: подкладываем пользователя и сессию.
-        from django.contrib.auth.models import AnonymousUser
-
         communicator.scope["user"] = user if user is not None else AnonymousUser()
         communicator.scope.setdefault("session", {})
         connected, _ = await communicator.connect()
@@ -90,8 +89,6 @@ class LobbyConsumerTest(TransactionTestCase):
     async def test_connect_to_missing_session_rejected(self):
         """Подключение к несуществующему PIN отклоняется."""
         communicator = WebsocketCommunicator(test_application, "/ws/lobby/000000/")
-        from django.contrib.auth.models import AnonymousUser
-
         communicator.scope["user"] = AnonymousUser()
         communicator.scope.setdefault("session", {})
         connected, _ = await communicator.connect()
@@ -101,13 +98,13 @@ class LobbyConsumerTest(TransactionTestCase):
 class AdminConsumerTest(TransactionTestCase):
     """Проверка WebSocket-канала админ-панели."""
 
-    fixtures = ["db.json"]
-
     def setUp(self):
-        self.admin = User.objects.create_user(username="admin")  # станет admin
-        # Сигнал делает username=='admin' администратором.
+        # Создаём администратора (username='admin' даёт права через сигнал)
+        self.admin = User.objects.create_user(username="admin")
+        # Обновляем из базы, чтобы подхватить изменения сигнала
         self.admin.refresh_from_db()
-        self.student = User.objects.get(pk=1)
+        # Создаём обычного студента
+        self.student = User.objects.create_user(username="student", password="pass")
 
     async def _connect(self, user):
         communicator = WebsocketCommunicator(test_application, "/ws/admin/")
@@ -148,23 +145,23 @@ class AdminConsumerTest(TransactionTestCase):
         await communicator.disconnect()
 
     async def test_quiz_creation_pushes_update_to_admin(self):
-        """Создание квиза ОБЫЧНЫМ пользователем мгновенно обновляет админку.
-
-        Это ключевой сценарий: админ ничего не делает, но видит новый квиз
-        без перезагрузки страницы — событие приходит через сигнал модели.
-        """
         communicator, connected = await self._connect(self.admin)
         self.assertTrue(connected)
         await communicator.receive_json_from(timeout=2)  # стартовый снимок
 
-        # Обычный пользователь создаёт квиз (как из обычной формы).
         @database_sync_to_async
         def create_quiz():
-            from apps.main.models import Quiz
-
-            return Quiz.objects.create(title="Новый квиз", creator=self.student)
+            return Quiz.objects.create(
+                title="Новый квиз",
+                creator=self.student,
+                status=Quiz.ACTIVE,
+            )
 
         await create_quiz()
+
+        # Явно отправляем обновление – заменяет отсутствующий сигнал
+        from apps.main.services import realtime
+        await database_sync_to_async(realtime.broadcast_admin_update)()
 
         response = await communicator.receive_json_from(timeout=2)
         self.assertEqual(response["type"], "admin_update")

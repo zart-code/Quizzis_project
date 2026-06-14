@@ -4,13 +4,11 @@
 
 from django.test import TestCase
 from apps.main.forms import CustomUserCreationForm, StyledAuthenticationForm
-from apps.registration import Profile
+from apps.registration.models import Profile
 
 
 class TestCustomUserCreationForm(TestCase):
     """Тесты для формы регистрации CustomUserCreationForm."""
-
-    fixtures = ["db.json"]
 
     def test_valid_student_registration(self):
         """

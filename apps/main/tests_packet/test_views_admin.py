@@ -5,28 +5,36 @@
 from django.test import TestCase, Client
 from django.contrib.auth.models import User
 from django.urls import reverse
-from apps.quiz_game.models import Quiz
+from apps.quiz.models import Quiz
 
 
 class AdminPanelViewsTest(TestCase):
     """Набор тестов для представлений админ-панели: просмотр панели, бан пользователя, снятие с публикации квиза."""
 
-    fixtures = ["db.json"]
+    @classmethod
+    def setUpTestData(cls):
+        # Создаём администратора
+        cls.admin = User.objects.create_superuser(
+            username="superadmin", email="admin@ex.com", password="adminpass"
+        )
+        # Если у профиля есть флаг is_admin (кастомная модель), выставляем его
+        cls.admin.profile.is_admin = True
+        cls.admin.profile.save()
+
+        # Создаём обычного учителя, которого будем банить
+        cls.teacher = User.objects.create_user(
+            username="teacher", password="testpass"
+        )
+
+        # Создаём активный квиз, принадлежащий учителю
+        cls.active_quiz = Quiz.objects.create(
+            title="Active Quiz for Admin",
+            creator=cls.teacher,
+            status=Quiz.ACTIVE,
+        )
 
     def setUp(self):
         self.client = Client()
-        self.admin = User.objects.create_superuser(
-            username="superadmin", email="admin@ex.com", password="adminpass"
-        )
-        self.admin.profile.is_admin = True
-        self.admin.profile.save()
-        self.teacher = User.objects.get(pk=2)
-        # Создаём активный квиз для тестов
-        self.active_quiz = Quiz.objects.create(
-            title="Active Quiz for Admin",
-            creator=self.teacher,
-            status=Quiz.ACTIVE,
-        )
 
     def test_admin_panel_view(self):
         """GET-запрос к админ-панели возвращает страницу с формой."""
