@@ -9,7 +9,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from apps.main.forms_features.forms_reports import QuizReportForm
+from apps.quiz.forms_reports import QuizReportForm
 from apps.quiz.models import Quiz, QuizReport, QuizResult, GameSession, GameParticipant
 from apps.main.services.quiz_revisions import collect_question_payloads_from_post, build_quiz_form_payload, \
     create_revision_from_payloads, get_quiz_questions, get_current_revision, get_quiz_max_score, \

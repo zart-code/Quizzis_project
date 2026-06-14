@@ -1,15 +1,12 @@
-"""Тесты для представлений лобби (views_lobby.py)."""
-
-from django.test import TestCase, Client
 from django.contrib.auth.models import User
+from django.test import TestCase, Client
 from django.urls import reverse
 from django.utils import timezone
 
-# pylint: disable=no-member
-from apps.quiz.models import GameSession, GameParticipant, GameAnswer
-from apps.quiz.models import Quiz, Question, Answer
+from apps.quiz.models import Quiz, Question, Answer, GameSession, GameParticipant, GameAnswer
 
 
+# Create your tests here.
 class LobbyViewsTest(TestCase):
     """Набор тестов для всех представлений, связанных с игровым лобби."""
 

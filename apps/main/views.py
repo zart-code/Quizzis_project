@@ -9,7 +9,7 @@ from django.urls import reverse
 from django.db.models import Count, Avg, Q, F
 from .forms import CustomUserCreationForm, StyledAuthenticationForm
 from ..quiz.models import (Quiz, GameSession)
-from apps.main.views_features.views_lobby import _get_request_user
+from ..game_lobby.views import _get_request_user
 
 # Настройка логгера
 logger = logging.getLogger(__name__)

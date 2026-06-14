@@ -1,17 +1,22 @@
-"""Views для лобби"""
-
 import logging
 import uuid
+
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
-from django.views.decorators.http import require_POST
-from apps.quiz.models import Quiz, QuizResult, GameSession, GameParticipant, GameAnswer
 from django.utils import timezone
+from django.views.decorators.http import require_POST
+
+from apps.main.services import realtime
+from apps.main.services.guest_cleanup import resolve_display_name_from_user, cleanup_guest_users
+from apps.main.services.quiz_revisions import get_current_revision, get_session_questions, get_session_max_score
+from apps.main.services.quiz_scoring import score_question
+from apps.quiz.models import Quiz, GameSession, GameParticipant, QuizResult, GameAnswer
 
 
+# Create your views here.
 def _get_guest_username(
     guest_name: str | None, exclude_user_id: int | None = None
 ) -> str:
@@ -75,18 +80,6 @@ def _get_request_user(request, guest_name=None):
     request.session["guest_user_id"] = guest_user.id
     return guest_user
 
-
-from apps.main.services.guest_cleanup import (
-    cleanup_guest_users,
-    resolve_display_name_from_user,
-)
-from apps.main.services.quiz_revisions import (
-    get_current_revision,
-    get_session_max_score,
-    get_session_questions,
-)
-from apps.main.services.quiz_scoring import score_question
-from apps.main.services import realtime
 
 logger = logging.getLogger(__name__)
 
