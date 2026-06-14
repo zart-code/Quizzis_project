@@ -799,6 +799,8 @@
 {% endblock %}
 
 {% block extra_js %}
+{% load static %}
+<script src="{% static 'js/lobby_ws.js' %}"></script>
 <script>
 
 // ── Показать дополнительные 15 строк ──
@@ -872,9 +874,6 @@ function hideRows(tableBodyId, itemsPerPage) {
 }
 
 // ── URL эндпоинтов (Django вставляет при рендере) ──
-const URL_STATS   = "{% url 'api_admin_stats' %}";
-const URL_USERS   = "{% url 'api_admin_users' %}";
-const URL_QUIZZES = "{% url 'api_admin_quizzes' %}";
 const URL_BAN     = "/admin-panel/ban/";     // + user_id + /
 const URL_CHANGE_ROLE = "/admin-panel/change-role/"; // + user_id + /
 const URL_PROFILE = "/admin-panel/user/";  // + user_id + /
@@ -1015,25 +1014,21 @@ document.addEventListener('submit', function(event) {
 
 window.addEventListener('pageshow', restoreAdminScroll);
 
-// ── Один цикл polling ──
-async function poll() {
-  try {
-    const [statsRes, usersRes, quizzesRes] = await Promise.all([
-      fetch(URL_STATS),
-      fetch(URL_USERS),
-      fetch(URL_QUIZZES),
-    ]);
-    updateStats(await statsRes.json());
-    updateUsers((await usersRes.json()).users);
-    updateQuizzes((await quizzesRes.json()).quizzes);
-  } catch (e) {
-    console.warn('Admin poll error:', e);
-  }
+// ── Real-time через WebSocket (заменяет polling) ──
+function setupAdminWs() {
+  const ws = new LobbyWebSocket(null, { path: '/ws/admin/' });
+  ws.on('admin_update', function (data) {
+    updateStats(data.stats);
+    updateUsers(data.users);
+    updateQuizzes(data.quizzes);
+  });
 }
 
-// ── Запуск ──
-poll();                          // сразу при загрузке
-setInterval(poll, 3_000);      // затем каждые 5 секунд
+if (window.LobbyWebSocket) {
+  setupAdminWs();
+} else {
+  window.addEventListener('DOMContentLoaded', setupAdminWs);
+}
 
 function closeAllRoleMenus() {
   document.querySelectorAll('.ap-role-menu').forEach(menu => {

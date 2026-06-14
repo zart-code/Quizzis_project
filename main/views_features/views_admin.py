@@ -4,13 +4,12 @@ import logging
 
 # pylint: disable=no-member,unused-argument
 
-from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Count, Case, When, Value, IntegerField, F, Q
+from django.db.models import Count, Case, When, IntegerField, F, Q
 from django.utils import timezone
 from main.models import Quiz, Profile, QuizReport
 
@@ -250,75 +249,3 @@ def admin_reject_report_view(request, report_id):
             f"Жалоба на квиз «{report.quiz.title}» отклонена.",
         )
     return redirect("admin_panel")
-
-
-@admin_required
-def api_admin_stats_view(request):
-    """API: текущая статистика для авто-обновления карточек"""
-    data = {
-        "total_users": User.objects.count(),
-        "total_quizzes": Quiz.objects.filter(is_deleted=False).count(),
-        "total_admins": Profile.objects.filter(role=Profile.ADMIN).count(),
-        "total_banned_users": Profile.objects.filter(is_banned=True).count(),
-        "total_pending_reports": QuizReport.objects.filter(
-            status=QuizReport.PENDING,
-            quiz__is_deleted=False,
-        ).count(),
-    }
-    return JsonResponse(data)
-
-
-@admin_required
-def api_admin_users_view(request):
-    """API: список пользователей для авто-обновления таблицы"""
-    users = (
-        User.objects.annotate(quiz_count=Count("created_quizzes"))
-        .select_related("profile")
-        .order_by("id")
-        .values(
-            "id",
-            "username",
-            "email",
-            "date_joined",
-            "quiz_count",
-            "profile__role",
-            "profile__is_banned",
-        )
-    )
-    return JsonResponse(
-        {"users": list(users)},
-        json_dumps_params={"default": str},
-    )
-
-
-@admin_required
-def api_admin_quizzes_view(request):
-    """API: список квизов для авто-обновления таблицы"""
-    quizzes = (
-        Quiz.objects.filter(is_deleted=False)
-        .select_related("creator")
-        .annotate(
-            question_count=Case(
-                When(
-                    current_revision__isnull=False,
-                    then=F("current_revision__question_count"),
-                ),
-                default=Count("questions"),
-                output_field=IntegerField(),
-            )
-        )
-        .order_by("-created_at")
-        .values(
-            "id",
-            "title",
-            "status",
-            "created_at",
-            "question_count",
-            "creator__id",
-            "creator__username",
-        )
-    )
-    return JsonResponse(
-        {"quizzes": list(quizzes)},
-        json_dumps_params={"default": str},
-    )

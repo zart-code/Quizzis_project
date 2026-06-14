@@ -94,19 +94,19 @@ class LobbyViewsTest(TestCase):
         with self.assertRaises(GameSession.DoesNotExist):
             self.session.refresh_from_db()
 
-    # --- api_players_view (для хоста) ---
-    def test_api_players_view(self):
-        """API-эндпоинт возвращает JSON со списком игроков
-        в лобби и статусом блокировки."""
-        self.client.force_login(self.teacher)
+    # --- realtime.build_player_list (бывший api_players) ---
+    def test_build_player_list(self):
+        """Сервис realtime отдаёт список игроков и статус блокировки
+        (раньше это был HTTP-эндпоинт api_players, теперь — push по WS)."""
+        from main.services.realtime import build_player_list
+
         GameParticipant.objects.create(session=self.session, user=self.student)
-        response = self.client.get(reverse("api_players", args=[self.session.pin]))
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
+        data = build_player_list(self.session)
         self.assertIn("players", data)
         self.assertEqual(len(data["players"]), 1)
         self.assertEqual(data["players"][0]["username"], self.student.username)
         self.assertFalse(data["is_locked"])
+        self.assertEqual(data["count"], 1)
 
     # --- join_lobby_view (для игрока) ---
     def test_join_lobby_view_success(self):
@@ -142,14 +142,45 @@ class LobbyViewsTest(TestCase):
         response = self.client.get(reverse("join_lobby", args=[self.session.pin]))
         self.assertRedirects(response, reverse("lobby", args=[self.session.pin]))
 
-    # --- api_state_view (требует авторизации?) ---
-    def test_api_state_view(self):
-        """API состояния сессии возвращает текущий статус игры в JSON."""
-        self.client.force_login(self.student)
-        response = self.client.get(reverse("api_state", args=[self.session.pin]))
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
+    # --- realtime.build_player_state (бывший api_state) ---
+    def test_build_player_state_status(self):
+        """Сервис realtime отдаёт состояние сессии для игрока,
+        включая текущий статус (раньше — HTTP-эндпоинт api_state)."""
+        from main.services.realtime import build_player_state
+
+        participant = GameParticipant.objects.create(
+            session=self.session, user=self.student
+        )
+        data = build_player_state(self.session, participant.id)
         self.assertEqual(data["status"], self.session.status)
+        self.assertFalse(data["kicked"])
+
+    def test_build_player_state_kicked(self):
+        """Если участника нет в сессии, build_player_state помечает kicked=True."""
+        from main.services.realtime import build_player_state
+
+        data = build_player_state(self.session, 999999)
+        self.assertTrue(data["kicked"])
+
+    def test_build_player_state_includes_question(self):
+        """Во время игры build_player_state отдаёт данные текущего вопроса,
+        чтобы игрок мог отрисовать его без перезагрузки страницы."""
+        from main.services.realtime import build_player_state
+
+        participant = GameParticipant.objects.create(
+            session=self.session, user=self.student
+        )
+        self.session.status = GameSession.IN_PROGRESS
+        self.session.current_question = 0
+        self.session.current_question_started_at = timezone.now()
+        self.session.save()
+
+        data = build_player_state(self.session, participant.id)
+        self.assertEqual(data["status"], GameSession.IN_PROGRESS)
+        self.assertIsNotNone(data["question"])
+        self.assertEqual(data["question"]["index"], 0)
+        self.assertIn("options", data["question"])
+        self.assertFalse(data["has_answered"])
 
     # --- start_game_view ---
     def test_start_game_view_with_participants(self):
@@ -204,9 +235,11 @@ class LobbyViewsTest(TestCase):
         self.assertTemplateUsed(response, "session_play.html")
         self.assertEqual(response.context["question"].id, 1)  # из фикстуры
 
-    def test_session_play_view_post_answer_correct(self):
-        """POST с правильным ответом на вопрос создаёт запись GameAnswer
-        и начисляет баллы."""
+    def test_submit_answer_creates_game_answer(self):
+        """POST на submit_answer создаёт запись GameAnswer и начисляет баллы.
+
+        Ответ отправляется через fetch на отдельный JSON-эндпоинт — без
+        перезагрузки страницы (единый экран игры с одним WebSocket)."""
         self.client.force_login(self.student)
         participant = GameParticipant.objects.create(
             session=self.session, user=self.student
@@ -215,11 +248,19 @@ class LobbyViewsTest(TestCase):
         self.session.current_question = 0
         self.session.current_question_started_at = timezone.now()
         self.session.save()
+
+        # Сохраняем id участника в HTTP-сессии (это делает session_play_view).
+        http_session = self.client.session
+        http_session[f"lobby_participant_{self.session.pin}"] = participant.id
+        http_session.save()
+
         data = {"answer": "1", "timed_out": "0"}
         response = self.client.post(
-            reverse("session_play", args=[self.session.pin]), data
+            reverse("submit_answer", args=[self.session.pin]), data
         )
-        self.assertRedirects(response, reverse("session_play", args=[self.session.pin]))
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["success"])
+
         game_answer = GameAnswer.objects.filter(participant=participant).first()
         self.assertIsNotNone(game_answer)
         self.assertTrue(game_answer.is_correct)

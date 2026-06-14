@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Лобби — {{ session.quiz.title }}{% endblock %}
 
@@ -180,12 +181,12 @@
 .player-chip:hover .kick-btn{opacity:1}
 .player-chip:hover .player-chip-name{opacity:0}
 </style>
+{% endblock %}
 
+{% block extra_js %}
+<script src="{% static 'js/lobby_ws.js' %}"></script>
 <script>
     const pin = "{{ session.pin }}";
-    const apiPlayersUrl = "{% url 'api_players' session.pin %}";
-    const apiGameStatsUrl = "{% url 'api_game_stats' session.pin %}";
-    const apiStateUrl = "{% url 'api_state' session.pin %}";
     const apiAdvanceQuestionUrl = "{% url 'advance_question' session.pin %}";
     let gameStarted = "{{ session.status }}" !== "waiting";
     let gameFinished = "{{ session.status }}" === "finished";
@@ -199,7 +200,6 @@
         btn.disabled = true;
         btn.textContent = '⏳ Загрузка...';
 
-        // Получаем CSRF токен
         const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
 
         fetch(apiAdvanceQuestionUrl, {
@@ -213,8 +213,7 @@
             .then(data => {
                 if (data.success) {
                     document.getElementById('gs-next-question-prompt').style.display = 'none';
-                    // Сразу же обновим статистику игры
-                    fetchGameStats();
+                    // Свежий снимок придёт push-уведомлением по WebSocket.
                 } else {
                     alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
                     btn.disabled = false;
@@ -229,213 +228,170 @@
             });
     }
 
-    function copyLink(){navigator.clipboard.writeText(document.getElementById('join-link').textContent)}
-
-    // Lobby polling (waiting state)
-    function fetchPlayers(){
-        if (gameStarted) return;
-        fetch(apiPlayersUrl).then(r=>r.json()).then(data=>{
-            document.getElementById('player-count').textContent=data.count;
-            const list=document.getElementById('players-list');
-            list.innerHTML=data.players.length===0
-                ? '<li class="players-empty">Ожидание игроков...</li>'
-                : data.players.map(p=>`
-                    <li class="player-chip" data-id="${p.id}">
-                        <span class="player-chip-name">👤 ${escapeHtml(p.username)}</span>
-                        <button class="kick-btn" onclick="kickPlayer(${p.id}, '${escapeHtml(p.username)}')">✕ Выгнать</button>
-                    </li>`).join('');
-            document.getElementById('start-btn').disabled=data.count===0;
-            document.getElementById('lock-status-badge').innerHTML=data.is_locked?'<span class="lbadge lbadge-danger">Закрыто</span>':'<span class="lbadge lbadge-success">Открыто</span>';
-        });
-    }
-
     function kickPlayer(participantId, username) {
         const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
         const url = `/lobby/${pin}/api/kick/${participantId}/`;
         fetch(url, {
             method: 'POST',
             headers: { 'X-CSRFToken': csrftoken }
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                const chip = document.querySelector(`.player-chip[data-id="${participantId}"]`);
-                if (chip) chip.remove();
-                const list = document.getElementById('players-list');
-                const remaining = list.querySelectorAll('.player-chip').length;
-                document.getElementById('player-count').textContent = remaining;
-                if (remaining === 0) {
-                    list.innerHTML = '<li class="players-empty">Ожидание игроков...</li>';
-                    document.getElementById('start-btn').disabled = true;
-                }
-            }
-        })
-        .catch(err => console.error('Kick error:', err));
+        }).catch(err => console.error('Kick error:', err));
+        // Обновление списка придёт через WebSocket (событие player_kicked).
     }
 
-    // Check if game started
-    function checkGameState(){
-        if (gameStarted) return;
-        fetch(apiStateUrl).then(r=>r.json()).then(data=>{
-            if (data.status === 'in_progress' || data.status === 'finished') {
-                gameStarted = true;
-                document.getElementById('lobby-waiting').style.display = 'none';
-                document.getElementById('lobby-game').style.display = '';
-                startGamePolling();
-            }
-        });
+    // --- Рендер списка игроков (экран ожидания) ---
+    function renderPlayerList(data){
+        document.getElementById('player-count').textContent = data.count;
+        const list = document.getElementById('players-list');
+        list.innerHTML = data.players.length === 0
+            ? '<li class="players-empty">Ожидание игроков...</li>'
+            : data.players.map(p => `
+                <li class="player-chip" data-id="${p.id}">
+                    <span class="player-chip-name">👤 ${escapeHtml(p.username)}</span>
+                    <button class="kick-btn" onclick="kickPlayer(${p.id}, '${escapeHtml(p.username)}')">✕ Выгнать</button>
+                </li>`).join('');
+        document.getElementById('start-btn').disabled = data.count === 0;
+        document.getElementById('lock-status-badge').innerHTML = data.is_locked
+            ? '<span class="lbadge lbadge-danger">Закрыто</span>'
+            : '<span class="lbadge lbadge-success">Открыто</span>';
     }
 
-    // Game stats polling
-    function fetchGameStats(){
-        fetch(apiGameStatsUrl).then(r=>r.json()).then(data=>{
-            document.getElementById('gs-current-q').textContent = data.current_question;
-            document.getElementById('gs-total-q').textContent = data.total_questions;
-            document.getElementById('gs-answered').textContent = data.answered_count;
-            document.getElementById('gs-total-p').textContent = data.total_participants;
+    // --- Рендер дашборда игры ---
+    function renderGameStats(data){
+        if (!gameStarted) {
+            gameStarted = true;
+            document.getElementById('lobby-waiting').style.display = 'none';
+            document.getElementById('lobby-game').style.display = '';
+        }
 
-            // Progress bar
-            const pct = data.total_participants > 0 ? (data.answered_count / data.total_participants * 100) : 0;
-            document.getElementById('gs-bar').style.width = pct + '%';
+        document.getElementById('gs-current-q').textContent = data.current_question;
+        document.getElementById('gs-total-q').textContent = data.total_questions;
+        document.getElementById('gs-answered').textContent = data.answered_count;
+        document.getElementById('gs-total-p').textContent = data.total_participants;
 
-            // Current question text and options
-            if (data.status === 'finished') {
-                document.getElementById('gs-question-card').style.display = 'none';
+        const pct = data.total_participants > 0 ? (data.answered_count / data.total_participants * 100) : 0;
+        document.getElementById('gs-bar').style.width = pct + '%';
+
+        if (data.status === 'finished') {
+            document.getElementById('gs-question-card').style.display = 'none';
+        } else {
+            document.getElementById('gs-question-text').textContent = data.current_question_text || '';
+            const optsEl = document.getElementById('gs-options');
+            if (data.current_options && data.current_options.length > 0) {
+                optsEl.classList.add('gs-options');
+                optsEl.innerHTML = data.current_options.map(function(o, idx){
+                    const letter = String.fromCharCode(65 + (idx % 26));
+                    return '<div class="gs-option">'
+                        + '<div class="gs-option-letter">' + letter + '</div>'
+                        + '<div class="gs-option-text">' + escapeHtml(o.text) + '</div>'
+                    + '</div>';
+                }).join('');
             } else {
-                document.getElementById('gs-question-text').textContent = data.current_question_text || '';
-                const optsEl = document.getElementById('gs-options');
-                if (data.current_options && data.current_options.length > 0) {
-                    optsEl.classList.add('gs-options');
-                    optsEl.innerHTML = data.current_options.map(function(o, idx){
-                        const letter = String.fromCharCode(65 + (idx % 26));
-                        return '<div class="gs-option">'
-                            + '<div class="gs-option-letter">' + letter + '</div>'
-                            + '<div class="gs-option-text">' + escapeHtml(o.text) + '</div>'
-                        + '</div>';
-                    }).join('');
+                optsEl.classList.remove('gs-options');
+                optsEl.innerHTML = '';
+            }
+
+            const promptEl = document.getElementById('gs-next-question-prompt');
+            const reasonEl = document.getElementById('gs-advance-reason');
+            const allAnswered = data.answered_count === data.total_participants;
+            const timerExpired = data.time_remaining === 0;
+
+            if (allAnswered || timerExpired) {
+                promptEl.style.display = '';
+                document.getElementById('gs-advance-btn').disabled = false;
+                document.getElementById('gs-advance-btn').textContent = '⬆ Следующий вопрос';
+                if (allAnswered) {
+                    reasonEl.textContent = 'Все ответили! ✓';
+                    promptEl.style.background = 'rgba(34, 197, 94, 0.1)';
                 } else {
-                    optsEl.classList.remove('gs-options');
-                    optsEl.innerHTML = '';
+                    const unanswered = data.total_participants - data.answered_count;
+                    reasonEl.textContent = '⏰ Время вышло! ' + unanswered + ' игр. не ответили — им засчитается 0 очков.';
+                    promptEl.style.background = 'rgba(239, 68, 68, 0.1)';
                 }
+            } else {
+                promptEl.style.display = 'none';
+            }
+        }
 
-                // Показываем кнопку "Следующий вопрос":
-                // 1) Все ответили, или
-                // 2) Таймер вышел (time_remaining === 0) — неответившие получат 0 автоматически
-                const promptEl = document.getElementById('gs-next-question-prompt');
-                const reasonEl = document.getElementById('gs-advance-reason');
-                const allAnswered = data.answered_count === data.total_participants;
-                const timerExpired = data.time_remaining === 0;
+        const lb = document.getElementById('gs-leaderboard');
+        const shouldUpdateLeaderboard = !leaderboardLoaded
+            || data.status === 'finished'
+            || data.current_question !== lastLeaderboardQuestion
+            || data.answered_count === data.total_participants;
 
-                if (allAnswered || timerExpired) {
-                    promptEl.style.display = '';
-                    document.getElementById('gs-advance-btn').disabled = false;
-                    document.getElementById('gs-advance-btn').textContent = '⬆ Следующий вопрос';
-                    if (allAnswered) {
-                        reasonEl.textContent = 'Все ответили! ✓';
-                        promptEl.style.background = 'rgba(34, 197, 94, 0.1)';
-                    } else {
-                        const unanswered = data.total_participants - data.answered_count;
-                        reasonEl.textContent = '⏰ Время вышло! ' + unanswered + ' игр. не ответили — им засчитается 0 очков.';
-                        promptEl.style.background = 'rgba(239, 68, 68, 0.1)';
-                    }
+        if (shouldUpdateLeaderboard) {
+            lb.innerHTML = data.players.map((p, i) => `
+                <div class="game-lb-row ${p.is_answered ? 'answered' : ''}">
+                    <span class="game-lb-pos">${i+1}</span>
+                    <span class="game-lb-name">${escapeHtml(p.username)}</span>
+                    <span class="game-lb-score">${p.score}</span>
+                    <span class="game-lb-status ${p.is_answered ? 'done' : 'waiting'}">${p.is_answered ? '✓' : '⏳'}</span>
+                </div>
+            `).join('');
+            leaderboardLoaded = true;
+            lastLeaderboardQuestion = data.current_question;
+        }
+
+        const historyEl = document.getElementById('gs-history');
+        if (data.question_history && data.question_history.length > 0) {
+            let html = '';
+            data.question_history.forEach(function(q) {
+                html += '<div class="game-history-card card">';
+                html += '<div class="game-history-q-title">Вопрос ' + q.number + ': ' + escapeHtml(q.text) + '</div>';
+                html += '<div class="game-history-answers">';
+                if (q.answers.length === 0) {
+                    html += '<span style="color:var(--text-muted);font-size:.85rem;">Нет ответов</span>';
                 } else {
-                    promptEl.style.display = 'none';
+                    q.answers.forEach(function(a) {
+                        const cls = a.is_correct ? 'correct' : 'wrong';
+                        const icon = a.is_correct ? '✓' : '✗';
+                        html += '<div class="game-history-answer ' + cls + '">';
+                        html += '<span class="gha-name">' + icon + ' ' + escapeHtml(a.username) + '</span>';
+                        html += '<span class="gha-points">' + a.points + ' очк.</span>';
+                        html += '</div>';
+                    });
                 }
-            }
+                html += '</div></div>';
+            });
+            historyEl.innerHTML = html;
+        }
 
-            // Leaderboard updates only after the question is completed
-            const lb = document.getElementById('gs-leaderboard');
-            const shouldUpdateLeaderboard = !leaderboardLoaded
-                || data.status === 'finished'
-                || data.current_question !== lastLeaderboardQuestion
-                || data.answered_count === data.total_participants;
-
-            if (shouldUpdateLeaderboard) {
-                lb.innerHTML = data.players.map((p, i) => `
-                    <div class="game-lb-row ${p.is_answered ? 'answered' : ''}">
-                        <span class="game-lb-pos">${i+1}</span>
-                        <span class="game-lb-name">${escapeHtml(p.username)}</span>
-                        <span class="game-lb-score">${p.score}</span>
-                        <span class="game-lb-status ${p.is_answered ? 'done' : 'waiting'}">${p.is_answered ? '✓' : '⏳'}</span>
-                    </div>
-                `).join('');
-                leaderboardLoaded = true;
-                lastLeaderboardQuestion = data.current_question;
-            }
-
-            // Question history (accumulates)
-            const historyEl = document.getElementById('gs-history');
-            if (data.question_history && data.question_history.length > 0) {
-                let html = '';
-                data.question_history.forEach(function(q) {
-                    html += '<div class="game-history-card card">';
-                    html += '<div class="game-history-q-title">Вопрос ' + q.number + ': ' + escapeHtml(q.text) + '</div>';
-                    html += '<div class="game-history-answers">';
-                    if (q.answers.length === 0) {
-                        html += '<span style="color:var(--text-muted);font-size:.85rem;">Нет ответов</span>';
-                    } else {
-                        q.answers.forEach(function(a) {
-                            const cls = a.is_correct ? 'correct' : 'wrong';
-                            const icon = a.is_correct ? '✓' : '✗';
-                            html += '<div class="game-history-answer ' + cls + '">';
-                            html += '<span class="gha-name">' + icon + ' ' + escapeHtml(a.username) + '</span>';
-                            html += '<span class="gha-points">' + a.points + ' очк.</span>';
-                            html += '</div>';
-                        });
-                    }
-                    html += '</div></div>';
-                });
-                historyEl.innerHTML = html;
-            }
-
-            // Status badge & finished state
-            const badge = document.getElementById('game-status-badge');
-            if (data.status === 'finished' && !gameFinished) {
-                gameFinished = true;
-                badge.innerHTML = '<span class="lbadge lbadge-danger">🏁 Игра завершена</span>';
-                document.getElementById('gs-finished-actions').style.display = '';
-                // Remove beforeunload since game is over
-                window.removeEventListener('beforeunload', beforeUnloadHandler);
-            }
-        });
+        const badge = document.getElementById('game-status-badge');
+        if (data.status === 'finished' && !gameFinished) {
+            gameFinished = true;
+            badge.innerHTML = '<span class="lbadge lbadge-danger">🏁 Игра завершена</span>';
+            document.getElementById('gs-finished-actions').style.display = '';
+            window.removeEventListener('beforeunload', beforeUnloadHandler);
+        }
     }
 
-    let gameInterval = null;
-    function startGamePolling(){
-        fetchGameStats();
-        gameInterval = setInterval(fetchGameStats, 1000);
-    }
-
-    // Initial setup
-    if (gameStarted) {
-        startGamePolling();
-    } else {
-        fetchPlayers();
-        setInterval(fetchPlayers, 1000);
-        setInterval(checkGameState, 1500);
-    }
-
-    // Beforeunload — only while game is not finished
     function beforeUnloadHandler(e) {
         e.preventDefault();
         e.returnValue = 'Вы точно хотите выйти? Сессия будет удалена';
     }
-    if (!gameFinished) {
-        window.addEventListener('beforeunload', beforeUnloadHandler);
-    }
 
-    document.querySelectorAll('form').forEach(function(form) {
-        form.addEventListener('submit', function() {
-            window.removeEventListener('beforeunload', beforeUnloadHandler);
+    window.addEventListener('DOMContentLoaded', function(){
+        const ws = new LobbyWebSocket(pin);
+        ws.on('player_list', renderPlayerList);
+        ws.on('game_stats', renderGameStats);
+        // На старте игры — запрашиваем полный снимок статистики.
+        ws.on('game_started', function(){ ws.sync(); });
+
+        if (!gameFinished) {
+            window.addEventListener('beforeunload', beforeUnloadHandler);
+        }
+
+        document.querySelectorAll('form').forEach(function(form) {
+            form.addEventListener('submit', function() {
+                window.removeEventListener('beforeunload', beforeUnloadHandler);
+            });
         });
+
+        const resultsLink = document.getElementById('gs-results-link');
+        if (resultsLink) {
+            resultsLink.addEventListener('click', function() {
+                window.removeEventListener('beforeunload', beforeUnloadHandler);
+            });
+        }
     });
-
-    // Also remove beforeunload when clicking results link
-    var resultsLink = document.getElementById('gs-results-link');
-    if (resultsLink) {
-        resultsLink.addEventListener('click', function() {
-            window.removeEventListener('beforeunload', beforeUnloadHandler);
-        });
-    }
 </script>
 {% endblock %}
