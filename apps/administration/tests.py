@@ -1,13 +1,11 @@
-"""Тесты для представлений админ-панели."""
-
-# pylint: disable=no-member,missing-class-docstring,missing-function-docstring
-
-from django.test import TestCase, Client
 from django.contrib.auth.models import User
+from django.test import TestCase, Client
 from django.urls import reverse
+
 from apps.quiz.models import Quiz
 
 
+# Create your tests here.
 class AdminPanelViewsTest(TestCase):
     """Набор тестов для представлений админ-панели: просмотр панели, бан пользователя, снятие с публикации квиза."""
 
@@ -15,7 +13,7 @@ class AdminPanelViewsTest(TestCase):
     def setUpTestData(cls):
         # Создаём администратора
         cls.admin = User.objects.create_superuser(
-            username="superadmin", email="admin@ex.com", password="adminpass"
+            username="superadmin", email="administration@ex.com", password="adminpass"
         )
         # Если у профиля есть флаг is_admin (кастомная модель), выставляем его
         cls.admin.profile.is_admin = True

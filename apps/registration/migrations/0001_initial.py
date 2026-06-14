@@ -30,7 +30,7 @@ class Migration(migrations.Migration):
                     "role",
                     models.CharField(
                         choices=[
-                            ("admin", "Админ"),
+                            ("administration", "Админ"),
                             ("teacher", "Учитель"),
                             ("student", "Ученик"),
                         ],

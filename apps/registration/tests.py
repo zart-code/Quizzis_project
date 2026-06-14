@@ -18,7 +18,7 @@ class ProfileViewsTest(TestCase):
             username="teacher", password="testpass123"
         )
         cls.admin = User.objects.create_superuser(
-            username="admin", email="a@a.com", password="adminpass"
+            username="administration", email="a@a.com", password="adminpass"
         )
         # Дополнительный флаг профиля (если используется в коде)
         cls.admin.profile.is_admin = True

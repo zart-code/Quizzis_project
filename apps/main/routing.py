@@ -10,5 +10,5 @@ websocket_urlpatterns = [
     # тот же эндпоинт, роль определяется на стороне сервера.
     re_path(r"^ws/lobby/(?P<pin>\w+)/$", LobbyConsumer.as_asgi()),
     # Канал админ-панели (real-time статистика, пользователи, квизы).
-    re_path(r"^ws/admin/$", AdminConsumer.as_asgi()),
+    re_path(r"^ws/administration/$", AdminConsumer.as_asgi()),
 ]

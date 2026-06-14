@@ -13,7 +13,7 @@ from django.dispatch import receiver
 class Profile(models.Model):
     """Профиль пользователя"""
 
-    ADMIN = "admin"
+    ADMIN = "administration"
     TEACHER = "teacher"
     STUDENT = "student"
     ROLE_CHOICES = [
@@ -42,7 +42,7 @@ def create_user_profile(sender, instance, created, **kwargs):
     """Создание профиля юзера"""
     if created:
         profile, _ = Profile.objects.get_or_create(user=instance)
-        if instance.username == "admin":
+        if instance.username == "administration":
             profile.role = Profile.ADMIN
             profile.is_admin = True
         profile.save()
@@ -53,7 +53,7 @@ def save_user_profile(sender, instance, **kwargs):
     """Сохранить профиль"""
     if hasattr(instance, "profile"):
         profile = instance.profile
-        if instance.username == "admin":
+        if instance.username == "administration":
             profile.role = Profile.ADMIN
             profile.is_admin = True
         elif profile.role == Profile.ADMIN and not profile.is_admin:

@@ -30,6 +30,8 @@ INSTALLED_APPS = [
     "apps.main",
     "apps.registration",
     "apps.quiz",
+    "apps.game_lobby",
+    "apps.administration"
 ]
 
 MIDDLEWARE = [

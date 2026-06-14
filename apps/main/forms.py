@@ -35,7 +35,7 @@ class CustomUserCreationForm(UserCreationForm):
     def save(self, commit=True):
         user = super().save(commit=commit)
         if commit and hasattr(user, "profile"):
-            if user.username == "admin":
+            if user.username == "administration":
                 user.profile.role = Profile.ADMIN
                 user.profile.is_admin = True
             else:

@@ -25,15 +25,8 @@ from apps.quiz.views import create_quiz_view, my_quizzes_view, toggle_quiz_statu
 from apps.game_lobby.views import create_lobby_view, lobby_view, toggle_lock_view, delete_session_view, \
     kick_player_view, join_lobby_view, start_game_view, session_play_view, submit_answer_view, quiz_sessions_list_view, \
     advance_question_view, session_results_teacher_view
-from apps.main.views_features.views_admin import (
-    admin_panel_view,
-    admin_ban_user_view,
-    admin_unpublish_quiz_view,
-    admin_delete_quiz_view,
-    admin_accept_report_view,
-    admin_reject_report_view,
-    admin_change_user_role_view,
-)
+from apps.administration.views import admin_panel_view, admin_ban_user_view, admin_change_user_role_view, admin_delete_quiz_view, \
+    admin_unpublish_quiz_view, admin_accept_report_view, admin_reject_report_view
 from apps.main.views_features.views_ai import (
     ai_generate_page_view,
     ai_generate_questions_view,
@@ -42,7 +35,7 @@ from apps.main.views_features.views_ai import (
 )
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    path("administration/", admin.site.urls),
     path("", main_page, name="main_page"),
     path("login/", login_page, name="login_page"),
     path("register/", register_page, name="register_page"),
@@ -87,41 +80,41 @@ urlpatterns = [
         name="session_results_teacher",
     ),
     path("quizzises/", quizzes_view, name="quizzes_view"),
-    path("admin-panel/", admin_panel_view, name="admin_panel"),
-    path("admin-panel/ban/<int:user_id>/", admin_ban_user_view, name="admin_ban_user"),
+    path("administration-panel/", admin_panel_view, name="admin_panel"),
+    path("administration-panel/ban/<int:user_id>/", admin_ban_user_view, name="admin_ban_user"),
     path(
-        "admin-panel/change-role/<int:user_id>/",
+        "administration-panel/change-role/<int:user_id>/",
         admin_change_user_role_view,
         name="admin_change_user_role",
     ),
     path(
-        "admin-panel/unpublish-quiz/<int:quiz_id>/",
+        "administration-panel/unpublish-quiz/<int:quiz_id>/",
         admin_unpublish_quiz_view,
         name="admin_unpublish_quiz",
     ),
     path(
-        "admin-panel/delete-quiz/<int:quiz_id>/",
+        "administration-panel/delete-quiz/<int:quiz_id>/",
         admin_delete_quiz_view,
         name="admin_delete_quiz",
     ),
     path(
-        "admin-panel/report/<int:report_id>/accept/",
+        "administration-panel/report/<int:report_id>/accept/",
         admin_accept_report_view,
         name="admin_accept_report",
     ),
     path(
-        "admin-panel/report/<int:report_id>/reject/",
+        "administration-panel/report/<int:report_id>/reject/",
         admin_reject_report_view,
         name="admin_reject_report",
     ),
-    path("admin-panel/user/<int:user_id>/", profile_view, name="admin_user_profile"),
+    path("administration-panel/user/<int:user_id>/", profile_view, name="admin_user_profile"),
     path(
-        "admin-panel/user/<int:user_id>/history/",
+        "administration-panel/user/<int:user_id>/history/",
         profile_history_view,
         name="admin_user_history",
     ),
     path(
-        "admin-panel/user/<int:user_id>/edit/",
+        "administration-panel/user/<int:user_id>/edit/",
         edit_profile_view,
         name="admin_edit_user",
     ),

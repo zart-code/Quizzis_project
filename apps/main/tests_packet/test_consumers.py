@@ -99,15 +99,15 @@ class AdminConsumerTest(TransactionTestCase):
     """Проверка WebSocket-канала админ-панели."""
 
     def setUp(self):
-        # Создаём администратора (username='admin' даёт права через сигнал)
-        self.admin = User.objects.create_user(username="admin")
+        # Создаём администратора (username='administration' даёт права через сигнал)
+        self.admin = User.objects.create_user(username="administration")
         # Обновляем из базы, чтобы подхватить изменения сигнала
         self.admin.refresh_from_db()
         # Создаём обычного студента
         self.student = User.objects.create_user(username="student", password="pass")
 
     async def _connect(self, user):
-        communicator = WebsocketCommunicator(test_application, "/ws/admin/")
+        communicator = WebsocketCommunicator(test_application, "/ws/administration/")
         communicator.scope["user"] = user
         communicator.scope.setdefault("session", {})
         connected, _ = await communicator.connect()
