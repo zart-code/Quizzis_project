@@ -5,7 +5,7 @@
 from django.test import TestCase, Client
 from django.contrib.auth.models import User
 from django.urls import reverse
-from apps.main.models import Quiz
+from apps.quiz_game.models import Quiz
 
 
 class AdminPanelViewsTest(TestCase):

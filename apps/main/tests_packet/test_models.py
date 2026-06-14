@@ -4,14 +4,8 @@
 
 from django.test import TestCase
 from django.contrib.auth.models import User
-from apps.main.models import (
-    Quiz,
-    Answer,
-    GameSession,
-    GameParticipant,
-    QuizRevision,
-    QuizResult,
-)
+from apps.quiz.models import GameSession, GameParticipant
+from apps.quiz_game.models import Quiz, QuizRevision, Answer, QuizResult
 from apps.registration import Profile
 
 

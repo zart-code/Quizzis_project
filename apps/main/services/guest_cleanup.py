@@ -7,7 +7,7 @@
 
 from django.contrib.auth.models import User
 
-from apps.main.models import GameParticipant, GameSession
+from apps.quiz.models import GameSession, GameParticipant
 
 
 def resolve_display_name_from_user(user: User) -> str:

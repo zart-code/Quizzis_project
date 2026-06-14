@@ -20,15 +20,8 @@ from apps.main.views_features.views_profile import (
     profile_history_view,
     edit_profile_view,
 )
-from apps.main.views_features.views_quiz import (
-    create_quiz_view,
-    my_quizzes_view,
-    toggle_quiz_status_view,
-    delete_quiz_view,
-    play_quiz_view,
-    edit_quiz_view,
-    report_quiz_view,
-)
+from apps.quiz.views import create_quiz_view, my_quizzes_view, toggle_quiz_status_view, delete_quiz_view, \
+    report_quiz_view, play_quiz_view, edit_quiz_view
 from apps.main.views_features.views_lobby import (
     create_lobby_view,
     lobby_view,

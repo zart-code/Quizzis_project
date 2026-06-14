@@ -6,7 +6,8 @@ from django.urls import reverse
 from django.utils import timezone
 
 # pylint: disable=no-member
-from apps.main.models import Quiz, GameSession, GameParticipant, GameAnswer
+from apps.quiz.models import GameSession, GameParticipant, GameAnswer
+from apps.quiz_game.models import Quiz
 
 
 class LobbyViewsTest(TestCase):

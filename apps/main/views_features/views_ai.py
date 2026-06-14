@@ -8,7 +8,7 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.views.decorators.http import require_POST
 
-from apps.main.models import Quiz
+from apps.quiz.models import Quiz
 from apps.registration.models import Profile
 from apps.main.services.quiz_ai_generator import generate_questions, generate_quiz_from_questions
 from apps.main.services.quiz_revisions import create_revision_from_payloads

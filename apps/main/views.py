@@ -8,7 +8,7 @@ from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.db.models import Count, Avg, Q, F
 from .forms import CustomUserCreationForm, StyledAuthenticationForm
-from apps.main.models_packet.quiz_models import Quiz
+from ..quiz.models import (Quiz, GameSession)
 from apps.main.views_features.views_lobby import _get_request_user
 
 # Настройка логгера
@@ -190,7 +190,6 @@ def quizzes_view(request):
 def join_by_code(request):
     """Вход в лобби по коду с главной страницы."""
     from django.contrib import messages
-    from apps.main.models import GameSession
 
     if request.method == "POST":
         pin = request.POST.get("pin", "").strip().upper()

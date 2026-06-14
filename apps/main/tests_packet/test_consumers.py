@@ -11,7 +11,8 @@ from channels.testing import WebsocketCommunicator
 from django.contrib.auth.models import User
 from django.test import TransactionTestCase
 
-from apps.main.models import GameSession, Quiz
+from apps.quiz.models import GameSession
+from apps.quiz_game.models import Quiz
 from apps.main.routing import websocket_urlpatterns
 from apps.main.services import realtime
 

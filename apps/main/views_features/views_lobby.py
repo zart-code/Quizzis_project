@@ -8,13 +8,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
-from apps.main.models import (
-    GameSession,
-    Quiz,
-    GameParticipant,
-    GameAnswer,
-    QuizResult,
-)
+from apps.quiz.models import Quiz, QuizResult, GameSession, GameParticipant, GameAnswer
 from django.utils import timezone
 
 
