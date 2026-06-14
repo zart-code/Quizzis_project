@@ -3,7 +3,7 @@
 # pylint: disable=no-member
 
 import logging
-from django.contrib.auth import login, logout
+from django.contrib.auth import login
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.db.models import Count, Avg, Q, F
@@ -120,18 +120,6 @@ def main_page(request):
         "popular_quizzes": popular_quizzes,
     }
     return render(request, "main_page.html", context)
-
-
-def logout_view(request):
-    """Выход из системы."""
-    if request.user.is_authenticated:
-        logger.info(
-            "Пользователь %s вышел из системы (IP: %s)",
-            request.user.username,
-            request.META.get("REMOTE_ADDR"),
-        )
-    logout(request)
-    return redirect("main_page")
 
 
 def quizzes_view(request):

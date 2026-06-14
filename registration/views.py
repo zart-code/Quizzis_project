@@ -1,4 +1,4 @@
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
 from django.shortcuts import render, redirect
 
 from main.forms import CustomUserCreationForm, StyledAuthenticationForm
@@ -44,3 +44,15 @@ def login_page(request):
         form = StyledAuthenticationForm(request)
 
     return render(request, "login_page.html", {"form": form, "next": next_url})
+
+
+def logout_view(request):
+    """Выход из системы."""
+    if request.user.is_authenticated:
+        logger.info(
+            "Пользователь %s вышел из системы (IP: %s)",
+            request.user.username,
+            request.META.get("REMOTE_ADDR"),
+        )
+    logout(request)
+    return redirect("main_page")

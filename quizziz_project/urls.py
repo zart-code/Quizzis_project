@@ -11,11 +11,10 @@ from django.conf import settings
 from django.views.static import serve
 from main.views import (
     main_page,
-    logout_view,
     quizzes_view,
     join_by_code,
 )
-from registration.views import register_page, login_page
+from registration.views import register_page, login_page, logout_view
 from main.views_features.views_profile import (
     profile_view,
     profile_history_view,
