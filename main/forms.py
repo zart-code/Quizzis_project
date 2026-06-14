@@ -5,7 +5,7 @@
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
 from django import forms
-from main.models import Profile
+from registration.models import Profile
 
 FIELD_ATTRS = {"class": "form-control"}
 

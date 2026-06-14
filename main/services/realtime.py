@@ -261,7 +261,8 @@ def build_admin_stats() -> dict:
     from django.contrib.auth.models import User
     from django.db.models import Q
 
-    from main.models import Profile, Quiz, QuizReport
+    from main.models import Quiz, QuizReport
+    from registration.models import Profile
 
     return {
         "total_users": User.objects.count(),

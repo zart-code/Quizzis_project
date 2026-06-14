@@ -7,7 +7,7 @@ from django.contrib.auth.models import (
     User,
 )  # noqa: F401 (оставлен для возможного использования)
 from main.forms import CustomUserCreationForm, StyledAuthenticationForm
-from main.models import Profile
+from registration.models import Profile
 
 
 class TestCustomUserCreationForm(TestCase):

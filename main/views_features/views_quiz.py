@@ -5,7 +5,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from main.forms_features.forms_reports import QuizReportForm
-from main.models import Quiz, Profile, QuizReport, QuizResult
+from main.models import Quiz, QuizReport, QuizResult
+from registration.models import Profile
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from main.services.quiz_revisions import (

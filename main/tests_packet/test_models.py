@@ -5,7 +5,6 @@
 from django.test import TestCase
 from django.contrib.auth.models import User
 from main.models import (
-    Profile,
     Quiz,
     Answer,
     GameSession,
@@ -13,6 +12,7 @@ from main.models import (
     QuizRevision,
     QuizResult,
 )
+from registration.models import Profile
 
 
 class TestProfile(TestCase):

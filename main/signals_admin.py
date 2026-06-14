@@ -18,7 +18,8 @@ from django.db import transaction
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
-from main.models import Profile, Quiz, QuizReport
+from main.models import Quiz, QuizReport
+from registration.models import Profile
 from main.services import realtime
 
 
