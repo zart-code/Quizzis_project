@@ -122,16 +122,6 @@ def main_page(request):
     return render(request, "main_page.html", context)
 
 
-def register_page(request):
-    """Страница регистрации"""
-    return _handle_form(
-        request,
-        form_class=CustomUserCreationForm,
-        template_name="register.html",
-        success_url="main_page",
-    )
-
-
 def login_page(request):
     """Страница логина (вход в систему)"""
     next_url = request.GET.get("next") or request.POST.get("next", "")
