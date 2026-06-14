@@ -9,18 +9,18 @@ from django.urls import path, re_path
 from django.shortcuts import render
 from django.conf import settings
 from django.views.static import serve
-from main.views import (
+from apps.main.views import (
     main_page,
     quizzes_view,
     join_by_code,
 )
-from registration.views import register_page, login_page, logout_view
-from main.views_features.views_profile import (
+from apps.registration.views import register_page, login_page, logout_view
+from apps.main.views_features.views_profile import (
     profile_view,
     profile_history_view,
     edit_profile_view,
 )
-from main.views_features.views_quiz import (
+from apps.main.views_features.views_quiz import (
     create_quiz_view,
     my_quizzes_view,
     toggle_quiz_status_view,
@@ -29,7 +29,7 @@ from main.views_features.views_quiz import (
     edit_quiz_view,
     report_quiz_view,
 )
-from main.views_features.views_lobby import (
+from apps.main.views_features.views_lobby import (
     create_lobby_view,
     lobby_view,
     toggle_lock_view,
@@ -43,7 +43,7 @@ from main.views_features.views_lobby import (
     quiz_sessions_list_view,
     advance_question_view,
 )
-from main.views_features.views_admin import (
+from apps.main.views_features.views_admin import (
     admin_panel_view,
     admin_ban_user_view,
     admin_unpublish_quiz_view,
@@ -52,7 +52,7 @@ from main.views_features.views_admin import (
     admin_reject_report_view,
     admin_change_user_role_view,
 )
-from main.views_features.views_ai import (
+from apps.main.views_features.views_ai import (
     ai_generate_page_view,
     ai_generate_questions_view,
     ai_generate_quiz_view,

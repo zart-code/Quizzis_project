@@ -231,58 +231,64 @@ def broadcast_question_advanced(pin, question_data):
 #### 3.2. Обновление `views_lobby.py`
 
 **Пример: `join_lobby_view`**
+
 ```python
-from main.services.websocket_events import broadcast_player_joined
+from apps.main import broadcast_player_joined
+
 
 def join_lobby_view(request, pin):
     # ... существующая логика ...
-    
+
     participant, created = GameParticipant.objects.get_or_create(
         session=session, user=current_user
     )
-    
+
     if created:
         # Публикуем событие через WebSocket
         broadcast_player_joined(pin, {
             'id': participant.id,
             'username': participant.get_display_name()
         })
-    
+
     # ... остальная логика ...
 ```
 
 **Пример: `start_game_view`**
+
 ```python
-from main.services.websocket_events import broadcast_game_started
+from apps.main import broadcast_game_started
+
 
 def start_game_view(request, pin):
     # ... существующая логика ...
-    
+
     session.status = GameSession.IN_PROGRESS
     session.save()
-    
+
     # Уведомляем всех игроков
     broadcast_game_started(pin)
-    
+
     return redirect('lobby', pin=pin)
 ```
 
 **Пример: `advance_question_view`**
+
 ```python
-from main.services.websocket_events import broadcast_question_advanced
+from apps.main import broadcast_question_advanced
+
 
 def advance_question_view(request, pin):
     # ... существующая логика ...
-    
+
     session.current_question += 1
     session.save()
-    
+
     # Уведомляем игроков о новом вопросе
     broadcast_question_advanced(pin, {
         'current_question': session.current_question,
         'status': session.status
     })
-    
+
     return JsonResponse({'success': True})
 ```
 
@@ -481,11 +487,13 @@ app.autodiscover_tasks()
 ```
 
 #### 5.3. Создание задач `main/tasks.py`
+
 ```python
 from celery import shared_task
 from django.utils import timezone
-from main.models import GameSession, GameParticipant
+from apps.main import GameSession, GameParticipant
 from django.contrib.auth.models import User
+
 
 @shared_task
 def cleanup_guest_users_task(session_id):
@@ -495,7 +503,7 @@ def cleanup_guest_users_task(session_id):
         guest_participants = session.participants.filter(
             user__username__startswith='guest_'
         ).select_related('user')
-        
+
         deleted_count = 0
         for participant in guest_participants:
             guest_user = participant.user
@@ -503,14 +511,15 @@ def cleanup_guest_users_task(session_id):
                 user=guest_user,
                 session__status__in=[GameSession.WAITING, GameSession.IN_PROGRESS]
             ).exclude(session=session).exists()
-            
+
             if not has_active:
                 guest_user.delete()
                 deleted_count += 1
-        
+
         return f'Удалено {deleted_count} гостевых пользователей'
     except GameSession.DoesNotExist:
         return 'Сессия не найдена'
+
 
 @shared_task
 def auto_finish_expired_sessions():
@@ -519,7 +528,7 @@ def auto_finish_expired_sessions():
         status=GameSession.IN_PROGRESS,
         created_at__lt=timezone.now() - timezone.timedelta(hours=3)
     )
-    
+
     count = expired.update(status=GameSession.FINISHED)
     return f'Завершено {count} просроченных сессий'
 ```
@@ -544,19 +553,21 @@ CELERY_BEAT_SCHEDULE = {
 ```
 
 #### 5.5. Обновление views
+
 ```python
-from main.tasks import cleanup_guest_users_task
+from apps.main import cleanup_guest_users_task
+
 
 def advance_question_view(request, pin):
     # ... существующая логика ...
-    
+
     if session.current_question >= total_questions:
         session.status = GameSession.FINISHED
         session.save()
-        
+
         # Запускаем очистку в фоне
         cleanup_guest_users_task.delay(session.id)
-    
+
     return JsonResponse({'success': True})
 ```
 
