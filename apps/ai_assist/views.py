@@ -1,21 +1,18 @@
-"""Views для ИИ-генерации квизов (двухшаговая, Google Gemini)."""
-
 import json
 import logging
 
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
+
 from django.shortcuts import render, redirect
 from django.views.decorators.http import require_POST
 
+from apps.ai_assist.services.quiz_ai_generator import generate_questions, generate_quiz_from_questions
+from apps.quiz.services.quiz_revisions import create_revision_from_payloads
 from apps.quiz.models import Quiz
 from apps.registration.models import Profile
-from apps.main.services.quiz_ai_generator import (
-    generate_questions,
-    generate_quiz_from_questions,
-)
-from apps.main.services.quiz_revisions import create_revision_from_payloads
 
+# Create your views here.
 logger = logging.getLogger(__name__)
 
 
@@ -146,7 +143,7 @@ def ai_save_quiz_view(request):
     if profile and profile.role not in [Profile.ADMIN, Profile.TEACHER]:
         return redirect("main_page")
 
-    from apps.main.services.quiz_revisions import collect_question_payloads_from_post
+    from apps.quiz.services.quiz_revisions import collect_question_payloads_from_post
 
     title = request.POST.get("title", "").strip()
     if not title:

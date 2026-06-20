@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from apps.quiz.models import Quiz, QuizReport, QuizResult, GameSession, GameParticipant
-from apps.main.services.quiz_revisions import (
+from apps.quiz.services.quiz_revisions import (
     collect_question_payloads_from_post,
     build_quiz_form_payload,
     create_revision_from_payloads,
@@ -17,7 +17,7 @@ from apps.main.services.quiz_revisions import (
     get_quiz_max_score,
     build_quiz_payload_for_edit,
 )
-from apps.main.services.quiz_scoring import score_question
+from apps.quiz.services.quiz_scoring import score_question
 from apps.quiz.forms_reports import QuizReportForm
 from apps.registration.models import Profile
 

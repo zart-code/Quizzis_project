@@ -2,8 +2,8 @@
 
 from django.urls import re_path
 
-from apps.main.consumers.admin_consumer import AdminConsumer
-from apps.main.consumers.lobby_consumer import LobbyConsumer
+from apps.superuser_app.consumers.admin_consumer import AdminConsumer
+from apps.game_lobby.consumers.lobby_consumer import LobbyConsumer
 
 websocket_urlpatterns = [
     # Единый канал на лобби/сессию по PIN. Хост и игроки используют один и

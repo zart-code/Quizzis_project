@@ -18,7 +18,7 @@ from channels.layers import get_channel_layer
 from django.utils import timezone
 
 from apps.quiz.models import Quiz, QuizReport, GameSession, GameAnswer
-from apps.main.services.quiz_revisions import (
+from apps.quiz.services.quiz_revisions import (
     get_session_questions,
 )
 

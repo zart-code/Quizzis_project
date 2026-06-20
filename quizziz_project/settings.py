@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "apps.quiz",
     "apps.game_lobby",
     "apps.superuser_app",
+    "apps.ai_assist",
 ]
 
 MIDDLEWARE = [

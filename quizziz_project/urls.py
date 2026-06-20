@@ -14,12 +14,8 @@ from apps.main.views import (
     quizzes_view,
     join_by_code,
 )
-from apps.registration.views import register_page, login_page, logout_view
-from apps.main.views_features.views_profile import (
-    profile_view,
-    profile_history_view,
-    edit_profile_view,
-)
+from apps.registration.views import register_page, login_page, logout_view, profile_view, profile_history_view, \
+    edit_profile_view
 from apps.quiz.views import (
     create_quiz_view,
     my_quizzes_view,
@@ -45,12 +41,8 @@ from apps.game_lobby.views import (
 )
 from apps.superuser_app.views import admin_panel_view, admin_ban_user_view, admin_change_user_role_view, \
     admin_delete_quiz_view, admin_unpublish_quiz_view, admin_accept_report_view, admin_reject_report_view
-from apps.main.views_features.views_ai import (
-    ai_generate_page_view,
-    ai_generate_questions_view,
-    ai_generate_quiz_view,
-    ai_save_quiz_view,
-)
+from apps.ai_assist.views import ai_generate_page_view, ai_generate_questions_view, ai_generate_quiz_view, \
+    ai_save_quiz_view
 
 urlpatterns = [
     path("admin/", admin.site.urls),

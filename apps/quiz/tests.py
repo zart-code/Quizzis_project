@@ -6,7 +6,7 @@
 
 from django.http import QueryDict
 
-from apps.main.services.quiz_revisions import (
+from apps.quiz.services.quiz_revisions import (
     get_current_revision,
     get_quiz_questions,
     create_revision_from_payloads,
@@ -16,7 +16,7 @@ from apps.main.services.quiz_revisions import (
     build_quiz_form_payload,
     build_quiz_payload_for_edit,
 )
-from apps.main.services.quiz_scoring import (
+from apps.quiz.services.quiz_scoring import (
     SingleChoiceScoringStrategy,
     MultipleChoiceScoringStrategy,
     NumberScoringStrategy,

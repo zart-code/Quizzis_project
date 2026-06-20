@@ -15,12 +15,12 @@ from apps.main.services.guest_cleanup import (
     resolve_display_name_from_user,
     cleanup_guest_users,
 )
-from apps.main.services.quiz_revisions import (
+from apps.quiz.services.quiz_revisions import (
     get_current_revision,
     get_session_questions,
     get_session_max_score,
 )
-from apps.main.services.quiz_scoring import score_question
+from apps.quiz.services.quiz_scoring import score_question
 from apps.quiz.models import Quiz, QuizResult, GameSession, GameParticipant, GameAnswer
 
 
