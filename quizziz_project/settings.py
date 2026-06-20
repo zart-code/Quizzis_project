@@ -19,8 +19,6 @@ ALLOWED_HOSTS = [
 ]
 
 INSTALLED_APPS = [
-    # Daphne must come first so it overrides the runserver command with the
-    # ASGI development server (needed for WebSocket support).
     "daphne",
     "channels",
     "django.contrib.admin",
@@ -33,6 +31,7 @@ INSTALLED_APPS = [
     "apps.registration",
     "apps.quiz",
     "apps.game_lobby",
+    "apps.superuser_app",
 ]
 
 MIDDLEWARE = [

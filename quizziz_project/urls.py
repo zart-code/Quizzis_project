@@ -43,15 +43,8 @@ from apps.game_lobby.views import (
     advance_question_view,
     session_results_teacher_view,
 )
-from apps.main.views_features.views_admin import (
-    admin_panel_view,
-    admin_ban_user_view,
-    admin_unpublish_quiz_view,
-    admin_delete_quiz_view,
-    admin_accept_report_view,
-    admin_reject_report_view,
-    admin_change_user_role_view,
-)
+from apps.superuser_app.views import admin_panel_view, admin_ban_user_view, admin_change_user_role_view, \
+    admin_delete_quiz_view, admin_unpublish_quiz_view, admin_accept_report_view, admin_reject_report_view
 from apps.main.views_features.views_ai import (
     ai_generate_page_view,
     ai_generate_questions_view,

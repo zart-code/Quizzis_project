@@ -1,13 +1,11 @@
-"""Тесты для представлений админ-панели."""
-
-# pylint: disable=no-member,missing-class-docstring,missing-function-docstring
-
-from django.test import TestCase, Client
 from django.contrib.auth.models import User
+from django.test import TestCase, Client
 from django.urls import reverse
+
 from apps.quiz.models import Quiz
 
 
+# Create your tests here.
 class AdminPanelViewsTest(TestCase):
     """Набор тестов для представлений админ-панели: просмотр панели, бан пользователя, снятие с публикации квиза."""
 

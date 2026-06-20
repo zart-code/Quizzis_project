@@ -1,19 +1,18 @@
-"""Views для панели администратора"""
-
 import logging
 
-# pylint: disable=no-member,unused-argument
-
-from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.contrib import messages
 from django.db import transaction
-from django.db.models import Count, Case, When, IntegerField, F, Q
+from django.db.models import Count, Q, Case, When, F, IntegerField
+
+from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
+
 from apps.quiz.models import Quiz, QuizReport
 from apps.registration.models import Profile
 
+# Create your views here.
 logger = logging.getLogger(__name__)
 
 

@@ -19,7 +19,7 @@ from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
 from apps.quiz.models import Quiz, QuizReport
-from apps.registration import Profile
+from apps.registration.models import Profile
 from apps.main.services import realtime
 
 
