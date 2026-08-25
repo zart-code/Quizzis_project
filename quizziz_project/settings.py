@@ -152,6 +152,11 @@ OPENROUTER_API_KEY = (
     "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"
 )
 
+# ============================================================
+# GROQ API (генерация квизов)
+# ============================================================
+GROQ_API_KEY = "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"
+
 # Директория для логов
 LOG_DIR = BASE_DIR / "logs"
 LOG_DIR.mkdir(exist_ok=True)

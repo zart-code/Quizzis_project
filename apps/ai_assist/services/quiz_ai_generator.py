@@ -1,5 +1,5 @@
 """
-Сервис генерации квизов с помощью OpenRouter API (бесплатные модели).
+Сервис генерации квизов с помощью Groq API.
 
 Двухшаговая генерация:
 1. generate_questions() — генерирует список вопросов (только тексты)
@@ -15,9 +15,9 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-OPENROUTER_API_KEY = getattr(settings, "OPENROUTER_API_KEY", "")
-OPENROUTER_MODEL = "google/gemini-2.5-flash-lite"
-OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+GROQ_API_KEY = getattr(settings, "GROQ_API_KEY", "")
+GROQ_MODEL = "llama-3.3-70b-versatile"
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 QUESTIONS_SYSTEM_PROMPT = """Ты — генератор вопросов для квизов. Твоя задача — придумать список вопросов по заданной теме.
 
@@ -102,18 +102,18 @@ QUIZ_SYSTEM_PROMPT = """Ты — генератор квизов. Тебе да�
 
 
 def _call_openrouter(system_prompt: str, user_prompt: str) -> dict:
-    """Вызов OpenRouter API (OpenAI-совместимый формат)."""
-    api_key = OPENROUTER_API_KEY
+    """Вызов Groq API (OpenAI-совместимый формат)."""
+    api_key = GROQ_API_KEY
     if not api_key:
         return {
             "success": False,
             "data": None,
-            "error": "API ключ OpenRouter не настроен. Добавьте OPENROUTER_API_KEY в settings.py",
+            "error": "API ключ Groq не настроен. Добавьте GROQ_API_KEY в settings.py",
         }
 
     payload = json.dumps(
         {
-            "model": OPENROUTER_MODEL,
+            "model": GROQ_MODEL,
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
@@ -124,17 +124,15 @@ def _call_openrouter(system_prompt: str, user_prompt: str) -> dict:
     ).encode("utf-8")
 
     req = urllib.request.Request(
-        OPENROUTER_URL,
+        GROQ_URL,
         data=payload,
         headers={
             "Content-Type": "application/json",
             "Authorization": f"Bearer {api_key}",
-            "HTTP-Referer": "https://quizzis.ru",
-            "X-Title": "Quizzis",
         },
     )
 
-    logger.info("Отправка запроса к OpenRouter: model=%s", OPENROUTER_MODEL)
+    logger.info("Отправка запроса к Groq: model=%s", GROQ_MODEL)
 
     try:
         with urllib.request.urlopen(req, timeout=60) as resp:
@@ -145,7 +143,7 @@ def _call_openrouter(system_prompt: str, user_prompt: str) -> dict:
             body = e.read().decode("utf-8", errors="replace")[:500]
         except Exception:
             pass
-        logger.error("OpenRouter HTTP %d: %s. Body: %s", e.code, e.reason, body)
+        logger.error("Groq HTTP %d: %s. Body: %s", e.code, e.reason, body)
 
         if e.code == 429:
             return {
@@ -157,14 +155,14 @@ def _call_openrouter(system_prompt: str, user_prompt: str) -> dict:
         return {
             "success": False,
             "data": None,
-            "error": f"OpenRouter вернул ошибку HTTP {e.code}: {e.reason}",
+            "error": f"Groq вернул ошибку HTTP {e.code}: {e.reason}",
         }
     except urllib.error.URLError as e:
-        logger.error("Не удалось подключиться к OpenRouter: %s", e)
+        logger.error("Не удалось подключиться к Groq: %s", e)
         return {
             "success": False,
             "data": None,
-            "error": "Не удалось подключиться к OpenRouter. Проверьте интернет.",
+            "error": "Не удалось подключиться к Groq. Проверьте интернет.",
         }
     except Exception as e:
         logger.error("Ошибка при генерации: %s", e)
@@ -174,17 +172,17 @@ def _call_openrouter(system_prompt: str, user_prompt: str) -> dict:
     try:
         raw_content = result["choices"][0]["message"]["content"]
     except (KeyError, IndexError):
-        logger.error("Неожиданный ответ OpenRouter: %s", json.dumps(result)[:500])
+        logger.error("Неожиданный ответ Groq: %s", json.dumps(result)[:500])
         return {
             "success": False,
             "data": None,
-            "error": "OpenRouter вернул неожиданный формат ответа.",
+            "error": "Groq вернул неожиданный формат ответа.",
         }
 
     parsed = _parse_json(raw_content)
 
     if parsed is None:
-        logger.error("Невалидный JSON от OpenRouter: %s", raw_content[:500])
+        logger.error("Невалидный JSON от Groq: %s", raw_content[:500])
         return {
             "success": False,
             "data": None,
