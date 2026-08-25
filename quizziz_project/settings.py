@@ -155,7 +155,7 @@ OPENROUTER_API_KEY = (
 # ============================================================
 # GROQ API (генерация квизов)
 # ============================================================
-GROQ_API_KEY = "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"
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 
 # Директория для логов
 LOG_DIR = BASE_DIR / "logs"
