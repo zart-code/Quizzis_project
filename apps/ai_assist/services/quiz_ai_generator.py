@@ -16,7 +16,7 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 OPENROUTER_API_KEY = getattr(settings, "OPENROUTER_API_KEY", "")
-OPENROUTER_MODEL = "openai/gpt-4.1-nano"
+OPENROUTER_MODEL = "google/gemini-2.5-flash-lite"
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 QUESTIONS_SYSTEM_PROMPT = """Ты — генератор вопросов для квизов. Твоя задача — придумать список вопросов по заданной теме.
