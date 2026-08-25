@@ -129,6 +129,8 @@ def _call_openrouter(system_prompt: str, user_prompt: str) -> dict:
         headers={
             "Content-Type": "application/json",
             "Authorization": f"Bearer {api_key}",
+            "HTTP-Referer": "https://quizzis.ru",
+            "X-Title": "Quizzis",
         },
     )
 
