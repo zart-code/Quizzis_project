@@ -77,7 +77,7 @@ jobs:
         run: |
           rsync -avz --delete \
             --exclude='.git/' \
-            --exclude='.venv/' \
+            --exclude='venv/' \
             --exclude='__pycache__/' \
             --exclude='*.pyc' \
             --exclude='static/' \
