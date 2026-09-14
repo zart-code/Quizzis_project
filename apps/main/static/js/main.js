@@ -1,5 +1,5 @@
 // ============================================
-// XSS-защита: экранирование HTML в пользовательских данных
+// XSS-защита: экранирование HTML
 // ============================================
 function escapeHtml(str) {
     if (str == null) return '';
@@ -15,7 +15,6 @@ window.escapeHtml = escapeHtml;
 // Автоматическое скрытие flash сообщений
 document.addEventListener('DOMContentLoaded', function() {
     const alerts = document.querySelectorAll('.alert');
-    
     alerts.forEach(alert => {
         setTimeout(() => {
             alert.style.animation = 'slideOut 0.3s';
@@ -24,14 +23,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Анимация для slideOut
+// Анимация slideOut
 const style = document.createElement('style');
 style.textContent = `
     @keyframes slideOut {
-        to {
-            transform: translateX(100%);
-            opacity: 0;
-        }
+        to { transform: translateX(100%); opacity: 0; }
     }
 `;
 document.head.appendChild(style);
@@ -47,10 +43,7 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         e.preventDefault();
         const target = document.querySelector(this.getAttribute('href'));
         if (target) {
-            target.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
-            });
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     });
 });
@@ -71,16 +64,15 @@ navToggle.style.cssText = `
 if (window.innerWidth <= 768) {
     const navMenu = document.querySelector('.nav-menu');
     const navbar = document.querySelector('.navbar .container');
-    
+
     if (navMenu && navbar) {
         navbar.insertBefore(navToggle, navMenu);
         navToggle.style.display = 'block';
-        
+
         navToggle.addEventListener('click', () => {
             navMenu.classList.toggle('active');
         });
-        
-        // Добавляем стили для активного меню
+
         const mobileStyle = document.createElement('style');
         mobileStyle.textContent = `
             @media (max-width: 768px) {
@@ -95,17 +87,14 @@ if (window.innerWidth <= 768) {
                     box-shadow: 0 5px 10px rgba(0,0,0,0.1);
                     display: none;
                 }
-                
-                .nav-menu.active {
-                    display: flex;
-                }
+                .nav-menu.active { display: flex; }
             }
         `;
         document.head.appendChild(mobileStyle);
     }
 }
 
-// Анимация для элементов при скролле
+// Анимация при скролле
 const observerOptions = {
     threshold: 0.1,
     rootMargin: '0px 0px -50px 0px'
@@ -120,23 +109,15 @@ const observer = new IntersectionObserver((entries) => {
     });
 }, observerOptions);
 
-// Анимация fadeInUp
 const animStyle = document.createElement('style');
 animStyle.textContent = `
     @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(30px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 `;
 document.head.appendChild(animStyle);
 
-// Применяем наблюдатель к карточкам
 document.addEventListener('DOMContentLoaded', () => {
     const cards = document.querySelectorAll('.quiz-card, .feature-card, .stat-card');
     cards.forEach(card => observer.observe(card));
@@ -148,18 +129,15 @@ forms.forEach(form => {
     form.addEventListener('submit', function(e) {
         const requiredFields = form.querySelectorAll('[required]');
         let isValid = true;
-        
+
         requiredFields.forEach(field => {
             if (!field.value.trim()) {
                 isValid = false;
                 field.style.borderColor = 'var(--danger)';
-                
-                setTimeout(() => {
-                    field.style.borderColor = '';
-                }, 3000);
+                setTimeout(() => { field.style.borderColor = ''; }, 3000);
             }
         });
-        
+
         if (!isValid) {
             e.preventDefault();
             alert('Пожалуйста, заполните все обязательные поля');
@@ -167,19 +145,16 @@ forms.forEach(form => {
     });
 });
 
-// Предпросмотр цвета квиза
+// Предпросмотр цвета
 const colorInput = document.getElementById('color');
 if (colorInput) {
     colorInput.addEventListener('input', function() {
-        // Можно добавить предпросмотр выбранного цвета
         const preview = document.querySelector('.color-preview');
-        if (preview) {
-            preview.style.background = this.value;
-        }
+        if (preview) preview.style.background = this.value;
     });
 }
 
-// Таймер для квиза
+// Таймер
 function formatTime(seconds) {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -194,61 +169,32 @@ function showNotification(message, type = 'info') {
         ${message}
         <button class="close-alert" onclick="this.parentElement.remove()">×</button>
     `;
-    
+
     let container = document.querySelector('.flash-messages');
     if (!container) {
         container = document.createElement('div');
         container.className = 'flash-messages';
         document.body.appendChild(container);
     }
-    
+
     container.appendChild(notification);
-    
+
     setTimeout(() => {
         notification.style.animation = 'slideOut 0.3s';
         setTimeout(() => notification.remove(), 300);
     }, 5000);
 }
 
-
-
-// Функция для установки сортировки
+// Сортировка
 function setSort(sortType) {
     const currentUrl = new URL(window.location.href);
     currentUrl.searchParams.set('sort', sortType);
-
-    // Сохраняем поисковый запрос если есть
     const searchInput = document.getElementById('searchInput');
     if (searchInput && searchInput.value) {
         currentUrl.searchParams.set('search', searchInput.value);
     }
-
     window.location.href = currentUrl.toString();
 }
-
-// Enter на странице квизов обрабатывается в quizzes_view.html через AJAX
-
-// Автоматическая отправка формы при изменении поиска (опционально)
-// Раскомментируйте если хотите live search
-/*
-document.addEventListener('DOMContentLoaded', function() {
-    let searchTimeout;
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                if (this.value.length >= 3 || this.value.length === 0) {
-                    const form = document.getElementById('searchForm');
-                    if (form) {
-                        form.submit();
-                    }
-                }
-            }, 500);
-        });
-    }
-});
-*/
 
 // ============================================
 // СТРАНИЦА СОЗДАНИЯ КВИЗА
@@ -262,15 +208,13 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.addEventListener('click', function(e) {
                 e.preventDefault();
                 const colorInput = document.getElementById('color');
-                if (colorInput) {
-                    colorInput.value = this.dataset.color;
-                }
+                if (colorInput) colorInput.value = this.dataset.color;
             });
         });
     }
 });
 
-// Конвертация минут в секунды при отправке формы создания квиза
+// Конвертация минут в секунды
 document.addEventListener('DOMContentLoaded', function() {
     const createQuizForm = document.getElementById('createQuizForm') || document.getElementById('quiz-form');
     if (createQuizForm) {
@@ -291,7 +235,6 @@ document.addEventListener('DOMContentLoaded', function() {
         themeRadios.forEach(radio => {
             radio.addEventListener('change', function() {
                 console.log('Выбрана тема:', this.value);
-                // Можно добавить дополнительные действия при выборе темы
             });
         });
     }
@@ -393,26 +336,18 @@ function makeAnswersText() {
 }
 
 function collectAnswerState(i) {
-    const state = {
-        texts: [],
-        checked: [],
-        numberValue: '',
-    };
+    const state = { texts: [], checked: [], numberValue: '' };
 
     for (let j = 0; j < 4; j += 1) {
         const textInput = document.querySelector(`input[name="q${i}_ans${j}"]`);
-        if (textInput) {
-            state.texts[j] = textInput.value;
-        }
+        if (textInput) state.texts[j] = textInput.value;
     }
 
     const checkedInputs = document.querySelectorAll(`input[name="q${i}_correct"]:checked`);
     state.checked = Array.from(checkedInputs).map((input) => input.value);
 
     const numberInput = document.querySelector(`input[name="q${i}_correct_number"]`);
-    if (numberInput) {
-        state.numberValue = numberInput.value;
-    }
+    if (numberInput) state.numberValue = numberInput.value;
 
     return state;
 }
@@ -427,9 +362,7 @@ function restoreAnswerState(i, state) {
 
     state.checked.forEach((value) => {
         const input = document.querySelector(`input[name="q${i}_correct"][value="${value}"]`);
-        if (input) {
-            input.checked = true;
-        }
+        if (input) input.checked = true;
     });
 
     const numberInput = document.querySelector(`input[name="q${i}_correct_number"]`);
@@ -438,13 +371,16 @@ function restoreAnswerState(i, state) {
     }
 }
 
+// ============================================
+// ГЛАВНОЕ ИСПРАВЛЕНИЕ: textarea вместо input
+// ============================================
 function makeQuestion(i) {
     const questionsContainer = document.getElementById('questions-container');
     if (!questionsContainer) {
         return;
     }
 
-        const html = `<div class="q-block" id="qblock${i}">
+    const html = `<div class="q-block" id="qblock${i}">
         <div class="q-block-header">
             <span class="q-block-title">Вопрос ${i}</span>
             <button type="button" class="q-remove-btn" onclick="removeQuestion(${i})">✕ Удалить</button>
@@ -460,11 +396,12 @@ function makeQuestion(i) {
         </div>
         <div class="q-row">
             <label>Текст вопроса</label>
-            <input type="text"
-                   class="q-input"
-                   name="q${i}_text"
-                   placeholder="Введите текст вопроса..."
-                   required>
+            <textarea class="q-input q-textarea"
+                      name="q${i}_text"
+                      rows="2"
+                      placeholder="Введите текст вопроса..."
+                      oninput="autoGrow(this)"
+                      required></textarea>
         </div>
         <div class="q-row">
             <label>Коэффициент</label>
@@ -486,35 +423,43 @@ function makeQuestion(i) {
     questionsContainer.insertAdjacentHTML('beforeend', html);
 }
 
-function setQuestionData(i, questionData) {
-    const typeSelect = document.getElementById(`q${i}_type`);
-    const questionInput = document.querySelector(`input[name="q${i}_text"]`);
-    const coefficientInput = document.querySelector(`input[name="q${i}_coefficient"]`);
+function autoGrow(el) {
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+}
+window.autoGrow = autoGrow;
 
+function setQuestionData(i, questionData) {
+    // 1. Тип
+    const typeSelect = document.getElementById(`q${i}_type`);
     if (typeSelect && questionData.type) {
         typeSelect.value = questionData.type;
         updateAnswers(i);
     }
 
+    // 2. Текст вопроса (textarea)
+    const questionInput = document.querySelector(`[name="q${i}_text"]`);
     if (questionInput) {
         questionInput.value = questionData.text || '';
+        autoGrow(questionInput);
     }
+
+    // 3. Коэффициент
+    const coefficientInput = document.querySelector(`input[name="q${i}_coefficient"]`);
     if (coefficientInput) {
         coefficientInput.value = questionData.coefficient || 1;
     }
 
+    // 4. Ответы
     if (questionData.type === 'single' || questionData.type === 'multiple') {
         const answers = Array.isArray(questionData.answers) ? questionData.answers : [];
         answers.forEach((answer, index) => {
             const answerInput = document.querySelector(`input[name="q${i}_ans${index}"]`);
             const correctInput = document.querySelector(`input[name="q${i}_correct"][value="${index}"]`);
 
-            if (answerInput) {
-                answerInput.value = answer.text || '';
-            }
-            if (correctInput && answer.is_correct) {
-                correctInput.checked = true;
-            }
+            if (answerInput) answerInput.value = answer.text || '';
+            if (correctInput && answer.is_correct) correctInput.checked = true;
         });
     } else if (questionData.type === 'number') {
         const numberInput = document.querySelector(`input[name="q${i}_correct_number"]`);
@@ -527,13 +472,12 @@ function setQuestionData(i, questionData) {
         }
     }
 
+    // 5. Время
     if (questionData.time) {
         const timeInput = document.querySelector(
             `input[name="q${i}_time"][value="${questionData.time}"]`,
         );
-        if (timeInput) {
-            timeInput.checked = true;
-        }
+        if (timeInput) timeInput.checked = true;
     }
 }
 
@@ -562,18 +506,13 @@ function renumberQuestions() {
 
     blocks.forEach((block, index) => {
         const i = index + 1;
-
         block.id = `qblock${i}`;
 
         const title = block.querySelector('.q-block-title');
-        if (title) {
-            title.textContent = `Вопрос ${i}`;
-        }
+        if (title) title.textContent = `Вопрос ${i}`;
 
         const removeBtn = block.querySelector('.q-remove-btn');
-        if (removeBtn) {
-            removeBtn.setAttribute('onclick', `removeQuestion(${i})`);
-        }
+        if (removeBtn) removeBtn.setAttribute('onclick', `removeQuestion(${i})`);
 
         const typeSelect = block.querySelector('.q-select');
         if (typeSelect) {
@@ -582,12 +521,13 @@ function renumberQuestions() {
             typeSelect.setAttribute('onchange', `updateAnswers(${i})`);
         }
 
-        const questionInput = block.querySelector('.q-row input.q-input[name$="_text"]');
+        // Текст вопроса — теперь textarea, селектор без input
+        const questionInput = block.querySelector('[name$="_text"]');
         if (questionInput) {
             questionInput.name = `q${i}_text`;
         }
 
-        const coefficientInput = block.querySelector('.q-row input.q-input[name$="_coefficient"]');
+        const coefficientInput = block.querySelector('input.q-input[name$="_coefficient"]');
         if (coefficientInput) {
             coefficientInput.name = `q${i}_coefficient`;
         }
@@ -641,8 +581,11 @@ function removeQuestion(i) {
 }
 
 function updateAnswers(i) {
-    const type = document.getElementById(`q${i}_type`).value;
+    const typeSelect = document.getElementById(`q${i}_type`);
     const answersContainer = document.getElementById(`q${i}_answers`);
+    if (!typeSelect || !answersContainer) return;
+
+    const type = typeSelect.value;
     const state = collectAnswerState(i);
 
     if (type === 'single') {
@@ -668,30 +611,33 @@ if (addQuestionBtn) {
     initQuizForm();
 }
 
-
-// Lobby polling is declared in lobby.html, where Django can render the URL.
+// Lobby polling
 const lobbyApiUrlFromStatic = null;
-function copyLink(){navigator.clipboard.writeText(document.getElementById('join-link').textContent)}
-function fetchPlayers(){
-    // Проверяем, находимся ли мы на странице создания квиза
+
+function copyLink() {
+    navigator.clipboard.writeText(document.getElementById('join-link').textContent);
+}
+
+function fetchPlayers() {
     if (window.location.pathname.includes('/quiz/create/')) {
         window.isCreateQuizPage = true;
     }
     if (!lobbyApiUrlFromStatic || window.isCreateQuizPage) return;
-    fetch(lobbyApiUrlFromStatic).then(r=>r.json()).then(data=>{
-        document.getElementById('player-count').textContent=data.count;
-        const list=document.getElementById('players-list');
-        list.innerHTML=data.players.length===0?'<li class="players-empty">Ожидание игроков...</li>':data.players.map(p=>`<li class="player-chip">👤 ${escapeHtml(p.username)}</li>`).join('');
-        document.getElementById('start-btn').disabled=data.count===0;
-        document.getElementById('lock-status-badge').innerHTML=data.is_locked?'<span class="lbadge lbadge-danger">Закрыто</span>':'<span class="lbadge lbadge-success">Открыто</span>';
+
+    fetch(lobbyApiUrlFromStatic).then(r => r.json()).then(data => {
+        document.getElementById('player-count').textContent = data.count;
+        const list = document.getElementById('players-list');
+        list.innerHTML = data.players.length === 0
+            ? '<li class="players-empty">Ожидание игроков...</li>'
+            : data.players.map(p => `<li class="player-chip">👤 ${escapeHtml(p.username)}</li>`).join('');
+        document.getElementById('start-btn').disabled = data.count === 0;
+        document.getElementById('lock-status-badge').innerHTML = data.is_locked
+            ? '<span class="lbadge lbadge-danger">Закрыто</span>'
+            : '<span class="lbadge lbadge-success">Открыто</span>';
     });
 }
 
-// Инициализация модальных окон карточек квизов перенесена в quizzes_view.html
-// чтобы корректно работать после AJAX-обновления списка
-
-
-// Экспортируем функции для использования в других файлах
 window.confirmDelete = confirmDelete;
 window.showNotification = showNotification;
 window.formatTime = formatTime;
+window.autoGrow = autoGrow;

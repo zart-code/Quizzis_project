@@ -177,7 +177,15 @@
 .sp-timer-bar-bg{flex:1;height:8px;background:rgba(139,92,246,.15);border-radius:10px;overflow:hidden}
 .sp-timer-bar{height:100%;background:linear-gradient(90deg,var(--primary),var(--secondary));border-radius:10px;transition:width 1s linear}
 .sp-timer-num{font-size:1.4rem;font-weight:700;color:var(--primary-light);min-width:2.5rem;text-align:right}
-.sp-question-text{font-size:1.4rem;font-weight:600;color:var(--text-primary);margin-bottom:1.5rem;line-height:1.4;text-align:center}
+.sp-question-text{
+    font-size:1.4rem;font-weight:600;
+    color:var(--text-primary);
+    margin-bottom:1.5rem;
+    line-height:1.4;text-align:center;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    }
 .sp-answers-grid{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-bottom:1.5rem}
 @media(max-width:500px){.sp-answers-grid{grid-template-columns:1fr}}
 .sp-answer-label{display:flex;align-items:center;gap:.8rem;background:rgba(139,92,246,.08);border:2px solid rgba(139,92,246,.2);border-radius:14px;padding:1rem 1.2rem;cursor:pointer;transition:all .2s}

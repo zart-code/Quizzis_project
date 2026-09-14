@@ -2622,3 +2622,14 @@ body {
     text-align: center;
     margin-bottom: 1.5rem;
 }
+
+.q-textarea {
+    resize: vertical;
+    min-height: 44px;
+    line-height: 1.4;
+    padding: 10px 12px;
+    font-family: inherit;
+    white-space: pre-wrap;
+    overflow: hidden;
+    box-sizing: border-box;
+}
