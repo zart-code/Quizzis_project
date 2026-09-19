@@ -1,0 +1,19 @@
+.lbadge{
+    display:inline-block;
+    padding:.3rem .9rem;
+    border-radius:20px;
+    font-size:.85rem;
+    font-weight:600
+    }
+
+.lbadge-success{
+    background:rgba(16,185,129,.2);
+    color:#10B981;
+    border:1px solid rgba(16,185,129,.3)
+    }
+
+.lbadge-danger{
+    background:rgba(239,68,68,.2);
+    color:#EF4444;
+    border:1px solid rgba(239,68,68,.3)
+    }

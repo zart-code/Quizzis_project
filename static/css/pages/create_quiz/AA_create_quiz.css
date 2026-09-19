@@ -1,0 +1,9 @@
+/* ============================================
+   Страница создания/редактирования квиза
+   и страница AI-генерации
+   ============================================ */
+
+@import url('create_quiz/layout.css');
+@import url('create_quiz/question.css');
+@import url('create_quiz/sidebars.css');
+@import url('create_quiz/ai_generate.css');

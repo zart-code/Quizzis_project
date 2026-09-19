@@ -19,3 +19,4 @@ export const DOM_IDS = {
     ADD_QUESTION_BTN: 'add-question-btn',
     QUIZ_TITLE: 'quiz-title',
 };
+

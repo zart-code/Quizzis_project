@@ -1,9 +1,12 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Генерация квиза AI — Quizziz{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/create_quiz.css' %}">
+{% endblock %}
 
 {% block content %}
+
 <div class="container">
     <div class="aig-wrapper">
         <div class="aig-header">

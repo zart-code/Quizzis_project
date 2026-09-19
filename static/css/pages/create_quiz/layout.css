@@ -1,0 +1,24 @@
+/* ============================================
+   Каркас страницы создания/редактирования квиза
+   ============================================ */
+
+.cq-wrapper{
+    max-width:780px;
+    margin:0 auto;
+    padding:2rem 0;
+    position:relative;   /* для absolute-позиционирования боковых панелей */
+}
+.cq-header{text-align:center;margin-bottom:2rem}
+.cq-title{
+    font-size:2.2rem;
+    font-weight:700;
+    background:linear-gradient(135deg,#A78BFA,#EC4899);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    background-clip:text;
+}
+.cq-subtitle{color:var(--text-secondary);margin-top:.4rem}
+.cq-title-card{padding:1.8rem;margin-bottom:1.5rem}
+.cq-label{display:block;font-weight:600;color:var(--text-primary);margin-bottom:.7rem;font-size:.95rem}
+.cq-add-row{text-align:center;margin:1.5rem 0}
+.cq-submit-row{text-align:center;margin-top:2rem}
