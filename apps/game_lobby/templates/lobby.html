@@ -3,12 +3,23 @@
 
 {% block title %}Лобби — {{ session.quiz.title }}{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/profile.css' %}">
+<link rel="stylesheet" href="{% static 'css/lobby.css' %}">
+
+<link rel="stylesheet" href="/static/css/pages/join_lobby.css">
+<link rel="stylesheet" href="/static/css/pages/quizzes.css">
+<link rel="stylesheet" href="/static/css/pages/modals.css">
+<link rel="stylesheet" href="/static/css/pages/my_quizzes.css">
+
+{% endblock %}
+
 {% block content %}
     <div class="container">
         <!-- Lobby waiting view -->
         <div class="lobby-wrapper" id="lobby-waiting" {% if session.status != 'waiting' %}style="display:none"{% endif %}>
             <div class="lobby-header">
-                <h1 class="lobby-title">🎮 {{ session.quiz.title }}</h1>
+                <h1 class="lobby-title">{{ session.quiz.title }}</h1>
                 <p class="lobby-meta">Вопросов: <strong>{{ session.quiz.total_questions }}</strong></p>
             </div>
 
@@ -35,7 +46,7 @@
             </div>
 
             <div class="players-section card">
-                <h3 class="section-title">👥 Участники</h3>
+                <h3 class="section-title">Участники</h3>
                 <ul class="players-list" id="players-list">
                     <li class="players-empty">Ожидание игроков...</li>
                 </ul>

@@ -3,6 +3,14 @@
 
 {% block title %}Все квизы - Quizziz{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/home.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/quizzes.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/modals.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/my_quizzes.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/profile.css' %}">
+{% endblock %}
+
 {% block content %}
 <div class="container">
     <div class="quizzes-page">

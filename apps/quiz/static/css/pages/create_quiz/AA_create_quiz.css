@@ -3,7 +3,7 @@
    и страница AI-генерации
    ============================================ */
 
-@import url('parts\layout.css');
-@import url('parts\question.css');
-@import url('parts\sidebars.css');
-@import url('parts\ai_generate.css');
+@import url('parts/layout.css');
+@import url('parts/question.css');
+@import url('parts/sidebars.css');
+@import url('parts/ai_generate.css');

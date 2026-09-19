@@ -1,12 +1,17 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Регистрация - Quizziz{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/login_register.css' %}">
+{% endblock %}
 
 {% block content %}
 <div class="container">
     <div class="auth-container">
         <div class="auth-card">
-            <h2 class="auth-title">Регистрация 🎯</h2>
+            <h2 class="auth-title">Регистрация</h2>
 
             {% if form.errors %}
                 <div style="color: red; margin-bottom: 15px;">

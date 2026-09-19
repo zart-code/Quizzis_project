@@ -4,7 +4,13 @@
 {% block title %}{% if is_edit %}Редактировать квиз — Quizziz{% else %}Создать квиз — Quizziz{% endif %}{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/AA_create_quiz.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/create_quiz/AA_create_quiz.css' %}">
+
+<link rel="stylesheet" href="{% static 'css/pages/profile.css' %}">
+<link rel="stylesheet" href="/static/css/pages/home.css">
+<link rel="stylesheet" href="/static/css/pages/quizzes.css">
+<link rel="stylesheet" href="/static/css/pages/modals.css">
+<link rel="stylesheet" href="/static/css/pages/my_quizzes.css">
 {% endblock %}
 
 {% block content %}

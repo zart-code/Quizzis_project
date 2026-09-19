@@ -1,6 +1,15 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}Главная - Quizziz{% endblock %}
+{% block title %}Главная - Quizzis{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/home.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/quizzes.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/join_lobby.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/modals.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/profile.css' %}">
+{% endblock %}
 
 {% block content %}
 
@@ -55,7 +64,7 @@ document.getElementById('kicked-overlay').addEventListener('click', function(e) 
 {% endif %}
 <div class="hero">
     <div class="container">
-        <h1 class="hero-title">Добро пожаловать в Quizziz!</h1>
+        <h1 class="hero-title">Добро пожаловать в Quizzis!</h1>
 
         {% if not user.is_authenticated %}
             <div class="hero-actions">
@@ -343,3 +352,4 @@ document.getElementById('kicked-overlay').addEventListener('click', function(e) 
 })();
 </script>
 {% endblock %}
+
