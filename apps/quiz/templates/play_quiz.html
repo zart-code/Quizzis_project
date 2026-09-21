@@ -3,6 +3,11 @@
 {% block title %}{{ quiz.title }} - Quizziz{% endblock %}
 {% load static %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/profile.css' %}">
+<link rel="stylesheet" href="/static/css/pages/play_quiz/play_quiz.css">
+{% endblock %}
+
 {% block content %}
 <div class="container">
     <div class="sp-wrapper">
@@ -160,66 +165,7 @@
     </div>
 </div>
 
-<style>
-.sp-wrapper{max-width:700px;margin:0 auto;padding:2rem 0}
-.sp-header{margin-bottom:1.5rem}
-.sp-quiz-title{font-size:1rem;color:var(--text-muted);text-align:center;margin-bottom:.5rem}
-.sp-report-row{text-align:center;margin-bottom:.8rem}
-.sp-report-link{color:#FCA5A5;font-size:.86rem;text-decoration:none}
-.sp-report-link:hover{text-decoration:underline}
-.sp-progress-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem}
-.sp-progress-text{color:var(--text-secondary);font-size:.9rem;font-weight:500}
-.sp-score{color:var(--accent);font-weight:700;font-size:1rem}
 
-/* Question card */
-.sp-question-card{padding:2rem}
-.sp-timer-row{display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem}
-.sp-timer-bar-bg{flex:1;height:8px;background:rgba(139,92,246,.15);border-radius:10px;overflow:hidden}
-.sp-timer-bar{height:100%;background:linear-gradient(90deg,var(--primary),var(--secondary));border-radius:10px;transition:width 1s linear}
-.sp-timer-num{font-size:1.4rem;font-weight:700;color:var(--primary-light);min-width:2.5rem;text-align:right}
-.sp-question-text{
-    font-size:1.4rem;font-weight:600;
-    color:var(--text-primary);
-    margin-bottom:1.5rem;
-    line-height:1.4;text-align:center;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    }
-.sp-answers-grid{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-bottom:1.5rem}
-@media(max-width:500px){.sp-answers-grid{grid-template-columns:1fr}}
-.sp-answer-label{display:flex;align-items:center;gap:.8rem;background:rgba(139,92,246,.08);border:2px solid rgba(139,92,246,.2);border-radius:14px;padding:1rem 1.2rem;cursor:pointer;transition:all .2s}
-.sp-answer-letter{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:rgba(139,92,246,.2);color:var(--primary-light);font-weight:700;font-size:.85rem;flex-shrink:0}
-.sp-answer-label:hover{background:rgba(139,92,246,.18);border-color:var(--primary)}
-.sp-answer-label:has(.sp-radio:checked),.sp-answer-label:has(.sp-check:checked){background:rgba(139,92,246,.25);border-color:var(--primary-light)}
-.sp-radio,.sp-check{width:18px;height:18px;accent-color:var(--primary);flex-shrink:0}
-.sp-answer-text{color:var(--text-primary);font-size:.95rem}
-.sp-input-row{margin-bottom:1.5rem}
-.sp-hint{color:var(--text-muted);font-size:.85rem;margin-top:.5rem;font-style:italic}
-.sp-submit-row{text-align:center}
-
-/* Result card */
-.sp-result-card{padding:2.5rem 2rem;text-align:center}
-.sp-result-icon{font-size:3rem;margin-bottom:.75rem}
-.sp-result-title{font-size:1.6rem;font-weight:700;margin-bottom:.5rem}
-.sp-result-title.sp-correct{color:#22c55e}
-.sp-result-title.sp-wrong{color:#ef4444}
-.sp-result-title.sp-timeout{color:#f59e0b}
-.sp-result-title.sp-manual{color:var(--primary-light)}
-.sp-result-sub{color:var(--text-secondary);margin-bottom:1rem}
-.sp-correct-answer{background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.25);border-radius:12px;padding:.9rem 1.2rem;margin:1rem 0 1.5rem;text-align:left}
-.sp-correct-label{display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.25rem;text-transform:uppercase;letter-spacing:.05em}
-.sp-correct-value{color:var(--text-primary);font-weight:600;font-size:1rem}
-.sp-result-form{margin-top:1.5rem}
-
-/* Finished card */
-.sp-finished-card{padding:3rem 2rem;text-align:center}
-.sp-finished-icon{font-size:3.5rem;margin-bottom:1rem}
-.sp-finished-title{font-size:1.6rem;font-weight:700;color:var(--primary-light);margin-bottom:.5rem}
-.sp-finished-score{font-size:3.5rem;font-weight:800;color:var(--accent);line-height:1}
-.sp-finished-sub{color:var(--text-secondary);margin-top:.25rem;margin-bottom:2rem}
-.sp-finished-actions{display:flex;flex-direction:column;gap:.8rem;align-items:center}
-</style>
 {% endblock %}
 
 {% block extra_js %}
