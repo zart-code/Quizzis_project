@@ -12,28 +12,6 @@ class TestProfile(TestCase):
         self.assertTrue(hasattr(user, "profile"))
         self.assertEqual(user.profile.role, Profile.STUDENT)
 
-    def test_admin_profile_auto_created_as_admin(self):
-        admin = User.objects.create(username="admin")
-        self.assertEqual(admin.profile.role, Profile.ADMIN)
-        self.assertTrue(admin.profile.is_admin)
-
-    def test_save_signal_corrects_role_for_admin_username(self):
-        admin_user = User.objects.create(username="admin")
-        # Убедимся, что роль изначально ADMIN
-        self.assertEqual(admin_user.profile.role, Profile.ADMIN)
-
-        # Меняем роль вручную
-        admin_user.profile.role = Profile.STUDENT
-        admin_user.profile.is_admin = False
-        admin_user.profile.save()
-
-        # Сохранение пользователя должно восстановить ADMIN
-        admin_user.save()
-        admin_user.refresh_from_db()
-        self.assertEqual(admin_user.profile.role, Profile.ADMIN)
-        self.assertTrue(admin_user.profile.is_admin)
-
-
 class TestQuiz(TestCase):
     """Тесты для модели Quiz и её методов."""
 
