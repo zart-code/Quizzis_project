@@ -41,7 +41,8 @@ def create_user_profile(sender, instance, created, **kwargs):
     """Создание профиля юзера"""
     if created:
         profile, _ = Profile.objects.get_or_create(user=instance)
-        if instance.username == "admin":
+        # Суперпользователь/персонал → админ
+        if instance.is_superuser or instance.is_staff:
             profile.role = Profile.ADMIN
             profile.is_admin = True
         profile.save()
@@ -50,13 +51,16 @@ def create_user_profile(sender, instance, created, **kwargs):
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
     """Сохранить профиль"""
-    if hasattr(instance, "profile"):
-        profile = instance.profile
-        if instance.username == "admin":
-            profile.role = Profile.ADMIN
-            profile.is_admin = True
-        elif profile.role == Profile.ADMIN and not profile.is_admin:
-            profile.role = Profile.TEACHER
-        elif profile.is_admin and profile.role != Profile.ADMIN:
-            profile.role = Profile.ADMIN
-        profile.save()
+    if not hasattr(instance, "profile"):
+        return
+    profile = instance.profile
+
+    if instance.is_superuser or instance.is_staff:
+        profile.role = Profile.ADMIN
+        profile.is_admin = True
+    elif profile.is_admin and profile.role != Profile.ADMIN:
+        profile.role = Profile.ADMIN
+    elif profile.role == Profile.ADMIN and not profile.is_admin:
+        profile.role = Profile.TEACHER
+
+    profile.save()
