@@ -21,7 +21,7 @@ from apps.quiz.services.quiz_revisions import (
     get_session_max_score,
 )
 from apps.quiz.services.quiz_scoring import score_question
-from apps.quiz.models import Quiz, QuizResult, GameSession, GameParticipant, GameAnswer
+from apps.quiz.models import Quiz, QuizResult, Question, GameSession, GameParticipant, GameAnswer
 
 
 # Create your views here.
@@ -503,16 +503,46 @@ def submit_answer_view(request, pin):
     participant.is_answered = True
     participant.save()
 
+    # ── Извлекаем ответ игрока в зависимости от типа вопроса ──
+    qtype = question.question_type
+    answer_obj = None
+    text_answer = None
+    number_answer = None
+
+    if qtype in (Question.SINGLE, Question.MULTIPLE):
+        answer_id = request.POST.get("answer")
+        if answer_id:
+            if session.revision_id:
+                answer_obj = question.answers.filter(id=answer_id).first()
+            else:
+                answer_obj = question.answers.filter(id=answer_id).first()
+
+    elif qtype == Question.TEXT:
+        raw = (request.POST.get("answer_text") or "").strip()
+        text_answer = raw or None
+
+    elif qtype == Question.NUMBER:
+        raw = request.POST.get("answer_number")
+        if raw not in (None, ""):
+            try:
+                number_answer = float(raw)
+            except (TypeError, ValueError):
+                number_answer = None
+
     game_answer_data = {
         "session": session,
         "participant": participant,
         "is_correct": is_correct,
         "points": earned_points,
+        "answer": answer_obj,
+        "text_answer": text_answer,
+        "number_answer": number_answer,
     }
     if session.revision_id:
         game_answer_data["revision_question"] = question
     else:
         game_answer_data["question"] = question
+
     GameAnswer.objects.create(**game_answer_data)
 
     logger.info(
@@ -598,6 +628,9 @@ def advance_question_view(request, pin):
                     "participant": participant,
                     "is_correct": False,
                     "points": 0,
+                    "answer": None,
+                    "text_answer": None,
+                    "number_answer": None,
                 }
                 if session.revision_id:
                     game_answer_data["revision_question"] = current_question
@@ -710,11 +743,7 @@ def session_results_teacher_view(request, pin):
             q_results.append(
                 {
                     "points": answer_data["points"],
-                    "max_points": (
-                        0
-                        if question.question_type == "text"
-                        else 4 * question.coefficient
-                    ),
+                    "max_points": 4 * question.coefficient,
                     "is_correct": answer_data["is_correct"],
                 }
             )

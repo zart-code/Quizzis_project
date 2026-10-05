@@ -121,13 +121,18 @@ class Quiz(models.Model):
         return self.questions.count()
 
     def total_max_score(self) -> int:
-        """Возвращает максимальный балл текущей ревизии квиза."""
         if self.current_revision_id:
             return self.current_revision.max_score
 
         total = 0
         for question in self.questions.all():
-            if question.question_type != Question.TEXT:
+            if question.question_type == Question.TEXT:
+                if question.correct_text:
+                    total += 4 * question.coefficient
+            elif question.question_type == Question.NUMBER:
+                if question.correct_number is not None:
+                    total += 4 * question.coefficient
+            else:
                 total += 4 * question.coefficient
         return total
 
@@ -541,6 +546,13 @@ class Question(models.Model):
         blank=True,
         verbose_name="Правильное число",
     )
+
+    correct_text = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name="Правильный текстовый ответ",
+    )
+
     coefficient = models.PositiveIntegerField(
         default=1,
         verbose_name="Коэффициент",
@@ -581,7 +593,14 @@ class RevisionQuestion(models.Model):
         verbose_name="Тип вопроса",
     )
     correct_number = models.FloatField(
-        null=True, blank=True, verbose_name="Правильное число"
+        null=True,
+        blank=True,
+        verbose_name="Правильное число"
+    )
+    correct_text = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name="Правильный текстовый ответ",
     )
     coefficient = models.PositiveIntegerField(default=1, verbose_name="Коэффициент")
     time_limit = models.IntegerField(default=30, verbose_name="Время на ответ (сек)")
@@ -677,6 +696,16 @@ class GameAnswer(models.Model):
         related_name="game_answers",
         verbose_name="Вопрос ревизии",
     )
+    number_answer = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name="Числовой ответ",
+    )
+    text_answer = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name="Текстовый ответ",
+    )
     answer = models.ForeignKey(
         Answer,
         on_delete=models.SET_NULL,
@@ -706,8 +735,45 @@ class GameAnswer(models.Model):
             ),
         ]
 
+    def _get_question(self):
+        """Возвращает вопрос: сначала из ревизии, потом обычный."""
+        return self.revision_question or self.question
+
+    def check_correct(self) -> bool:
+        """Проверяет ответ в зависимости от типа вопроса."""
+        question = self._get_question()
+        if not question:
+            return False
+
+        qtype = question.question_type
+
+        if qtype in (Question.SINGLE, Question.MULTIPLE):
+            return bool(self.answer and self.answer.is_correct)
+
+        if qtype == Question.TEXT:
+            correct = (question.correct_text or "").strip().casefold()
+            user = (self.text_answer or "").strip().casefold()
+            return correct != "" and correct == user
+
+        if qtype == Question.NUMBER:
+            if question.correct_number is None or self.number_answer is None:
+                return False
+            return abs(question.correct_number - self.number_answer) < 1e-9
+
+        return False
+
+    def save(self, *args, **kwargs):
+        question = self._get_question()
+        if question:
+            self.is_correct = self.check_correct()
+            self.points = 4 * question.coefficient if self.is_correct else 0
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        """
-        Отладочная информация
-        """
-        return f"{self.answer} — {self.question}"
+        question = self._get_question()
+        if self.text_answer:
+            return f"{self.text_answer} — {question}"
+        if self.number_answer is not None:
+            return f"{self.number_answer} — {question}"
+        return f"{self.answer} — {question}"
+

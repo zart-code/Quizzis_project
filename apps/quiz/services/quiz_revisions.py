@@ -36,7 +36,13 @@ def get_quiz_max_score(quiz):
 
     total = 0
     for question in quiz.questions.all():
-        if question.question_type != Question.TEXT:
+        if question.question_type == Question.TEXT:
+            if question.correct_text:
+                total += 4 * question.coefficient
+        elif question.question_type == Question.NUMBER:
+            if question.correct_number is not None:
+                total += 4 * question.coefficient
+        else:
             total += 4 * question.coefficient
     return total
 
@@ -80,6 +86,7 @@ def build_revision_payload(revision):
                 "time": question.time_limit,
                 "coefficient": question.coefficient,
                 "correct_number": question.correct_number,
+                "correct_text": question.correct_text,     # ← добавлено
                 "answers": [
                     {
                         "text": answer.text,
@@ -132,6 +139,7 @@ def collect_question_payloads_from_post(request):
             "coefficient": coefficient,
             "order": order,
             "correct_number": None,
+            "correct_text": None,                      # ← добавлено
             "answers": [],
         }
 
@@ -165,8 +173,12 @@ def collect_question_payloads_from_post(request):
             raw_number = request.POST.get(f"q{index}_correct_number", "0")
             try:
                 payload["correct_number"] = float(raw_number)
-            except ValueError:
+            except (TypeError, ValueError):
                 payload["correct_number"] = 0
+
+        elif question_type == "text":                  # ← добавлено
+            raw_text = (request.POST.get(f"q{index}_correct_text") or "").strip()
+            payload["correct_text"] = raw_text or None
 
         question_payloads.append(payload)
 
@@ -179,7 +191,15 @@ def calculate_revision_totals(question_payloads):
     max_score = 0
 
     for question_payload in question_payloads:
-        if question_payload["question_type"] != Question.TEXT:
+        qtype = question_payload["question_type"]
+
+        if qtype == Question.TEXT:
+            if question_payload.get("correct_text"):
+                max_score += 4 * question_payload["coefficient"]
+        elif qtype == Question.NUMBER:
+            if question_payload.get("correct_number") is not None:
+                max_score += 4 * question_payload["coefficient"]
+        else:
             max_score += 4 * question_payload["coefficient"]
 
     return {
@@ -213,7 +233,8 @@ def create_revision_from_payloads(quiz, title, question_payloads):
             revision=revision,
             text=question_payload["text"],
             question_type=question_payload["question_type"],
-            correct_number=question_payload["correct_number"],
+            correct_number=question_payload.get("correct_number"),
+            correct_text=question_payload.get("correct_text"),     # ← добавлено
             coefficient=question_payload["coefficient"],
             time_limit=question_payload["time_limit"],
             order=question_payload["order"],
@@ -243,7 +264,8 @@ def build_quiz_form_payload(title, question_payloads):
                 "type": question_payload["question_type"],
                 "time": question_payload["time_limit"],
                 "coefficient": question_payload["coefficient"],
-                "correct_number": question_payload["correct_number"],
+                "correct_number": question_payload.get("correct_number"),
+                "correct_text": question_payload.get("correct_text"),   # ← добавлено
                 "answers": [
                     {
                         "text": answer_payload["text"],
@@ -272,6 +294,7 @@ def build_quiz_payload_for_edit(quiz):
                 "time": question.time_limit,
                 "coefficient": question.coefficient,
                 "correct_number": question.correct_number,
+                "correct_text": question.correct_text,       # ← добавлено
                 "answers": [
                     {
                         "text": answer.text,

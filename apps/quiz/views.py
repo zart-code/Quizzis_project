@@ -7,7 +7,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from apps.quiz.models import Quiz, QuizReport, QuizResult, GameSession, GameParticipant
+from apps.quiz.models import Quiz, QuizReport, QuizResult, GameSession, GameParticipant,  Question
 from apps.quiz.services.quiz_revisions import (
     collect_question_payloads_from_post,
     build_quiz_form_payload,
@@ -20,6 +20,8 @@ from apps.quiz.services.quiz_revisions import (
 from apps.quiz.services.quiz_scoring import score_question
 from apps.quiz.forms_reports import QuizReportForm
 from apps.registration.models import Profile
+
+from dataclasses import dataclass
 
 # Create your views here.
 logger = logging.getLogger(__name__)
@@ -239,11 +241,144 @@ def report_quiz_view(request, quiz_id):
     )
 
 
+@dataclass
+class ScoreResult:
+    points: int
+    max_points: int
+    is_correct: bool
+
+
+@dataclass
+class ScoreResult:
+    points: int
+    max_points: int
+    is_correct: bool
+
+
+def score_question(question, request, timed_out=False):
+    """Проверяет ответ игрока и возвращает баллы.
+
+    Поддерживает все 4 типа вопросов. Проверка автоматическая.
+    """
+    max_points = 4 * question.coefficient
+
+    if timed_out:
+        return ScoreResult(points=0, max_points=max_points, is_correct=False)
+
+    qtype = question.question_type
+
+    if qtype == Question.SINGLE:
+        answer_id = request.POST.get("answer")
+        chosen = question.answers.filter(id=answer_id).first()
+        is_correct = bool(chosen and chosen.is_correct)
+
+    elif qtype == Question.MULTIPLE:
+        chosen_ids = request.POST.getlist("answer")
+        try:
+            chosen_ids = {int(x) for x in chosen_ids}
+        except (TypeError, ValueError):
+            chosen_ids = set()
+
+        correct_ids = set(
+            question.answers.filter(is_correct=True).values_list("id", flat=True)
+        )
+        is_correct = bool(correct_ids) and chosen_ids == correct_ids
+
+    elif qtype == Question.NUMBER:
+        raw = request.POST.get("answer_number")
+        if raw in (None, ""):
+            is_correct = False
+        else:
+            try:
+                user_num = float(raw)
+            except (TypeError, ValueError):
+                is_correct = False
+            else:
+                is_correct = (
+                    question.correct_number is not None
+                    and abs(question.correct_number - user_num) < 1e-9
+                )
+
+    elif qtype == Question.TEXT:
+        user_text = (request.POST.get("answer_text") or "").strip().casefold()
+        correct_text = (question.correct_text or "").strip().casefold()
+        is_correct = bool(correct_text) and user_text == correct_text
+
+    else:
+        is_correct = False
+
+    return ScoreResult(
+        points=max_points if is_correct else 0,
+        max_points=max_points,
+        is_correct=is_correct,
+    )
+
+
+@login_required
+def edit_quiz_view(request, quiz_id):
+    profile = getattr(request.user, "profile", None)
+
+    if profile and profile.role not in [Profile.ADMIN, Profile.TEACHER]:
+        messages.error(
+            request,
+            "Редактировать квизы могут только учителя и администраторы.",
+        )
+        return redirect("main_page")
+
+    quiz = get_object_or_404(Quiz, id=quiz_id, creator=request.user, is_deleted=False)
+
+    if request.method == "POST":
+        title = request.POST.get("title", "").strip()
+        question_payloads = collect_question_payloads_from_post(request)
+        quiz_payload = build_quiz_form_payload(title, question_payloads)
+
+        if not title:
+            messages.error(request, "Название квиза не может быть пустым.")
+            return _render_quiz_form(
+                request,
+                quiz=quiz,
+                quiz_payload=quiz_payload,
+            )
+
+        if not question_payloads:
+            messages.error(
+                request,
+                "Нельзя сохранить пустой квиз. Добавьте хотя бы один вопрос.",
+            )
+            return _render_quiz_form(
+                request,
+                quiz=quiz,
+                quiz_payload=quiz_payload,
+            )
+
+        quiz.title = title
+        quiz.save(update_fields=["title"])
+
+        create_revision_from_payloads(
+            quiz=quiz,
+            title=title,
+            question_payloads=question_payloads,
+        )
+
+        logger.info(
+            "Пользователь %s отредактировал квиз «%s» (ID: %d) (IP: %s)",
+            request.user.username,
+            title,
+            quiz.id,
+            request.META.get("REMOTE_ADDR"),
+        )
+        messages.success(request, "Квиз успешно обновлён.")
+        return redirect("my_quizzes")
+
+    return _render_quiz_form(
+        request,
+        quiz=quiz,
+        quiz_payload=build_quiz_payload_for_edit(quiz),
+    )
+
 def play_quiz_view(request, quiz_id):
     quiz = get_object_or_404(Quiz, id=quiz_id, is_deleted=False)
 
-    # Для незарегистрированных пользователей не создаём гостевой аккаунт —
-    # статистика прохождений ведётся только для авторизованных
     current_user = request.user if request.user.is_authenticated else None
 
     if quiz.status == Quiz.DRAFT and (
@@ -267,7 +402,7 @@ def play_quiz_view(request, quiz_id):
             score_percent = (score / total * 100) if total else 0
 
             result_id = request.session.get(f"quiz_{quiz_id}_result_id")
-            if result_id:
+            if result_id and current_user is not None:
                 QuizResult.objects.filter(
                     id=result_id,
                     user=current_user,
@@ -285,8 +420,6 @@ def play_quiz_view(request, quiz_id):
             request.session.pop(f"quiz_{quiz_id}_result_id", None)
             request.session.pop(f"quiz_{quiz_id}_answered", None)
 
-            # Удаляем гостевого пользователя после завершения одиночного квиза,
-            # если он не участвует в активных лобби-сессиях
             guest_user_id = request.session.get("guest_user_id")
             if guest_user_id:
                 from django.contrib.auth.models import User
@@ -309,7 +442,7 @@ def play_quiz_view(request, quiz_id):
 
             logger.info(
                 "Пользователь %s завершил одиночное прохождение квиза «%s» (ID: %d). Баллы: %d / %d (%.1f%%) (IP: %s)",
-                request.user.username,
+                current_user.username if current_user else "аноним",
                 quiz.title,
                 quiz.id,
                 score,
@@ -432,7 +565,6 @@ def play_quiz_view(request, quiz_id):
                 },
             )
 
-    # Статистика ведётся только для авторизованных пользователей
     if current_user is not None:
         result = QuizResult.objects.create(
             user=current_user,
@@ -460,67 +592,4 @@ def play_quiz_view(request, quiz_id):
             "finished": False,
             "show_result": False,
         },
-    )
-
-
-@login_required
-def edit_quiz_view(request, quiz_id):
-    profile = getattr(request.user, "profile", None)
-
-    if profile and profile.role not in [Profile.ADMIN, Profile.TEACHER]:
-        messages.error(
-            request,
-            "Редактировать квизы могут только учителя и администраторы.",
-        )
-        return redirect("main_page")
-
-    quiz = get_object_or_404(Quiz, id=quiz_id, creator=request.user, is_deleted=False)
-
-    if request.method == "POST":
-        title = request.POST.get("title", "").strip()
-        question_payloads = collect_question_payloads_from_post(request)
-        quiz_payload = build_quiz_form_payload(title, question_payloads)
-
-        if not title:
-            messages.error(request, "Название квиза не может быть пустым.")
-            return _render_quiz_form(
-                request,
-                quiz=quiz,
-                quiz_payload=quiz_payload,
-            )
-
-        if not question_payloads:
-            messages.error(
-                request,
-                "Нельзя сохранить пустой квиз. Добавьте хотя бы один вопрос.",
-            )
-            return _render_quiz_form(
-                request,
-                quiz=quiz,
-                quiz_payload=quiz_payload,
-            )
-
-        quiz.title = title
-        quiz.save(update_fields=["title"])
-
-        create_revision_from_payloads(
-            quiz=quiz,
-            title=title,
-            question_payloads=question_payloads,
-        )
-
-        logger.info(
-            "Пользователь %s отредактировал квиз «%s» (ID: %d) (IP: %s)",
-            request.user.username,
-            title,
-            quiz.id,
-            request.META.get("REMOTE_ADDR"),
-        )
-        messages.success(request, "Квиз успешно обновлён.")
-        return redirect("my_quizzes")
-
-    return _render_quiz_form(
-        request,
-        quiz=quiz,
-        quiz_payload=build_quiz_payload_for_edit(quiz),
     )

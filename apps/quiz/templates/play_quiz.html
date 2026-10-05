@@ -46,7 +46,6 @@
                     ⚑ Пожаловаться
                 </a>
                 {% endif %}
-
             </div>
         </div>
 
@@ -56,10 +55,6 @@
             {% if timed_out %}
                 <div class="sp-result-icon sp-timeout">⏰</div>
                 <h2 class="sp-result-title sp-timeout">Время истекло!</h2>
-            {% elif is_correct is None %}
-                <div class="sp-result-icon sp-manual">📋</div>
-                <h2 class="sp-result-title sp-manual">Ответ принят</h2>
-                <p class="sp-result-sub">Будет проверен преподавателем вручную</p>
             {% elif is_correct %}
                 <div class="sp-result-icon sp-correct">✅</div>
                 <h2 class="sp-result-title sp-correct">Верно!</h2>
@@ -86,6 +81,11 @@
                 <div class="sp-correct-answer">
                     <span class="sp-correct-label">Правильное число:</span>
                     <span class="sp-correct-value">{{ question.correct_number }}</span>
+                </div>
+            {% elif question.question_type == 'text' %}
+                <div class="sp-correct-answer">
+                    <span class="sp-correct-label">Правильный ответ:</span>
+                    <span class="sp-correct-value">{{ question.correct_text }}</span>
                 </div>
             {% endif %}
 
@@ -150,8 +150,7 @@
                 </div>
                 {% elif question.question_type == 'text' %}
                 <div class="sp-input-row">
-                    <input type="text" name="answer_text" class="form-control" placeholder="Введите ответ...">
-                    <p class="sp-hint">💬 Проверяется вручную</p>
+                    <input type="text" name="answer_text" class="form-control" placeholder="Введите ответ..." required>
                 </div>
                 {% endif %}
 
@@ -164,15 +163,12 @@
 
     </div>
 </div>
-
-
 {% endblock %}
 
 {% block extra_js %}
 {% if not finished and not show_result %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // Fill ABCD letters
     var letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     document.querySelectorAll('.sp-answer-letter').forEach(function(el,i){el.textContent=letters[i]||'';});
 
@@ -201,4 +197,3 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 {% endif %}
 {% endblock %}
-
