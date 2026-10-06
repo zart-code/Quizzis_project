@@ -74,14 +74,23 @@ function makeAnswersNumber(i) {
     `;
 }
 
-function makeAnswersText() {
-    return '<p class="text-hint">💬 Ответ проверяется преподавателем вручную</p>';
+function makeAnswersText(i) {
+    return `
+        <div class="q-row">
+            <label>Правильный текстовый ответ</label>
+            <input type="text"
+                   class="q-input"
+                   name="q${i}_correct_text"
+                   placeholder="Введите правильный ответ..."
+                   required>
+        </div>
+    `;
 }
 
 // ---------- Состояние ответов ----------
 
 function collectAnswerState(i) {
-    const state = { texts: [], checked: [], numberValue: '' };
+    const state = { texts: [], checked: [], numberValue: '', correctText: '' };
 
     for (let j = 0; j < 4; j += 1) {
         const textInput = document.querySelector(`input[name="q${i}_ans${j}"]`);
@@ -93,6 +102,9 @@ function collectAnswerState(i) {
 
     const numberInput = document.querySelector(`input[name="q${i}_correct_number"]`);
     if (numberInput) state.numberValue = numberInput.value;
+
+    const correctTextInput = document.querySelector(`input[name="q${i}_correct_text"]`);
+    if (correctTextInput) state.correctText = correctTextInput.value;
 
     return state;
 }
@@ -113,6 +125,11 @@ function restoreAnswerState(i, state) {
     const numberInput = document.querySelector(`input[name="q${i}_correct_number"]`);
     if (numberInput && state.numberValue !== undefined) {
         numberInput.value = state.numberValue;
+    }
+
+    const correctTextInput = document.querySelector(`input[name="q${i}_correct_text"]`);
+    if (correctTextInput && state.correctText !== undefined) {
+        correctTextInput.value = state.correctText;
     }
 }
 
@@ -205,9 +222,14 @@ function setQuestionData(i, questionData) {
             if (correctInput && answer.is_correct) correctInput.checked = true;
         });
     } else if (questionData.type === 'number') {
-        const numberInput = document.querySelector(`input[name="q${i}_correct_number"]`);
-        if (numberInput && questionData.correct_number != null) {
-            numberInput.value = questionData.correct_number;
+    const numberInput = document.querySelector(`input[name="q${i}_correct_number"]`);
+    if (numberInput && questionData.correct_number != null) {
+        numberInput.value = questionData.correct_number;
+    }
+    } else if (questionData.type === 'text') {
+        const textCorrectInput = document.querySelector(`input[name="q${i}_correct_text"]`);
+        if (textCorrectInput && questionData.correct_text != null) {
+            textCorrectInput.value = questionData.correct_text;
         }
     }
 
@@ -269,7 +291,8 @@ function renumberQuestions() {
         const answersContainer = block.querySelector('[id$="_answers"]');
         if (answersContainer) {
             answersContainer.id = `q${i}_answers`;
-
+            const correctTextInput = answersContainer.querySelector('input[name$="_correct_text"]');
+            if (correctTextInput) correctTextInput.name = `q${i}_correct_text`;
             answersContainer.querySelectorAll('.answer-row').forEach((row, j) => {
                 const correctInput = row.querySelector('input[type="radio"], input[type="checkbox"]');
                 if (correctInput) {
@@ -321,7 +344,7 @@ function updateAnswers(i) {
     } else if (type === 'number') {
         answersContainer.innerHTML = makeAnswersNumber(i);
     } else {
-        answersContainer.innerHTML = makeAnswersText();
+        answersContainer.innerHTML = makeAnswersText(i);
     }
 
     restoreAnswerState(i, state);
@@ -404,6 +427,14 @@ function populateFormFromJson(data) {
         if (type === 'number' && q.correctAnswer !== undefined) {
             const numInput = document.querySelector(`input[name="q${i}_correct_number"]`);
             if (numInput) numInput.value = q.correctAnswer;
+        }
+
+        if (type === 'text') {
+            const correctTextInput = document.querySelector(`input[name="q${i}_correct_text"]`);
+            const correctText = q.correctText ?? q.correct_text ?? q.correctAnswer;
+            if (correctTextInput && correctText != null) {
+                correctTextInput.value = correctText;
+            }
         }
 
         if (q.timeLimit) {
