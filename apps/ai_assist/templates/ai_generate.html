@@ -3,6 +3,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/pages/create_quiz.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/create_quiz/AA_create_quiz.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -10,7 +11,7 @@
 <div class="container">
     <div class="aig-wrapper">
         <div class="aig-header">
-            <h1 class="aig-title">✨ Генерация квиза с помощью AI</h1>
+            <h1 class="aig-title">Генерация квиза с помощью AI</h1>
             <p class="aig-subtitle">Укажите тему — AI предложит квиз</p>
             <p class="aig-subtitle">(AI может ошибаться, проверяйте всё)</p>
         </div>
@@ -20,7 +21,7 @@
             <div class="aig-step-badge">Шаг 1 — Выберите тему</div>
             <form id="ai-form">
                 <div class="aig-field">
-                    <label class="cq-label" for="topic">🎯 Тема квиза</label>
+                    <label class="cq-label" for="topic">Тема квиза</label>
                     <input type="text" id="topic" name="topic" class="q-input"
                            placeholder="Опишите максимально подробно тему"
                            required>
@@ -28,7 +29,7 @@
 
                 <div class="aig-row">
                     <div class="aig-field">
-                        <label class="cq-label" for="num_questions">📝 Количество вопросов</label>
+                        <label class="cq-label" for="num_questions">Количество вопросов</label>
                         <input type="number" id="num_questions" name="num_questions"
                                class="q-input" value="5" min="1" max="20">
                     </div>
