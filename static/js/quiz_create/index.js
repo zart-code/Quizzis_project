@@ -28,17 +28,24 @@ function makeTimeOpts(i) {
     `).join('');
 }
 
+function makeAnswerTextarea(i, index, label, placeholder) {
+    return `
+        <textarea class="q-input q-textarea answer-textarea"
+                  name="q${i}_ans${index}"
+                  rows="1"
+                  placeholder="${placeholder}"
+                  oninput="autoGrow(this)"
+                  required></textarea>
+    `;
+}
+
 function makeAnswersSingle(i) {
     return `<div class="answers-grid">${labels.map(
         (label, index) => `
             <div class="answer-row">
                 <input type="radio" name="q${i}_correct" value="${index}" id="q${i}c${index}">
                 <span class="ans-label">${label}</span>
-                <input type="text"
-                       class="q-input"
-                       name="q${i}_ans${index}"
-                       placeholder="Вариант ${label}"
-                       required>
+                ${makeAnswerTextarea(i, index, label, `Вариант ${label}`)}
             </div>
         `,
     ).join('')}</div>`;
@@ -50,11 +57,7 @@ function makeAnswersMultiple(i) {
             <div class="answer-row">
                 <input type="checkbox" name="q${i}_correct" value="${index}" id="q${i}c${index}">
                 <span class="ans-label">${label}</span>
-                <input type="text"
-                       class="q-input"
-                       name="q${i}_ans${index}"
-                       placeholder="Вариант ${label}"
-                       required>
+                ${makeAnswerTextarea(i, index, label, `Вариант ${label}`)}
             </div>
         `,
     ).join('')}</div>`;
@@ -78,11 +81,12 @@ function makeAnswersText(i) {
     return `
         <div class="q-row">
             <label>Правильный текстовый ответ</label>
-            <input type="text"
-                   class="q-input"
-                   name="q${i}_correct_text"
-                   placeholder="Введите правильный ответ..."
-                   required>
+            <textarea class="q-input q-textarea autogrow-textarea"
+                      name="q${i}_correct_text"
+                      rows="1"
+                      placeholder="Введите правильный ответ..."
+                      oninput="autoGrow(this)"
+                      required></textarea>
         </div>
     `;
 }
@@ -93,7 +97,7 @@ function collectAnswerState(i) {
     const state = { texts: [], checked: [], numberValue: '', correctText: '' };
 
     for (let j = 0; j < 4; j += 1) {
-        const textInput = document.querySelector(`input[name="q${i}_ans${j}"]`);
+        const textInput = document.querySelector(`[name="q${i}_ans${j}"]`);
         if (textInput) state.texts[j] = textInput.value;
     }
 
@@ -103,7 +107,7 @@ function collectAnswerState(i) {
     const numberInput = document.querySelector(`input[name="q${i}_correct_number"]`);
     if (numberInput) state.numberValue = numberInput.value;
 
-    const correctTextInput = document.querySelector(`input[name="q${i}_correct_text"]`);
+    const correctTextInput = document.querySelector(`[name="q${i}_correct_text"]`);
     if (correctTextInput) state.correctText = correctTextInput.value;
 
     return state;
@@ -111,9 +115,10 @@ function collectAnswerState(i) {
 
 function restoreAnswerState(i, state) {
     for (let j = 0; j < 4; j += 1) {
-        const textInput = document.querySelector(`input[name="q${i}_ans${j}"]`);
+        const textInput = document.querySelector(`[name="q${i}_ans${j}"]`);
         if (textInput && state.texts[j] !== undefined) {
             textInput.value = state.texts[j];
+            autoGrow(textInput);
         }
     }
 
@@ -127,9 +132,10 @@ function restoreAnswerState(i, state) {
         numberInput.value = state.numberValue;
     }
 
-    const correctTextInput = document.querySelector(`input[name="q${i}_correct_text"]`);
+    const correctTextInput = document.querySelector(`[name="q${i}_correct_text"]`);
     if (correctTextInput && state.correctText !== undefined) {
         correctTextInput.value = state.correctText;
+        autoGrow(correctTextInput);
     }
 }
 
@@ -161,7 +167,7 @@ function makeQuestion(i) {
         </div>
         <div class="q-row">
             <label>Текст вопроса</label>
-            <textarea class="q-input q-textarea"
+            <textarea class="q-input q-textarea question-textarea"
                       name="q${i}_text"
                       rows="2"
                       placeholder="Введите текст вопроса..."
@@ -198,7 +204,7 @@ function setQuestionData(i, questionData) {
         updateAnswers(i);
     }
 
-    // 2. Текст вопроса (textarea)
+    // 2. Текст вопроса
     const questionInput = document.querySelector(`[name="q${i}_text"]`);
     if (questionInput) {
         questionInput.value = questionData.text || '';
@@ -215,21 +221,27 @@ function setQuestionData(i, questionData) {
     if (questionData.type === 'single' || questionData.type === 'multiple') {
         const answers = Array.isArray(questionData.answers) ? questionData.answers : [];
         answers.forEach((answer, index) => {
-            const answerInput = document.querySelector(`input[name="q${i}_ans${index}"]`);
-            const correctInput = document.querySelector(`input[name="q${i}_correct"][value="${index}"]`);
+            const answerInput = document.querySelector(`[name="q${i}_ans${index}"]`);
+            const correctInput = document.querySelector(
+                `input[name="q${i}_correct"][value="${index}"]`,
+            );
 
-            if (answerInput) answerInput.value = answer.text || '';
+            if (answerInput) {
+                answerInput.value = answer.text || '';
+                autoGrow(answerInput);
+            }
             if (correctInput && answer.is_correct) correctInput.checked = true;
         });
     } else if (questionData.type === 'number') {
-    const numberInput = document.querySelector(`input[name="q${i}_correct_number"]`);
-    if (numberInput && questionData.correct_number != null) {
-        numberInput.value = questionData.correct_number;
-    }
+        const numberInput = document.querySelector(`input[name="q${i}_correct_number"]`);
+        if (numberInput && questionData.correct_number != null) {
+            numberInput.value = questionData.correct_number;
+        }
     } else if (questionData.type === 'text') {
-        const textCorrectInput = document.querySelector(`input[name="q${i}_correct_text"]`);
+        const textCorrectInput = document.querySelector(`[name="q${i}_correct_text"]`);
         if (textCorrectInput && questionData.correct_text != null) {
             textCorrectInput.value = questionData.correct_text;
+            autoGrow(textCorrectInput);
         }
     }
 
@@ -281,8 +293,8 @@ function renumberQuestions() {
             typeSelect.setAttribute('onchange', `updateAnswers(${i})`);
         }
 
-        // textarea — селектор без input
-        const questionInput = block.querySelector('[name$="_text"]');
+        // Текст вопроса — по уникальному классу, чтобы не задеть correct_text
+        const questionInput = block.querySelector('.question-textarea');
         if (questionInput) questionInput.name = `q${i}_text`;
 
         const coefficientInput = block.querySelector('input.q-input[name$="_coefficient"]');
@@ -291,16 +303,20 @@ function renumberQuestions() {
         const answersContainer = block.querySelector('[id$="_answers"]');
         if (answersContainer) {
             answersContainer.id = `q${i}_answers`;
-            const correctTextInput = answersContainer.querySelector('input[name$="_correct_text"]');
+
+            const correctTextInput = answersContainer.querySelector('[name$="_correct_text"]');
             if (correctTextInput) correctTextInput.name = `q${i}_correct_text`;
+
             answersContainer.querySelectorAll('.answer-row').forEach((row, j) => {
-                const correctInput = row.querySelector('input[type="radio"], input[type="checkbox"]');
+                const correctInput = row.querySelector(
+                    'input[type="radio"], input[type="checkbox"]',
+                );
                 if (correctInput) {
                     correctInput.name = `q${i}_correct`;
                     correctInput.id = `q${i}c${j}`;
                 }
 
-                const answerTextInput = row.querySelector('input.q-input');
+                const answerTextInput = row.querySelector('.q-input');
                 if (answerTextInput) answerTextInput.name = `q${i}_ans${j}`;
             });
 
@@ -412,8 +428,11 @@ function populateFormFromJson(data) {
 
         if ((type === 'single' || type === 'multiple') && Array.isArray(q.options)) {
             q.options.forEach((opt, idx) => {
-                const ansInput = document.querySelector(`input[name="q${i}_ans${idx}"]`);
-                if (ansInput && opt.text) ansInput.value = opt.text;
+                const ansInput = document.querySelector(`[name="q${i}_ans${idx}"]`);
+                if (ansInput && opt.text) {
+                    ansInput.value = opt.text;
+                    autoGrow(ansInput);
+                }
 
                 if (opt.isCorrect) {
                     const correctInput = document.querySelector(
@@ -430,10 +449,11 @@ function populateFormFromJson(data) {
         }
 
         if (type === 'text') {
-            const correctTextInput = document.querySelector(`input[name="q${i}_correct_text"]`);
+            const correctTextInput = document.querySelector(`[name="q${i}_correct_text"]`);
             const correctText = q.correctText ?? q.correct_text ?? q.correctAnswer;
             if (correctTextInput && correctText != null) {
                 correctTextInput.value = correctText;
+                autoGrow(correctTextInput);
             }
         }
 
@@ -455,7 +475,6 @@ function initJsonDropzone() {
     const dropContent = document.getElementById('json-drop-content');
     if (!dropzone || !fileInput) return;
 
-    // Глобально глушим дефолт, чтобы файл не открывался при промахе
     document.addEventListener('dragover', (e) => e.preventDefault());
     document.addEventListener('drop', (e) => e.preventDefault());
 
@@ -521,7 +540,6 @@ function initJsonDropzone() {
 // ---------- Инициализация страницы ----------
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Данные для режима редактирования (из json_script в шаблоне)
     const dataEl = document.getElementById('quiz-initial-data');
     if (dataEl) {
         try {
@@ -531,7 +549,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 2. AI-кнопка (URL передаётся через data-url в шаблоне)
     const aiBtn = document.getElementById('ai-generate-btn');
     if (aiBtn && aiBtn.dataset.url) {
         aiBtn.style.cursor = 'pointer';
@@ -540,10 +557,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 3. Импорт из JSON
     initJsonDropzone();
 
-    // 4. Основная форма
     const addQuestionBtn = document.getElementById(DOM_IDS.ADD_QUESTION_BTN);
     if (addQuestionBtn) {
         addQuestionBtn.addEventListener('click', () => {
@@ -553,7 +568,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// ---------- Экспорт для inline-обработчиков и main.js ----------
+// ---------- Экспорт для inline-обработчиков ----------
 
 window.makeQuestion = makeQuestion;
 window.removeQuestion = removeQuestion;
