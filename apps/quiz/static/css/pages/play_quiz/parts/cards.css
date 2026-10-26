@@ -15,15 +15,79 @@
     }
 .sp-answers-grid{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-bottom:1.5rem}
 @media(max-width:500px){.sp-answers-grid{grid-template-columns:1fr}}
-.sp-answer-label{display:flex;align-items:center;gap:.8rem;background:rgba(139,92,246,.08);border:2px solid rgba(139,92,246,.2);border-radius:14px;padding:1rem 1.2rem;cursor:pointer;transition:all .2s}
-.sp-answer-letter{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:rgba(139,92,246,.2);color:var(--primary-light);font-weight:700;font-size:.85rem;flex-shrink:0}
+
+/* ─── Answer label (многострочные варианты) ─── */
+.sp-answer-label{
+    display:flex;
+    align-items:flex-start;
+    gap:.8rem;
+    background:rgba(139,92,246,.08);
+    border:2px solid rgba(139,92,246,.2);
+    border-radius:14px;
+    padding:1rem 1.2rem;
+    cursor:pointer;
+    transition:all .2s;
+}
+.sp-answer-letter{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:28px;height:28px;
+    border-radius:8px;
+    background:rgba(139,92,246,.2);
+    color:var(--primary-light);
+    font-weight:700;
+    font-size:.85rem;
+    flex-shrink:0;
+    margin-top:.15rem;
+}
 .sp-answer-label:hover{background:rgba(139,92,246,.18);border-color:var(--primary)}
 .sp-answer-label:has(.sp-radio:checked),.sp-answer-label:has(.sp-check:checked){background:rgba(139,92,246,.25);border-color:var(--primary-light)}
-.sp-radio,.sp-check{width:18px;height:18px;accent-color:var(--primary);flex-shrink:0}
-.sp-answer-text{color:var(--text-primary);font-size:.95rem}
+.sp-radio,.sp-check{
+    width:18px;height:18px;
+    accent-color:var(--primary);
+    flex-shrink:0;
+    margin-top:.25rem;
+}
+.sp-answer-text{
+    color:var(--text-primary);
+    font-size:.95rem;
+    line-height:1.4;
+    white-space:pre-wrap;
+    word-wrap:break-word;
+    overflow-wrap:break-word;
+    min-width:0;
+}
+
+/* ─── Input row + textarea для текстового ответа ─── */
 .sp-input-row{margin-bottom:1.5rem}
 .sp-hint{color:var(--text-muted);font-size:.85rem;margin-top:.5rem;font-style:italic}
 .sp-submit-row{text-align:center}
+
+.sp-answer-textarea{
+    resize:none;
+    overflow:hidden;
+    min-height:52px;
+    width:100%;
+    box-sizing:border-box;
+    padding:.8rem 1rem;
+    font-family:'Poppins',sans-serif;
+    font-size:.95rem;
+    line-height:1.4;
+    white-space:pre-wrap;
+    word-wrap:break-word;
+    overflow-wrap:break-word;
+    background:rgba(15,15,35,.5);
+    border:2px solid rgba(139,92,246,.25);
+    border-radius:12px;
+    color:var(--text-primary);
+    transition:all .3s;
+}
+.sp-answer-textarea:focus{
+    outline:none;
+    border-color:var(--primary);
+    box-shadow:0 0 15px rgba(139,92,246,.2);
+}
 
 /* Result card */
 .sp-result-card{padding:2.5rem 2rem;text-align:center}
@@ -36,7 +100,14 @@
 .sp-result-sub{color:var(--text-secondary);margin-bottom:1rem}
 .sp-correct-answer{background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.25);border-radius:12px;padding:.9rem 1.2rem;margin:1rem 0 1.5rem;text-align:left}
 .sp-correct-label{display:block;font-size:.8rem;color:var(--text-muted);margin-bottom:.25rem;text-transform:uppercase;letter-spacing:.05em}
-.sp-correct-value{color:var(--text-primary);font-weight:600;font-size:1rem}
+.sp-correct-value{
+    color:var(--text-primary);
+    font-weight:600;
+    font-size:1rem;
+    white-space:pre-wrap;
+    word-wrap:break-word;
+    overflow-wrap:break-word;
+}
 .sp-result-form{margin-top:1.5rem}
 
 /* Finished card */

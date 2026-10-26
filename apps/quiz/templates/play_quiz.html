@@ -73,7 +73,7 @@
                     <span class="sp-correct-label">Правильные ответы:</span>
                     <span class="sp-correct-value">
                         {% for answer in question.answers.all %}
-                            {% if answer.is_correct %}{{ answer.text }}{% if not forloop.last %}; {% endif %}{% endif %}
+                            {% if answer.is_correct %}{{ answer.text }}{% if not forloop.last %}<br>{% endif %}{% endif %}
                         {% endfor %}
                     </span>
                 </div>
@@ -150,7 +150,12 @@
                 </div>
                 {% elif question.question_type == 'text' %}
                 <div class="sp-input-row">
-                    <input type="text" name="answer_text" class="form-control" placeholder="Введите ответ..." required>
+                    <textarea name="answer_text"
+                              class="form-control sp-answer-textarea"
+                              rows="2"
+                              placeholder="Введите ответ..."
+                              oninput="autoGrow(this)"
+                              required></textarea>
                 </div>
                 {% endif %}
 
@@ -168,15 +173,30 @@
 {% block extra_js %}
 {% if not finished and not show_result %}
 <script>
+function autoGrow(el){
+    if(!el) return;
+    el.style.height='auto';
+    el.style.height=el.scrollHeight+'px';
+}
+window.autoGrow = autoGrow;
+
 document.addEventListener('DOMContentLoaded', function () {
     var letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     document.querySelectorAll('.sp-answer-letter').forEach(function(el,i){el.textContent=letters[i]||'';});
 
-    const timeLimit = {{ question.time_limit }};
+    // Авто-высота для многострочного текстового ответа
+    document.querySelectorAll('.sp-answer-textarea').forEach(autoGrow);
+
+    const timeLimit = {{ question.time_limit|default:0 }};
     const timerEl = document.getElementById('timer');
     const bar = document.getElementById('timer-bar');
     const form = document.getElementById('answer-form');
     const timedOut = document.getElementById('timed-out-field');
+
+    if (!timeLimit || !form) {
+        return;
+    }
+
     let remaining = timeLimit;
     if (bar) bar.style.width = '100%';
 
@@ -187,7 +207,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (remaining <= 5 && bar) bar.style.background = 'linear-gradient(90deg,#EF4444,#F59E0B)';
         if (remaining <= 0) {
             clearInterval(interval);
-            timedOut.value = '1';
+            if (timedOut) timedOut.value = '1';
             form.submit();
         }
     }, 1000);

@@ -25,12 +25,76 @@
     box-sizing:border-box;
 }
 
+/* ---- Многострочные варианты ответов ---- */
+.answer-row{
+    align-items:flex-start;
+}
+
+.answer-row input[type=radio],
+.answer-row input[type=checkbox]{
+    margin-top:.55rem;
+}
+
+.answer-row .ans-label{
+    padding-top:.5rem;
+}
+
+.answer-row .q-input{
+    flex:1;
+    min-width:0;
+    resize:none;
+    overflow:hidden;
+    min-height:38px;
+    line-height:1.4;
+    padding:.35rem .4rem;
+}
+
+/* ---- Правильный текстовый ответ (textarea) ---- */
+.q-row .autogrow-textarea{
+    resize:none;
+    overflow:hidden;
+    min-height:38px;
+    line-height:1.4;
+}
+
 /* Варианты ответов */
-.answers-grid{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
-.answer-row{display:flex;align-items:center;gap:.6rem;background:rgba(139,92,246,.07);border:1px solid rgba(139,92,246,.15);border-radius:12px;padding:.6rem .8rem}
-.answer-row input[type=radio],.answer-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--primary);cursor:pointer;flex-shrink:0}
-.answer-row .ans-label{font-size:.8rem;color:var(--primary-light);font-weight:600;min-width:16px}
-.answer-row .q-input{margin:0;border:none;background:transparent;padding:.3rem .4rem}
+.answers-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:.8rem
+}
+
+.answer-row{
+    display:flex;
+    align-items:center;
+    gap:.6rem;background:rgba(139,92,246,.07);
+    border:1px solid rgba(139,92,246,.15);
+    border-radius:12px;
+    padding:.6rem .8rem
+}
+
+.answer-row input[type=radio], .answer-row input[type=checkbox]{
+    width:18px;
+    height:18px;
+    accent-color:var(--primary);
+    cursor:pointer;
+    flex-shrink:0
+}
+
+.answer-row .ans-label{
+    font-size:.8rem;
+    color:var(--primary-light);
+    font-weight:600;
+    min-width:16px
+}
+
+.answer-row .q-input{
+    margin:0;
+    border:none;
+    background:transparent;
+    padding:.3rem .4rem
+}
+
 .answer-row .q-input:focus{box-shadow:none}
 
 /* Время на ответ */
